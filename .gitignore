@@ -1,0 +1,17 @@
+# Ignore environment variables.
+.env
+
+# Ignore cached source code.
+__pycache__
+
+# Ignore database folder and files.
+instance
+instance/*
+
+# Ignore reports.
+reports/*
+!reports
+
+# Ignore logs.
+logs/*
+!logs
