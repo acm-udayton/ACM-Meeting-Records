@@ -1,17 +1,20 @@
 # Ignore environment variables.
 .env
+flask/.env
 
 # Ignore cached source code.
 __pycache__
 
 # Ignore database folder and files.
-instance
+flask/instance/*
 instance/*
 
 # Ignore reports.
 reports/*
-!reports
 
 # Ignore logs.
-logs/*
-!logs
+/flask/logs/*
+
+# Ignore documentation/planning files.
+flask/notes.txt
+flask/test.html

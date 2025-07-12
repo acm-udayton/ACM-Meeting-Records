@@ -1,0 +1,79 @@
+
+{% include "header.html" %}
+
+{% include "navbar.html" %}
+
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-sm-4">
+      <h2>About Me</h2>
+      <h5>Photo of me:</h5>
+      <div class="fakeimg">Fake Image</div>
+      <p>Some text about me in culpa qui officia deserunt mollit anim..</p>
+      <h3 class="mt-4">Some Links</h3>
+      <p>Lorem ipsum dolor sit ame.</p>
+      <ul class="nav nav-pills flex-column">
+        <li class="nav-item">
+          <a class="nav-link active" href="#">Active</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">Link</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">Link</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link disabled" href="#">Disabled</a>
+        </li>
+      </ul>
+      <hr class="d-sm-none">
+    </div>
+    <div class="col-sm-8">
+      <h2>TITLE HEADING</h2>
+      <h5>Title description, Dec 7, 2020</h5>
+      <div class="fakeimg">Fake Image</div>
+      <p>Some text..</p>
+      <p>Sunt in culpa qui officia deserunt mollit anim id est laborum consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.</p>
+
+      <h2 class="mt-5">TITLE HEADING</h2>
+      <h5>Title description, Sep 2, 2020</h5>
+      <div class="fakeimg">Fake Image</div>
+      <p>Some text..</p>
+      <p>Sunt in culpa qui officia deserunt mollit anim id est laborum consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.</p>
+    </div>
+  </div>
+</div>
+
+<footer class="mt-5 p-4 bg-dark text-white text-center">
+    <div class="row gy-4">
+    <div class="col-lg-5 col-md-12 footer-about">
+        <a href="index.html" class="logo d-flex align-items-center">
+        <span class="sitename">ACM Attendance</span>
+        </a><br/>Follow ACM at UD on our socials to get up-to-date information on club events!
+        <div class="social-links d-flex mt-4">
+        <a href="{{ social_instagram }}" target="_blank"><i class="fa-brands fa-instagram fa-xl"></i></a>
+        <a href="{{ social_linkedin }}" target="_blank"><i class="fa-brands fa-linkedin fa-xl"></i></a>
+        </div>
+    </div>
+
+    <div class="col-lg-2 col-6 footer-links">
+    </div>
+
+    <div class="col-lg-2 col-6 footer-links text-start">
+        <h4>Useful Links</h4>
+        <a href="/">Home</a><br/>
+        <a href="/events">Meeting Minutes</a><br/>
+        <a href="{{ github_url }}" target="_blank">Source Code</a><br/>
+        <a href="/login">Officer Login</a><br/>
+    </div>
+
+    <div class="col-lg-3 col-md-12 footer-contact text-center text-md-start">
+        <h4>Contact Us</h4>
+        <p>{{ contact_location }}</p>
+        <p><strong>Email:</strong> <a href="mailto:{{ contact_email }}" target="_blank" style="text-decoration: none;color: white;"><span>{{ contact_email }}</span></a></p>
+    </div>
+    </div>
+</footer>
+
+</body>
+</html>

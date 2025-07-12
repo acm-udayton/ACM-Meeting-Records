@@ -1,0 +1,50 @@
+{% include "header.html" %}
+
+<body class="index-page">
+
+  <header id="header" class="header d-flex align-items-center fixed-top">
+    <div class="container-fluid container-xl position-relative d-flex align-items-center">
+
+      <a href="/" class="logo d-flex align-items-center me-auto">
+        <h1 class="sitename">ACM Attendance</h1>
+      </a>
+
+      <nav id="navmenu" class="navmenu">
+        <ul>
+          <li><a href="/" class="active">Home<br></a></li>
+          <li><a href="/events">Meeting Minutes</a></li>
+          <li class="dropdown"><a href="{{ github_url }}">Source Code</a></li>
+        </ul>
+        <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+      </nav>
+
+      <a class="btn-getstarted" href="/create-account">Create Account</a>
+
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- Header Section -->
+    <section id="hero" class="hero section dark-background">
+
+      <img src="{{ url_for('static', filename='img/world-dotted-map.png') }}" alt="" class="hero-bg" data-aos="fade-in">
+
+      <div class="container">
+        <div class="row gy-4 d-flex justify-content-between">
+          <div class="col-lg-6 order-2 order-lg-2 d-flex flex-column justify-content-center">
+            <h2 data-aos="fade-up">Log In</h2>
+            <p data-aos="fade-up" data-aos-delay="100">Take notes, track attendees, and revisit old meetings - all with ease and fully customized for ACM at the University of Dayton.</p>
+            <form action="/login" method="POST" class="form-search d-flex align-items-stretch mb-3" data-aos="fade-up" data-aos-delay="200">
+                <input name="username" type="text" class="form-control" placeholder="Your Username">
+                <input name="password" type="text" class="form-control" placeholder="Your Password">
+                <button type="submit" class="btn btn-primary">Log In</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+    </section><!-- /Header Section -->
+  </main>
+
+{% include "footer.html" %}
