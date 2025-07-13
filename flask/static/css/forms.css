@@ -1,0 +1,19 @@
+/* Form CSS */
+
+form input {
+    border-color: var(--ud-blue) !important;
+    border-width: 2px !important;
+}
+form button[type=submit] {
+    background-color: var(--ud-red) !important;
+    color: white;
+}
+section#form-context {
+    margin-top: 32px;
+}
+section#form-context h2, section#form-context span, section#form-context span a {
+    color: var(--ud-blue) !important;
+}
+section#form {
+    margin-bottom: 32px;
+}

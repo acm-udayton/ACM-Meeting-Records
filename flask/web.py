@@ -143,7 +143,7 @@ def login():
             print(request.form["password"])
         return redirect(url_for("home"))
     else:
-        return render_template("login.html")
+        return render_template("login.html", page_title="User Log In")
 
 @app.route("/create-account")
 def create_account():
