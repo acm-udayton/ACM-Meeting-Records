@@ -1,96 +1,46 @@
-{% include "header.html" %}
 
-<body class="index-page">
+{% extends "header.html" %}
 
-  <header id="header" class="header d-flex align-items-center fixed-top">
-    <div class="container-fluid container-xl position-relative d-flex align-items-center">
+{% include "navbar.html" %}
 
-      <a href="/" class="logo d-flex align-items-center me-auto">
-        <h1 class="sitename">ACM Attendance</h1>
-      </a>
-
-      <nav id="navmenu" class="navmenu">
-        <ul>
-          <li><a href="/" class="active">Home<br></a></li>
-          <li><a href="/events">Meeting Minutes</a></li>
-          <li class="dropdown"><a href="{{ github_url }}">Source Code</a></li>
-        </ul>
-        <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
-      </nav>
-
-      <a class="btn-getstarted" href="/login">Officer Login</a>
-
+<div class="flex-grow-1 container mt-5">
+  <div class="row">
+    <div class="col-sm-4">
+      <h2>About Me</h2>
+      <h5>Photo of me:</h5>
+      <div class="fakeimg">Fake Image</div>
+      <p>Some text about me in culpa qui officia deserunt mollit anim..</p>
+      <h3 class="mt-4">Some Links</h3>
+      <p>Lorem ipsum dolor sit ame.</p>
+      <ul class="nav nav-pills flex-column">
+        <li class="nav-item">
+          <a class="nav-link active" href="#">Active</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">Link</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">Link</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link disabled" href="#">Disabled</a>
+        </li>
+      </ul>
+      <hr class="d-sm-none">
     </div>
-  </header>
+    <div class="col-sm-8">
+      <h2>TITLE HEADING</h2>
+      <h5>Title description, Dec 7, 2020</h5>
+      <div class="fakeimg">Fake Image</div>
+      <p>Some text..</p>
+      <p>Sunt in culpa qui officia deserunt mollit anim id est laborum consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.</p>
 
-  <main class="main">
-
-    <!-- Header Section -->
-    <section id="hero" class="hero section dark-background">
-
-      <img src="{{ url_for('static', filename='img/world-dotted-map.png') }}" alt="" class="hero-bg" data-aos="fade-in">
-
-      <div class="container">
-        <div class="row gy-4 d-flex justify-content-between">
-          <div class="col-lg-5 order-1 order-lg-1 hero-img" data-aos="zoom-out">
-            <h2>Recent Meetings</h2>
-            <ul>
-            {% for meeting in recent_meetings %}
-              <li><a href="/event/{{meeting['id']}}">{{meeting['date']}} Meeting</a></li>
-            {% endfor %}
-            </ul>
-            {{ current_user.role }}
-          </div>
-
-          <div class="col-lg-6 order-2 order-lg-2 d-flex flex-column justify-content-center">
-            <h2 data-aos="fade-up">Record Meetings</h2>
-            <p data-aos="fade-up" data-aos-delay="100">Take notes, track attendees, and revisit old meetings - all with ease and fully customized for ACM at the University of Dayton.</p>
-              
-            {% if not current_user.is_anonymous %}
-              {% if current_user.role == "member" %}
-              <div class="header">
-                <p data-aos="fade-up" data-aos-delay="100">You must log into your account to join or start a meeting.</p>
-                <a href="/dashboard" class="btn-getstarted" data-aos="fade-up">Log In</a>
-              </div>
-              {% else %}
-                <div class="header">
-                  <p data-aos="fade-up" data-aos-delay="100">You must log into your account to join or start a meeting.</p>
-                  <a href="/admin/dashboard" class="btn-getstarted" data-aos="fade-up">Log In</a>
-                </div>
-              {% endif %}
-            {% else %}
-              <div class="header">
-                <p data-aos="fade-up" data-aos-delay="100">You must log into your account to join or start a meeting.</p>
-                <a href="/login" class="btn-getstarted" data-aos="fade-up">Log In</a>
-              </div>
-            {% endif %}
-
-              
-
-            <div class="row gy-4" data-aos="fade-up" data-aos-delay="300" style="z-index:-1">
-
-              <div class="col-lg-3 col-6">
-                <div class="stats-item text-center w-100 h-100">
-                  <span data-purecounter-start="0" data-purecounter-end="232" data-purecounter-duration="0" class="purecounter">232</span>
-                  <p>Meetings</p>
-                </div>
-              </div><!-- End Stats Item -->
-
-              <div class="col-lg-3 col-6">
-                <div class="stats-item text-center w-100 h-100">
-                  <span data-purecounter-start="0" data-purecounter-end="521" data-purecounter-duration="0" class="purecounter">521</span>
-                  <p>Members</p>
-                </div>
-              </div><!-- End Stats Item -->
-
-            </div>
-
-          </div>
-
-        </div>
-      </div>
-
-    </section><!-- /Header Section -->
-  </main>
-
+      <h2 class="mt-5">TITLE HEADING</h2>
+      <h5>Title description, Sep 2, 2020</h5>
+      <div class="fakeimg">Fake Image</div>
+      <p>Some text..</p>
+      <p>Sunt in culpa qui officia deserunt mollit anim id est laborum consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.</p>
+    </div>
+  </div>
+</div>
 {% include "footer.html" %}
