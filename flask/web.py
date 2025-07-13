@@ -82,12 +82,13 @@ with app.app_context():
 app.context = {}
 app.logs = {}
 app.context["socials"] = {"linkedin": os.getenv("LINKEDIN_URL"), 
-                          "instagram": os.getenv("INSTAGRAM_URL"),}
+                          "instagram": os.getenv("INSTAGRAM_URL"),
+                          "github": os.getenv("GITHUB_URL"),}
 app.context["details"] = {"location": os.getenv("MEETING_LOCATION"),
                           "email": os.getenv("CONTACT_EMAIL"),}
 app.context["officers"] = {"admin": [os.getenv("ADMIN_USERNAME"), os.getenv("ADMIN_PASSWORD")],
                            "secretary": [os.getenv("SECRETARY_USERNAME"),os.getenv("SECRETARY_PASSWORD")]}
-app.context["source"] = os.getenv("GITHUB_URL")
+app.context["source"] = os.getenv("GITHUB_SOURCE")
 app.logs["error"] = os.getenv("ERROR_LOG_PATH")
 app.logs["login"] = os.getenv("LOGIN_LOG_PATH")
 app.logs["full"] = os.getenv("FULL_LOG_PATH")
@@ -101,6 +102,7 @@ def app_context():
                     github_url = app.context["source"],
                     social_linkedin = app.context["socials"]["linkedin"],
                     social_instagram = app.context["socials"]["instagram"],
+                    social_github = app.context["socials"]["github"],
                     contact_location = app.context["details"]["location"],
                     contact_email = app.context["details"]["email"],
                     current_user = current_user,
@@ -309,4 +311,5 @@ def api_event_status(meeting_id):
 
 if __name__ == "__main__":
     # Run the application.
+    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0  # Disable caching for static files
     app.run(debug=True)

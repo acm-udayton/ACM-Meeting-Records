@@ -1,0 +1,40 @@
+:root {
+    /* Define Global Variables */
+    --ud-blue: #171b48;
+    --ud-red: #ee0019;
+}
+
+/* Background classes. */
+.ud-blue-bg {
+    background-color: var(--ud-blue);
+}
+.ud-red-bg {
+    background-color: var(--ud-red);
+}
+
+/* Text classes. */
+.ud-blue-text {
+    color: var(--ud-blue);
+}
+.ud-red-text {
+    color: var(--ud-red);
+}
+
+
+nav a.nav-link {
+    font-size: large;
+}
+
+
+/* Footer CSS */
+footer a {
+    color: white;
+}
+footer .social-links a {
+    color: var(--ud-red);
+    margin: 8px;
+}
+footer .footer-contact a {
+    text-decoration: none;
+    color: white;
+}

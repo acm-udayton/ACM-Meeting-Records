@@ -43,37 +43,4 @@
     </div>
   </div>
 </div>
-
-<footer class="mt-5 p-4 bg-dark text-white text-center">
-    <div class="row gy-4">
-    <div class="col-lg-5 col-md-12 footer-about">
-        <a href="index.html" class="logo d-flex align-items-center">
-        <span class="sitename">ACM Attendance</span>
-        </a><br/>Follow ACM at UD on our socials to get up-to-date information on club events!
-        <div class="social-links d-flex mt-4">
-        <a href="{{ social_instagram }}" target="_blank"><i class="fa-brands fa-instagram fa-xl"></i></a>
-        <a href="{{ social_linkedin }}" target="_blank"><i class="fa-brands fa-linkedin fa-xl"></i></a>
-        </div>
-    </div>
-
-    <div class="col-lg-2 col-6 footer-links">
-    </div>
-
-    <div class="col-lg-2 col-6 footer-links text-start">
-        <h4>Useful Links</h4>
-        <a href="/">Home</a><br/>
-        <a href="/events">Meeting Minutes</a><br/>
-        <a href="{{ github_url }}" target="_blank">Source Code</a><br/>
-        <a href="/login">Officer Login</a><br/>
-    </div>
-
-    <div class="col-lg-3 col-md-12 footer-contact text-center text-md-start">
-        <h4>Contact Us</h4>
-        <p>{{ contact_location }}</p>
-        <p><strong>Email:</strong> <a href="mailto:{{ contact_email }}" target="_blank" style="text-decoration: none;color: white;"><span>{{ contact_email }}</span></a></p>
-    </div>
-    </div>
-</footer>
-
-</body>
-</html>
+{% include "footer.html" %}
