@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block header_styles %}
+<link href="{{ url_for('static', filename='css/forms.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block page_content %}
+  <main class="main">
+    <section id="form-context" class="d-grid justify-content-center text-center">
+      <h2>Account Details</h2>
+    </section>
+    <section id="form" class="d-flex justify-content-center">
+      <form action="/update-account" method="POST" class="col-6" onsubmit="return validateSemesterFields(event);">
+          <div class="form mb-3 mt-3">
+            <label for="username">UD Email</label>
+            <input type="text" class="form-control form-control-lg" placeholder="Username" name="username" id="username" autocomplete="on" disabled value="{{current_user.username}}">
+          </div>
+          <div class="form mb-3 mt-3">
+            <label for="password">Password</label>
+            <input type="text" class="form-control form-control-lg" placeholder="Password" name="password" id="password" autocomplete="off">
+          </div>
+          <div class="form mb-3 mt-3">
+            <label for="start_semester">Start Semester</label>
+            <input type="text" class="form-control form-control-lg" placeholder="FA/SP YYYY" name="start_semester" id="start_semester" value="{{current_user.joined | default('')}}">
+          </div>
+          <div class="form mb-3 mt-3">
+            <label for="grad_semester">Graduation Semester</label>
+            <input type="text" class="form-control form-control-lg" placeholder="FA/SP YYYY" name="grad_semester" id="grad_semester" value="{{current_user.graduated | default('')}}">
+          </div>
+
+        <button type="submit" class="form-control form-control-lg red-button">Save Account Details</button>
+        </form>        
+    </section>
+    <section id="log-out" class="d-flex justify-content-center">
+        <form action="/logout" class="col-6">
+            <button type="submit" class="form-control form-control-lg red-button">Log Out</button>
+        </form>
+    </section>
+  </main>
+
+{% endblock %}

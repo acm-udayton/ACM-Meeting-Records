@@ -38,3 +38,8 @@ footer .footer-contact a {
     text-decoration: none;
     color: white;
 }
+
+div [role=alert] {
+    background-color: var(--ud-red);
+    color: white;
+}

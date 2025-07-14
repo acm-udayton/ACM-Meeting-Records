@@ -10,9 +10,10 @@ File Purpose: Implement the webserver for the project.
 
 import datetime 
 import os
+import re
 
 from dotenv import load_dotenv
-from flask import Flask, abort, jsonify, render_template, request, redirect, url_for
+from flask import Flask, abort, jsonify, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
 from functools import wraps
@@ -50,6 +51,8 @@ class Users(UserMixin, db.Model):
     username = db.Column(db.String(250), unique = True, nullable = False)
     password = db.Column(db.String(64), nullable = False)
     role = db.Column(db.String(64), nullable = False)
+    joined = db.Column(db.String(7), nullable=True) # Store FA|SP YYYY
+    graduated = db.Column(db.String(7), nullable=True) # Store FA|SP YYYY
 
 class Meetings(db.Model):
     """ Store a list of meetings. """
@@ -123,7 +126,9 @@ def login():
         if user != None:
             if user.password == sha_hash(request.form["password"]):
                 login_user(user)
-                print("MEMBER")
+            else:
+                flash("Login attempt failed. Please try again or contact the system administrator to reset your credentials.")
+                return redirect(url_for("login"))
         elif request.form["username"] == app.context["officers"]["admin"][0] and sha_hash(request.form["password"]) == app.context["officers"]["admin"][1]:
             # User is a new admin.
             user = Users(username=app.context["officers"]["admin"][0], password = app.context["officers"]["admin"][1], role="admin")
@@ -139,8 +144,8 @@ def login():
             login_user(user)
             print("SECRETARY")
         else:
-            print("FAILED")
-            print(request.form["password"])
+            flash("Login attempt failed. User does not exist.")
+            return redirect(url_for("login"))
         return redirect(url_for("home"))
     else:
         return render_template("login.html", page_title="User Log In")
@@ -160,6 +165,39 @@ def logout():
 @app.route("/")
 def home():
     return render_template("base.html", page_title="Home")
+
+@app.route("/my-account")
+@login_required
+def my_account():
+    """ View account details or log out. """
+    return render_template("my_account.html", page_title="My Account")
+
+@app.route("/update-account", methods=["POST"])
+def update_account():
+    """ Update account details. """
+    update_user = db.session.get(Users, current_user.get_id())
+    form_password = request.form["password"].strip()
+    if form_password != "":
+        update_user.password = sha_hash(form_password)
+    
+    semester_regex = re.compile(r"^(FA|SP) \d{4}$|^$")
+    # Validate start semester.
+    form_start = request.form["start_semester"].strip().upper()
+    if not semester_regex.fullmatch(form_start):
+        flash('Invalid format for Start Semester. Use "FA YYYY" or "SP YYYY" or leave it empty.', 'error')
+    else:
+        update_user.joined = form_start
+
+    # Validate graduation semester.
+    form_grad = request.form["grad_semester"].strip().upper()
+    if not semester_regex.fullmatch(form_grad):
+        flash('Invalid format for Graduation Semester. Use "FA YYYY" or "SP YYYY" or leave it empty.', 'error')
+    else:
+        update_user.graduated = form_grad
+    
+    # Update database and redirect.
+    db.session.commit()
+    return redirect(url_for("my_account"))
 
 
 @app.route("/events/")
