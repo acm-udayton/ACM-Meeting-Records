@@ -116,7 +116,7 @@ def app_context():
 @login_manager.user_loader
 def loader_user(user_id):
     """ Flask-Login login manager in combination with Flask-SQL-Alchemy """
-    return Users.query.get(user_id)
+    return db.session.get(Users, user_id)
 
 @app.route("/login", methods = ["GET", "POST"])
 def login():
@@ -150,10 +150,34 @@ def login():
     else:
         return render_template("login.html", page_title="User Log In")
 
-@app.route("/create-account")
-def create_account():
-    if not current_user.is_anonymous:
-        logout_user()
+@app.route("/sign-up", methods=["GET", "POST"])
+def sign_up():
+    if request.method == "POST":
+        # Log the user out if active.
+        if not current_user.is_anonymous:
+            logout_user()
+        uname = request.form["username"]
+        pword = request.form["password"]
+        conf_pword = request.form["confirm_password"]
+        # Handle new username and password issues or create the new user.
+        if Users.query.filter_by(username=uname).first() != None:
+            flash("User creation failed. Username already registered. Try logging in instead or contact an administrator.")
+            return redirect(url_for("sign_up"))
+        elif pword != conf_pword:
+            flash("User creation failed. Passwords do not match.")
+            return redirect(url_for("sign_up"))
+        else:
+            new_user = Users(username = uname,
+                             password = sha_hash(pword),
+                             role="user")
+            db.session.add(new_user)
+            db.session.commit()
+            flash("User creation succeeded. You can now log into your new account.")
+            return redirect(url_for("login"))
+    
+    # Handle GET requests.
+    else:
+        return render_template("sign_up.html", page_title="Create New Account")
 
 @app.route("/logout")
 @login_required

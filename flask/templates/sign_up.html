@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block header_styles %}
+<link href="{{ url_for('static', filename='css/forms.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block page_content %}
+  <main class="main">
+    <section id="form-context" class="d-grid justify-content-center text-center">
+      <h2>New Account</h2>
+      <span>Already have an account? <a href="/login">Log in instead!</a></span>
+    </section>
+    <section id="form" class="d-flex justify-content-center">
+      <form action="/sign-up" method="POST" class="col-6" onsubmit="return validateSemesterFields(event);">
+          <div class="form mb-3 mt-3">
+            <label for="username">UD Email</label>
+            <input type="text" class="form-control form-control-lg" placeholder="Username" name="username" id="username" autocomplete="on">
+          </div>
+          <div class="form mb-3 mt-3">
+            <label for="password">Password</label>
+            <input type="text" class="form-control form-control-lg" placeholder="Password" name="password" id="password" autocomplete="off">
+          </div>
+          <div class="form mb-3 mt-3">
+            <label for="confirm_password">Confim Password</label>
+            <input type="text" class="form-control form-control-lg" placeholder="Confirm Password" name="confirm_password" id="confirm_password" autocomplete="off">
+          </div>
+        <button type="submit" class="form-control form-control-lg red-button">Save Account Details</button>
+        </form>        
+    </section>
+  </main>
+
+{% endblock %}
