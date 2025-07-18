@@ -3,7 +3,7 @@
 """
 Project Name: AttendanceTaker
 Project Author(s): Joseph Lefkovitz (github.com/lefkovitz)
-Last Modified: 6/7/2025
+Last Modified: 7/14/2025
 
 File Purpose: Implement the webserver for the project.
 """
@@ -17,6 +17,7 @@ from flask import Flask, abort, jsonify, render_template, request, redirect, url
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
 from functools import wraps
+from sqlalchemy import desc
 
 from utils import sha_hash
 
@@ -188,7 +189,12 @@ def logout():
 
 @app.route("/")
 def home():
-    return render_template("base.html", page_title="Home")
+    recent_meetings = Meetings.query.order_by(desc(Meetings.id)).limit(4).all()
+    if len(recent_meetings) != 0:
+        featured_meeting = recent_meetings.pop(0)
+    else:
+        featured_meeting = None
+    return render_template("index.html", page_title="Home", recent_meetings=recent_meetings, featured_meeting=featured_meeting)
 
 @app.route("/my-account")
 @login_required
@@ -315,7 +321,7 @@ def event_end(meeting_id):
 @login_required
 @admin_required
 def event_minutes(meeting_id):
-    if Meetings.query.filter_by(id = meeting_id).exists():
+    if Meetings.query.filter_by(id=meeting_id).first() is not None:
         # Handle minutes submission.
         meeting_minutes = request.form["meeting_minutes"]
         minutes = Minutes(meeting=meeting_id, username_by=current_user.username, notes=meeting_minutes)
@@ -331,7 +337,7 @@ def event_minutes(meeting_id):
 @app.route("/event/check-in/<int:meeting_id>", methods=["POST"])
 @login_required
 def event_check_in(meeting_id):
-    if Meetings.query.filter_by(id = meeting_id).exists():
+    if Meetings.query.filter_by(id=meeting_id).first() is not None:
         code = request.form["meeting_code"]
         meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
         if meeting.state == "active":
@@ -340,19 +346,17 @@ def event_check_in(meeting_id):
                 attendance = Attendees(username=current_user.username, meeting=meeting_id)
                 db.session.add(attendance)
                 db.session.commit()
-                return_data = {"success": True, "meeting_id": meeting_id, "message": "Attendance updated successfully."}
-                return jsonify(return_data), 200
+                flash("Check-in succeeded. Attendance updated successfully.")
             else:
                 # Invalid meeting code.
-                return_data = {"success": False, "meeting_id": meeting_id, "message": "Meeting code is invalid."}
-                return jsonify(return_data), 400
+                flash("Check-in failed. Meeting code is invalid.")
         else:
             # Meeting inactive, return an error message.
-            return_data = {"success": False, "meeting_id": meeting_id, "message": "Specified meeting is inactive."}
-            return jsonify(return_data), 400
-    else: # Meeting does not exist.
-        return_data = {"success": False, "meeting_id": meeting_id, "message": "Specified meeting does not exist."}
-        return jsonify(return_data), 400
+            flash("Check-in failed. Specified meeting is inactive.")
+    else: 
+        # Meeting does not exist.
+        flash("Check-in failed. Specified meeting does not exist.")
+    return redirect(url_for("home"))
 
 # API Routing.
 @app.route("/api/event/attendees/<int:meeting_id>")
