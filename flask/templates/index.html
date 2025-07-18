@@ -21,7 +21,7 @@
             {% block header_styles %}
               <link href="{{ url_for('static', filename='css/forms.css') }}" rel="stylesheet">
             {% endblock %}
-            <section id="form" class="d-flex justify-content-center">
+            <section id="form" class="d-flex">
               <form action="/event/check-in/{{ featured_meeting.id }}" method="POST" class="col-6">
                   <div class="form-floating mb-3 mt-3">
                     <input type="text" class="form-control form-control-lg" placeholder="Meeting Code" name="meeting_code" id="meeting_code" autocomplete="off">

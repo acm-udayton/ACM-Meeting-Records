@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block header_styles %}
+<link href="{{ url_for('static', filename='css/forms.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block page_content %}
+  <main class="main">
+    <section id="form-context" class="d-grid justify-content-center text-center">
+      <h2>{{ page_title }}</h2>
+      <p>{{ error_message }}</p>
+    </section>
+    {% if not current_user.is_authenticated %}
+        <section id="log-in" class="d-flex justify-content-center">
+            <form action="/login" class="col-6">
+                <button type="submit" class="form-control form-control-lg red-button">Sign In</button>
+            </form>
+        </section>
+        <p class="h3">OR</p>
+    {% endif %}
+    <section id="go-home" class="d-flex justify-content-center">
+        <form action="/" class="col-6">
+            <button type="submit" class="form-control form-control-lg red-button">Go to Homepage</button>
+        </form>
+    </section>
+
+  </main>
+
+{% endblock %}

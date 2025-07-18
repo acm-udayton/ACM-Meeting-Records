@@ -375,20 +375,20 @@ def api_event_status(meeting_id):
     return jsonify(meeting.state), 200
 
 @app.errorhandler(401)
-def authentication_required():
-    return "401 - Request to this page requires authentication"
+def authentication_required(e):
+    return render_template("error.html", page_title="401 Error", error_message="Requests to this page require authentication.")
 
 @app.errorhandler(403)
-def forbidden():
-    return "403 - Request forbidden due to insufficient authorization"
+def forbidden(e):
+    return render_template("error.html", page_title="403 Error", error_message="Request forbidden due to insufficient authorization.")
 
 @app.errorhandler(404)
-def page_not_found():
-    return "404 - Request failed because page could not be found"
+def page_not_found(e):
+    return render_template("error.html", page_title="404 Error", error_message="Request failed because page could not be found.")
 
 @app.errorhandler(405)
-def method_not_allowed():
-    return "405 - Request method not allowed"
+def method_not_allowed(e):
+    return render_template("error.html", page_title="405 Error", error_message="Request method not allowed.")
 
 if __name__ == "__main__":
     # Run the application.
