@@ -374,6 +374,21 @@ def api_event_status(meeting_id):
     meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
     return jsonify(meeting.state), 200
 
+@app.errorhandler(401)
+def authentication_required():
+    return "401 - Request to this page requires authentication"
+
+@app.errorhandler(403)
+def forbidden():
+    return "403 - Request forbidden due to insufficient authorization"
+
+@app.errorhandler(404)
+def page_not_found():
+    return "404 - Request failed because page could not be found"
+
+@app.errorhandler(405)
+def method_not_allowed():
+    return "405 - Request method not allowed"
 
 if __name__ == "__main__":
     # Run the application.
