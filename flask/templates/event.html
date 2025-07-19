@@ -4,33 +4,20 @@
   <div class="flex-grow-1 container mt-5">
     <div class="row">
       <aside class="col-lg-3">
-        {% if featured_meeting %}
-          {% if featured_meeting.state == "not started" %}
-            <h2>Upcoming Meeting</h2>
-          {% elif featured_meeting.state == "active" %}
-            <h2>Active Meeting</h2>
-          {% else %}
-            <h2>Featured Meeting</h2>
-          {% endif %}
-        
-          <h5>{{ featured_meeting.title }}</h5>
-          <div class="fakeimg">{{ featured_meeting.host }}</div>
-          <p>{{ featured_meeting.description }}</p>
-
-          {% if featured_meeting.state == "active" and current_user.is_authenticated %}
-            {% block header_styles %}
-              <link href="{{ url_for('static', filename='css/forms.css') }}" rel="stylesheet">
-            {% endblock %}
-            <section id="form" class="d-flex">
-              <form action="/event/check-in/{{ featured_meeting.id }}" method="POST" class="col-6">
-                  <div class="form-floating mb-3 mt-3">
-                    <input type="text" class="form-control form-control-lg" placeholder="Meeting Code" name="meeting_code" id="meeting_code" autocomplete="off">
-                    <label for="meeting_code">Meeting Code</label>
-                  </div>
-                <button type="submit" class="form-control form-control-lg">Check In</button>
-              </form>
-            </section>
-          {% endif %}
+        {% if meeting.state == "active" and current_user.is_authenticated %}
+        <h5>Check In</h5>
+        {% block header_styles %}
+            <link href="{{ url_for('static', filename='css/forms.css') }}" rel="stylesheet">
+        {% endblock %}
+        <section id="form" class="d-flex">
+            <form action="/event/check-in/{{ meeting.id }}" method="POST" class="col-8">
+                <div class="form-floating mb-3 mt-3">
+                <input type="text" class="form-control form-control-lg" placeholder="Meeting Code" name="meeting_code" id="meeting_code" autocomplete="off">
+                <label for="meeting_code">Meeting Code</label>
+                </div>
+            <button type="submit" class="form-control form-control-lg">Check In</button>
+            </form>
+        </section>
         {% endif %}
         <hr class="d-sm-none">
 
@@ -38,7 +25,7 @@
       <main class="col-lg-6">
         <section id="meeting-data" class="text-center">
             <h2>{{ meeting.title }}</h2>
-            <h5>{{ meeting.event_start}} - {{ meeting.event_end }}<br/>{{ meeting.host }}</h5>
+            <h5>{{ meeting.event_start|default("Start Time Unavailable", true) }} - {{ meeting.event_end|default("End Time Unavailable", true) }}<br/>{{ meeting.host }}</h5>
             <p>{{ meeting.description }}</p>
             <hr>
         </section>
