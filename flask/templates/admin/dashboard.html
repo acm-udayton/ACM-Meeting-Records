@@ -2,7 +2,7 @@
 {% block header_styles %}
     <link href="{{ url_for('static', filename='css/forms.css') }}" rel="stylesheet">
 {% endblock %}
-{% block header_scripts %}
+{% block footer_scripts %}
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 {% endblock %}
 {% block page_content %}
@@ -59,14 +59,16 @@
       </main>
       <aside class="col-lg-3 text-lg-end">
         <h5>Meeting Attendees</h5>
+        <p id="attendee-list">
         {% if attendees|length > 0 %}
             {% for attendee in attendees %}
-                <p>{{attendee.username}}</p>
+                {{attendee.username}}<br/>
             {% endfor %}
         {% endif %}
+        </p>
           <section id="form" class="justify-content-right row">
             <div class="col-lg-4"></div>
-            <form action="/event/admin/attendees/{{ meeting.id }}" method="POST" class="col-lg-8">
+            <form action="/admin/attendees/{{ meeting.id }}" id="meeting-attendees-form" method="POST" class="col-lg-8">
                 <div class="form-floating mb-3 mt-3">
                 <input type="text" class="form-control form-control-lg" placeholder="Attendee Username" name="attendee_username" id="attendee_username" autocomplete="off">
                 <label for="meeting_code">Attendee Username</label>

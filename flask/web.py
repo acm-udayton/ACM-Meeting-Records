@@ -349,7 +349,7 @@ def event_end(meeting_id):
             return_data = {"success": False, "meeting_id": meeting_id, "message": f"Meeting could not be ended because it is currently {meeting.state}."}
             return return_data, 400
 
-@app.route("/event/admin/attendees/<int:meeting_id>/", methods=["POST"])
+@app.route("/admin/attendees/<int:meeting_id>/", methods=["POST"])
 @login_required
 @admin_required
 def event_attendees(meeting_id):
