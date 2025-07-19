@@ -113,12 +113,12 @@ def app_context():
                     )
     return context
 
-# User management routes.
 @login_manager.user_loader
 def loader_user(user_id):
     """ Flask-Login login manager in combination with Flask-SQL-Alchemy """
     return db.session.get(Users, user_id)
 
+# Authentication routes.
 @app.route("/login", methods = ["GET", "POST"])
 def login():
     if request.method=="POST":
@@ -136,14 +136,12 @@ def login():
             db.session.add(user)
             db.session.commit()
             login_user(user)
-            print("ADMIN")
         elif request.form["username"] == app.context["officers"]["secretary"][0] and sha_hash(request.form["password"]) == app.context["officers"]["secretary"][1]:
             # User is a new secretary.
             user = Users(username=app.context["officers"]["secretary"][0], password = app.context["officers"]["secretary"][1], role="secretary")
             db.session.add(user)
             db.session.commit()
             login_user(user)
-            print("SECRETARY")
         else:
             flash("Login attempt failed. User does not exist.")
             return redirect(url_for("login"))
@@ -187,15 +185,8 @@ def logout():
     logout_user()
     return redirect(url_for("home"))
 
-@app.route("/")
-def home():
-    recent_meetings = Meetings.query.order_by(desc(Meetings.id)).limit(4).all()
-    if len(recent_meetings) != 0:
-        featured_meeting = recent_meetings.pop(0)
-    else:
-        featured_meeting = None
-    return render_template("index.html", page_title="Home", recent_meetings=recent_meetings, featured_meeting=featured_meeting)
 
+# Account management routes.
 @app.route("/my-account")
 @login_required
 def my_account():
@@ -230,34 +221,42 @@ def update_account():
     return redirect(url_for("my_account"))
 
 
+# Public web routes.
+@app.route("/")
+def home():
+    recent_meetings = Meetings.query.order_by(desc(Meetings.id)).limit(4).all()
+    if len(recent_meetings) != 0:
+        featured_meeting = recent_meetings.pop(0)
+    else:
+        featured_meeting = None
+    return render_template("index.html", page_title="Home", recent_meetings=recent_meetings, featured_meeting=featured_meeting)
+
 @app.route("/events/")
 def events_list():
-    return render_template("events.html")
+    all_meetings = Meetings.query.all()
+    print(all_meetings)
+    return render_template("events.html", page_title="Meetings", meetings=all_meetings)
 
 @app.route("/event/<int:meeting_id>")
 @login_required
-def user_event(meeting):
-    return render_template("event.html")
+def user_event(meeting_id):
+    meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
+    attendees = Attendees.query.filter_by(meeting = meeting_id).all()
+    minutes = Minutes.queryy.filter_by(meeting = meeting_id).all()
+    return render_template("event.html", page_title=f"Meeting - {meeting.title}", meeting=meeting)
 
-@app.route("/event/admin/<int:meeting_id>")
+
+# Admin web routes.
+@app.route("/admin/dashboard/<int:meeting_id>")
 @login_required
 @admin_required
-def admin_event(meeting_id):
-    return render_template("event_admin.html")
+def admin_dashboard(meeting_id):
+    meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
+    attendees = Attendees.query.filter_by(meeting = meeting_id).all()
+    minutes = Minutes.queryy.filter_by(meeting = meeting_id).all()
+    return render_template("admin/dashboard.html", page_title=f"Meeting - {meeting.title}", meeting=meeting, attendees=attendees, minutes=minutes)
 
-@app.route("/dashboard")
-@login_required
-def user_dashboard():
-    return render_template("dashboard.html")
-
-@app.route("/admin/dashboard")
-@login_required
-@admin_required
-def admin_dashboard():
-    return render_template("admin/dashboard.html")
-
-
-@app.route("/api/event/admin/create", methods=["POST"])
+@app.route("/admin/create", methods=["POST"])
 @login_required
 @admin_required
 def event_create():
@@ -271,9 +270,9 @@ def event_create():
                         code_hash=None)
     db.session.add(meeting)
     db.session.commit()
-    redirect(url_for("admin_event"))
+    redirect(url_for("admin_dashboard"))
 
-@app.route("/event/admin/start/<int:meeting_id>", methods=["POST"])
+@app.route("/admin/start/<int:meeting_id>", methods=["POST"])
 @login_required
 @admin_required
 def event_start(meeting_id):
@@ -284,6 +283,7 @@ def event_start(meeting_id):
         # Mark the meeting as "active".
         meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
         if meeting.status == "not started":
+            meeting.code_hash=sha_hash(request.form["meeting_code"])
             meeting.status = "active"
             # Add the user (officer) as an attendee.
             attendance = Attendees(username=current_user.username, meeting=meeting_id, event_start=datetime.datetime.now())
@@ -296,7 +296,7 @@ def event_start(meeting_id):
             return_data = {"success": False, "meeting_id": meeting_id, "message": f"Meeting could not be started because it is already {meeting.status}."}
             return jsonify(return_data), 400
 
-@app.route("/event/admin/end/<int:meeting_id>", methods=["POST"])
+@app.route("/admin/end/<int:meeting_id>", methods=["POST"])
 @login_required
 @admin_required
 def event_end(meeting_id):
@@ -374,6 +374,8 @@ def api_event_status(meeting_id):
     meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
     return jsonify(meeting.state), 200
 
+
+# Error Handling
 @app.errorhandler(401)
 def authentication_required(e):
     return render_template("error.html", page_title="401 Error", error_message="Requests to this page require authentication.")

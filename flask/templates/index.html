@@ -43,6 +43,7 @@
               <h3 class="h5">{{ meeting.title }}</h3>
               <div class="fakeimg">{{ meeting.event_start}} - {{ meeting.event_end }}</div>
               <p>{{ meeting.description }}</p>
+              <a href="/event/{{ meeting.id }}"><button role="button" class="btn btn-primary">Meeting Details ></button></a>
             </article>
           {% endfor %}
           <a href="/events/"><button role="button" class="btn btn-primary">View All ></button></a>
