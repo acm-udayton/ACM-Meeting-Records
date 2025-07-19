@@ -3,6 +3,10 @@
     <link href="{{ url_for('static', filename='css/forms.css') }}" rel="stylesheet">
 {% endblock %}
 {% block footer_scripts %}
+    <script>
+        const CURRENT_MEETING_ID = "{{ meeting.id }}";
+    </script>
+
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 {% endblock %}
 {% block page_content %}
@@ -36,9 +40,9 @@
 
         {% if minutes|length > 0 %}
           <article id="meeting-minutes">
-            <form action="/admin/minutes/{{ meeting.id }}/{{ minutes[0].id }}" method="POST" id="meeting-minutes-form" class="col-12">
-              <textarea id="meeting_minutes" name="meeting_minutes" class="form-control">{{ minutes[0].notes }}</textarea>
-              <div><strong>Recorded By: {{ minutes[0].username_by }}</strong></div>
+            <form action="/admin/minutes/{{ meeting.id }}/{{ minutes[-1].id }}" method="POST" id="meeting-minutes-form" class="col-12">
+              <textarea id="meeting_minutes" name="meeting_minutes" class="form-control">{{ minutes[-1].notes }}</textarea>
+              <div><strong>Recorded By: {{ minutes[-1].username_by }}</strong></div>
               <br>
               <button type="submit" class="form-control form-control-lg">Save Minutes</button>
             </form>

@@ -55,6 +55,14 @@ class Users(UserMixin, db.Model):
     joined = db.Column(db.String(7), nullable=True) # Store FA|SP YYYY
     graduated = db.Column(db.String(7), nullable=True) # Store FA|SP YYYY
 
+    def to_dict(self):
+        return {"id": self.id, 
+                "username": self.username,
+                "password": self.password,
+                "role": self.role,
+                "joined": self.joined,
+                "graduated": self.graduated}
+
 class Meetings(db.Model):
     """ Store a list of meetings. """
     id = db.Column(db.Integer, primary_key=True, nullable=False)
@@ -66,11 +74,26 @@ class Meetings(db.Model):
     event_end = db.Column(db.DateTime, nullable=True)
     code_hash = db.Column(db.String(250), nullable=True)
 
+    def to_dict(self):
+        return {"id": self.id,
+                "state": self.state,
+                "title": self.title,
+                "description": self.description,
+                "host": self.host, 
+                "event_start": self.event_start,
+                "event_end": self.event_end,
+                "code_hash": self.code_hash}
+
 class Attendees(db.Model):
     """ Store a list of meeting attendees. """
     id = db.Column(db.Integer, primary_key=True, nullable=False)
     username = db.Column(db.String(250), nullable=False)
     meeting = db.Column(db.Integer, nullable=False)
+
+    def to_dict(self):
+        return {"id": self.id,
+                "username": self.username,
+                "meeting": self.meeting}
     
 class Minutes(db.Model):
     """ Store a list of meeting minutes. """
@@ -78,6 +101,12 @@ class Minutes(db.Model):
     notes = db.Column(db.Text, nullable=False)
     username_by = db.Column(db.String(250), nullable=False)
     meeting = db.Column(db.Integer, nullable=False)
+
+    def to_dict(self):
+        return {"id": self.id,
+                "notes": self.notes,
+                "username_by": self.username_by,
+                "meeting": self.meeting}
 
 with app.app_context():
     db.create_all()
@@ -436,17 +465,19 @@ def event_check_in(meeting_id):
 @app.route("/api/event/attendees/<int:meeting_id>/")
 def api_event_attendees(meeting_id):
     attendees = Attendees.query.filter_by(meeting = meeting_id).all()
-    return jsonify(attendees), 200
+    attendees_data = [attendee.to_dict() for attendee in attendees]
+    return jsonify(attendees_data), 200
 
 @app.route("/api/event/notes/<int:meeting_id>/")
 def api_event_minutes(meeting_id):
     minutes = Minutes.query.filter_by(meeting = meeting_id).all()
-    return jsonify(minutes), 200
+    minutes_data = [minute.to_dict() for minute in minutes]
+    return jsonify(minutes_data), 200
 
 @app.route("/api/event/state/<int:meeting_id>/")
 def api_event_state(meeting_id):
     meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
-    return jsonify(meeting.state), 200
+    return jsonify(meeting.state.title()), 200
 
 
 # Error Handling

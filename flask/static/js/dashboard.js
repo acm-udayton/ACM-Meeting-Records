@@ -1,3 +1,40 @@
+setInterval(function() {
+    // Code to be executed repeatedly every 60 seconds
+    refresh = async function(event) {
+        // Update meeting status.
+        const status = await fetch(`/api/event/state/${CURRENT_MEETING_ID}`, {
+                    method: 'GET'
+                });
+        const statusData = await status.json();
+        var submitButton = document.getElementById("meeting-status-submit");
+        var statusP = document.getElementById("status-p");
+        if (statusData == "Not Started") {
+            statusP.innerHTML = `<strong>Current Status: </strong> ${statusData}`;
+            submitButton.innerHTML = "Start Meeting";
+        }
+        else if (statusData == "Ended"){
+            statusP.innerHTML = `<strong>Current Status: </strong> ${statusData}`;
+        }
+        else {
+            statusP.innerHTML = `<strong>Current Status: </strong> ${statusData}<br/><strong>Meeting Code: </strong><a href="/admin/reset-code/${CURRENT_MEETING_ID}" target="_blank">Reset Code</a>`;
+            submitButton.innerHTML = "End Meeting";
+        }
+        
+        // Update meeting attendees list.
+        const attendees = await fetch(`/api/event/attendees/${CURRENT_MEETING_ID}`, {
+                    method: 'GET'
+                });
+        const attendeesData = await attendees.json();
+        const attendeeList = document.getElementById("attendee-list");
+        attendeeList.innerHTML = "";
+        for (let i=0; i < attendeesData.length; i++) {
+            attendeeList.innerHTML += attendeesData[i].username + "<br\>";
+        }
+        }
+    refresh();
+}, 60000);
+
+
 document.addEventListener('DOMContentLoaded', function() {
     const meetingMinutesForm = document.getElementById('meeting-minutes-form');
     const meetingStatusForm = document.getElementById('meeting-status-form');
