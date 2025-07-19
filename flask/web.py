@@ -238,12 +238,11 @@ def events_list():
     return render_template("events.html", page_title="Meetings", meetings=all_meetings)
 
 @app.route("/event/<int:meeting_id>")
-@login_required
 def user_event(meeting_id):
     meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
     attendees = Attendees.query.filter_by(meeting = meeting_id).all()
-    minutes = Minutes.queryy.filter_by(meeting = meeting_id).all()
-    return render_template("event.html", page_title=f"Meeting - {meeting.title}", meeting=meeting)
+    minutes = Minutes.query.filter_by(meeting = meeting_id).all()
+    return render_template("event.html", page_title=f"Meeting - {meeting.title}", meeting=meeting, all_minutes=minutes, all_attendees=attendees)
 
 
 # Admin web routes.
@@ -253,7 +252,7 @@ def user_event(meeting_id):
 def admin_dashboard(meeting_id):
     meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
     attendees = Attendees.query.filter_by(meeting = meeting_id).all()
-    minutes = Minutes.queryy.filter_by(meeting = meeting_id).all()
+    minutes = Minutes.query.filter_by(meeting = meeting_id).all()
     return render_template("admin/dashboard.html", page_title=f"Meeting - {meeting.title}", meeting=meeting, attendees=attendees, minutes=minutes)
 
 @app.route("/admin/create", methods=["POST"])

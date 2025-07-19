@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block page_content %}
+  <div class="flex-grow-1 container mt-5">
+    <div class="row">
+      <aside class="col-lg-3">
+        {% if featured_meeting %}
+          {% if featured_meeting.state == "not started" %}
+            <h2>Upcoming Meeting</h2>
+          {% elif featured_meeting.state == "active" %}
+            <h2>Active Meeting</h2>
+          {% else %}
+            <h2>Featured Meeting</h2>
+          {% endif %}
+        
+          <h5>{{ featured_meeting.title }}</h5>
+          <div class="fakeimg">{{ featured_meeting.host }}</div>
+          <p>{{ featured_meeting.description }}</p>
+
+          {% if featured_meeting.state == "active" and current_user.is_authenticated %}
+            {% block header_styles %}
+              <link href="{{ url_for('static', filename='css/forms.css') }}" rel="stylesheet">
+            {% endblock %}
+            <section id="form" class="d-flex">
+              <form action="/event/check-in/{{ featured_meeting.id }}" method="POST" class="col-6">
+                  <div class="form-floating mb-3 mt-3">
+                    <input type="text" class="form-control form-control-lg" placeholder="Meeting Code" name="meeting_code" id="meeting_code" autocomplete="off">
+                    <label for="meeting_code">Meeting Code</label>
+                  </div>
+                <button type="submit" class="form-control form-control-lg">Check In</button>
+              </form>
+            </section>
+          {% endif %}
+        {% endif %}
+        <hr class="d-sm-none">
+
+      </aside>
+      <main class="col-lg-6">
+        <section id="meeting-data" class="text-center">
+            <h2>{{ meeting.title }}</h2>
+            <h5>{{ meeting.event_start}} - {{ meeting.event_end }}<br/>{{ meeting.host }}</h5>
+            <p>{{ meeting.description }}</p>
+            <hr>
+        </section>
+
+        {% if all_minutes|length > 0 %}
+          {% for minutes in all_minutes %}
+            <article id="meeting-minutes-{{ minutes.id }}">
+              <div>{{ minutes.notes|safe }}</div>
+              <div><strong>Recorded By: {{ minutes.username_by }}</strong></div>
+              <br/>
+            </article>
+          {% endfor %}
+        {% else %}
+            <p>No Meeting Records Found</p>
+        {% endif %}
+      </main>
+      <aside class="col-lg-3 text-lg-end">
+        {% if all_attendees|length > 0 %}
+            <h4>Meeting Attendees</h4>
+            {% for attendee in all_attendees %}
+                <p>{{attendee.username}}</p>
+            {% endfor %}
+        {% endif %}
+      </aside>
+    </div>
+  </div>
+{% endblock %}
