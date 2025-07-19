@@ -8,7 +8,7 @@
   <main class="main">
     <section id="form-context" class="d-grid justify-content-center text-center">
       <h2>{{ page_title }}</h2>
-      <p>{{ error_message }}</p>
+      <p>{{ error_message | safe }}</p>
     </section>
     {% if not current_user.is_authenticated %}
         <section id="log-in" class="d-flex justify-content-center">

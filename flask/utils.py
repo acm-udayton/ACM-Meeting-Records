@@ -1,5 +1,7 @@
 import hashlib
 import qrcode
+import secrets
+import string
 
 def sha_hash(string_to_hash):
     """ Wrapper function for hashlib's SHA-512 hash. """
@@ -29,3 +31,12 @@ def make_qr(base_url, event_id, rand_code):
     qr_file = f"qrcode_{event_id}.png"
     img.save(qr_file)
     return qr_file
+
+def generate_meeting_code(length=8):
+    """ Generate a random meeting code. """
+    # Define the character set for the password
+    characters = string.ascii_letters + string.digits
+
+    # Use secrets.choice for cryptographic randomness
+    password = ''.join(secrets.choice(characters) for _ in range(length))
+    return password

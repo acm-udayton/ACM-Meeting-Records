@@ -19,7 +19,7 @@ from flask_sqlalchemy import SQLAlchemy
 from functools import wraps
 from sqlalchemy import desc
 
-from utils import sha_hash
+from utils import sha_hash, generate_meeting_code
 
 def admin_required(f):
     @wraps(f)
@@ -282,18 +282,51 @@ def event_start(meeting_id):
         # Mark the meeting as "active".
         meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
         if meeting.state == "not started":
-            meeting.code_hash=sha_hash(request.form["meeting_code"])
+            meeting_code = generate_meeting_code()
+            meeting.code_hash=sha_hash(meeting_code)
             meeting.state = "active"
+            meeting.event_start=datetime.datetime.now()
             # Add the user (officer) as an attendee.
-            attendance = Attendees(username=current_user.username, meeting=meeting_id, event_start=datetime.datetime.now())
+            attendance = Attendees(username=current_user.username, meeting=meeting_id)
             db.session.add(attendance)
             db.session.commit()
-            return_data = {"success": True, "meeting_id": meeting_id, "message": "Meeting started successfully."}
+            return_data = {"success": True, "meeting_id": meeting_id, "message": "Meeting started successfully.", "meeting_code": meeting_code}
             return jsonify(return_data), 200
         else:
             # Meeting cannot be activated.
             return_data = {"success": False, "meeting_id": meeting_id, "message": f"Meeting could not be started because it is already {meeting.state}."}
             return jsonify(return_data), 400
+
+@app.route("/admin/reset-code/<int:meeting_id>/")
+@login_required
+@admin_required
+def reset_code(meeting_id):
+    if current_user.role not in app.context["officers"].keys():
+        # User is not an officer, so prevent access.
+        abort(403)
+    else:
+        # Mark the meeting as "active".
+        meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
+        if meeting.state == "active":
+            meeting_code = generate_meeting_code()
+            meeting.code_hash=sha_hash(meeting_code)
+            # Add the user (officer) as an attendee.
+            db.session.commit()
+            return redirect(f"/admin/show-code?code={meeting_code}")
+        else:
+            # Meeting cannot be activated.
+            return render_template("error.html", page_title="400 Error", error_message="This meeting is not active.")
+
+@app.route("/admin/show-code/")
+@login_required
+@admin_required
+def show_code():
+    code = request.args.get("code")
+    if code != None:
+        return render_template("error.html", page_title="Meeting Code", error_message=f"Use this code to join the meeting: </p><h3 style='font-size:72px'>{code}</h3><p>")
+    else:
+        abort(404)
+
 
 @app.route("/admin/end/<int:meeting_id>/", methods=["POST"])
 @login_required
