@@ -17,3 +17,6 @@ section#form-context h2, section#form-context span, section#form-context span a 
 section#form, section#log-out {
     margin-bottom: 32px;
 }
+textarea {
+    min-height: 300px!important;
+}

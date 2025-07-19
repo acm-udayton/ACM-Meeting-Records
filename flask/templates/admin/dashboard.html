@@ -1,13 +1,71 @@
-{% include "header.html" %}
+{% extends "base.html" %}
+{% block header_styles %}
+    <link href="{{ url_for('static', filename='css/forms.css') }}" rel="stylesheet">
+{% endblock %}
+{% block page_content %}
+  <div class="flex-grow-1 container mt-5">
+    <div class="row">
+      <aside class="col-lg-3">
+        <h5>Meeting Status</h5>
+        <p><strong>Current Status: </strong>{{ meeting.state | title }}</p>
+        {% if meeting.state == "not started" %}
+          <section id="start-meeting" class="d-flex">
+              <form action="/admin/start/{{ meeting.id }}" method="POST" class="col-8">
+                <button type="submit" class="form-control form-control-lg">Start Meeting</button>
+              </form>
+          </section>
+        {% elif meeting.state == "active" %}
+          <section id="end-meeting" class="d-flex">
+              <form action="/admin/end/{{ meeting.id }}" method="POST" class="col-8">
+                <button type="submit" class="form-control form-control-lg">End Meeting</button>
+              </form>
+          </section>
+        {% endif %}
+        <hr class="d-sm-none">
 
-<body class="index-page">
-{% include "navbar.html" %}
-    <main class="main">
+      </aside>
+      <main class="col-lg-6">
+        <section id="meeting-data" class="text-center">
+            <h2>{{ meeting.title }}</h2>
+            <h5>{{ meeting.event_start|default("Start Time Unavailable", true) }} - {{ meeting.event_end|default("End Time Unavailable", true) }}<br/>{{ meeting.host }}</h5>
+            <p>{{ meeting.description }}</p>
+            <hr>
+        </section>
 
-    <!-- Header Section -->
-    <section id="hero" class="hero section dark-background">
-        <h1>TEST</h1>
-    </section><!-- /Header Section -->
-  </main>
-
-{% include "footer.html" %}
+        {% if minutes|length > 0 %}
+          {% for minutes in minutes %}
+            <article id="meeting-minutes-{{ minutes.id }}">
+              <form action="/admin/minutes/{{ meeting.id }}/{{ minutes.id }}" method="POST" class="col-12">
+                <textarea id="meeting_minutes" name="meeting_minutes" class="form-control">{{ minutes.notes }}</textarea>
+                <div><strong>Recorded By: {{ minutes.username_by }}</strong></div>
+                <br>
+                <button type="submit" class="form-control form-control-lg">Update Minutes</button>
+              </form>
+              <br/>
+            </article>
+          {% endfor %}
+        {% else %}
+            <p>No Meeting Records Found</p>
+        {% endif %}
+      </main>
+      <aside class="col-lg-3 text-lg-end">
+        <h5>Meeting Attendees</h5>
+        {% if attendees|length > 0 %}
+            {% for attendee in attendees %}
+                <p>{{attendee.username}}</p>
+            {% endfor %}
+        {% endif %}
+          <section id="form" class="justify-content-right row">
+            <div class="col-4"></div>
+            <form action="/event/admin/attendees/{{ meeting.id }}" method="POST" class="col-8">
+                <div class="form-floating mb-3 mt-3">
+                <input type="text" class="form-control form-control-lg" placeholder="Attendee Username" name="attendee_username" id="attendee_username" autocomplete="off">
+                <label for="meeting_code">Attendee Username</label>
+                </div>
+            <button type="submit" class="form-control form-control-lg">Add Attendee</button>
+            </form>
+        </section>
+      </aside>
+    </div>
+  </div>
+{% endblock %}

@@ -281,9 +281,9 @@ def event_start(meeting_id):
     else:
         # Mark the meeting as "active".
         meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
-        if meeting.status == "not started":
+        if meeting.state == "not started":
             meeting.code_hash=sha_hash(request.form["meeting_code"])
-            meeting.status = "active"
+            meeting.state = "active"
             # Add the user (officer) as an attendee.
             attendance = Attendees(username=current_user.username, meeting=meeting_id, event_start=datetime.datetime.now())
             db.session.add(attendance)
@@ -292,7 +292,7 @@ def event_start(meeting_id):
             return jsonify(return_data), 200
         else:
             # Meeting cannot be activated.
-            return_data = {"success": False, "meeting_id": meeting_id, "message": f"Meeting could not be started because it is already {meeting.status}."}
+            return_data = {"success": False, "meeting_id": meeting_id, "message": f"Meeting could not be started because it is already {meeting.state}."}
             return jsonify(return_data), 400
 
 @app.route("/admin/end/<int:meeting_id>", methods=["POST"])
@@ -305,27 +305,69 @@ def event_end(meeting_id):
     else:
         # Mark the meeting as "ended".
         meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
-        if meeting.status == "active":
-            meeting.status = "ended"
+        if meeting.state == "active":
+            meeting.state = "ended"
             meeting.event_end = datetime.datetime.now()
             db.session.commit()
             return_data = {"success": True, "meeting_id": meeting_id, "message": "Meeting ended successfully."}
             return jsonify(return_data), 200
         else:
             # Meeting cannot be ended.
-            return_data = {"success": False, "meeting_id": meeting_id, "message": f"Meeting could not be ended because it is currently {meeting.status}."}
+            return_data = {"success": False, "meeting_id": meeting_id, "message": f"Meeting could not be ended because it is currently {meeting.state}."}
             return return_data, 400
 
-@app.route("/event/admin/minutes:<int:meeting_id>", methods=["POST"])
+@app.route("/event/admin/attendees/<int:meeting_id>", methods=["POST"])
 @login_required
 @admin_required
-def event_minutes(meeting_id):
+def event_attendees(meeting_id):
+    if Meetings.query.filter_by(id=meeting_id).first() is not None:
+        # Handle minutes submission.
+        attendee_username = request.form["attendee_username"]
+        if Users.query.filter_by(username=attendee_username).first() != None:
+            if Attendees.query.filter_by(meeting=meeting_id, username=attendee_username).first() == None:
+                attendee = Attendees(meeting=meeting_id, username=attendee_username)
+                db.session.add(attendee)
+                db.session.commit()
+                return_data = {"success": True, "meeting_id": meeting_id, "message": f"Attendee {attendee_username} checked in successfully."}
+                return jsonify(return_data), 201
+            else:
+                return_data = {"success": False, "meeting_id": meeting_id, "message": f"Attendee {attendee_username} is already checked in."}
+                return jsonify(return_data), 400
+        else:
+            return_data = {"success": False, "meeting_id": meeting_id, "message": f"Attendee {attendee_username} does not exist."}
+            return jsonify(return_data), 400
+    else:
+        # Meeting does not exist.
+        return_data = {"success": False, "meeting_id": meeting_id, "message": "Specified meeting does not exist."}
+        return jsonify(return_data), 400
+
+@app.route("/admin/minutes/<int:meeting_id>", methods=["POST"])
+@app.route("/admin/minutes/<int:meeting_id>/<int:minutes_id>", methods=["POST"])
+@login_required
+@admin_required
+def event_minutes(meeting_id, minutes_id=None):
     if Meetings.query.filter_by(id=meeting_id).first() is not None:
         # Handle minutes submission.
         meeting_minutes = request.form["meeting_minutes"]
-        minutes = Minutes(meeting=meeting_id, username_by=current_user.username, notes=meeting_minutes)
-        return_data = {"success": True, "meeting_id": meeting_id, "message": "Meeting minutes saved successfully."}
-        return jsonify(return_data), 201
+        if minutes_id is not None:
+            minutes_entry = Minutes.query.filter_by(id=minutes_id, meeting=meeting_id).first()
+            if minutes_entry is not None:
+                if current_user.username not in minutes_entry.username:
+                    minutes_entry.username_by += current_user.username
+                minutes_entry.notes = meeting_minutes
+                db.session.commit()
+                return_data = {"success": True, "meeting_id": meeting_id, "minutes_id":minutes_id, "message": "Meeting minutes saved successfully."}
+                return jsonify(return_data), 201
+
+            else:
+                return_data = {"success": False, "meeting_id": meeting_id, "message": "Meeting minutes could not be updated due to minutes entry."}
+                return jsonify(return_data), 400    
+        else:
+            minutes = Minutes(meeting=meeting_id, username_by=current_user.username, notes=meeting_minutes)
+            db.session.add(minutes)
+            db.session.commit()
+            return_data = {"success": True, "meeting_id": meeting_id, "minutes_id":minutes.id, "message": "Meeting minutes saved successfully."}
+            return jsonify(return_data), 201
     else:
         # Meeting does not exist.
         return_data = {"success": False, "meeting_id": meeting_id, "message": "Specified meeting does not exist."}
@@ -368,8 +410,8 @@ def api_event_minutes(meeting_id):
     minutes = Minutes.query.filter_by(meeting = meeting_id).all()
     return jsonify(minutes), 200
 
-@app.route("/api/event/status/<int:meeting_id>")
-def api_event_status(meeting_id):
+@app.route("/api/event/state/<int:meeting_id>")
+def api_event_state(meeting_id):
     meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
     return jsonify(meeting.state), 200
 
