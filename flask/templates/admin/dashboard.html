@@ -2,6 +2,9 @@
 {% block header_styles %}
     <link href="{{ url_for('static', filename='css/forms.css') }}" rel="stylesheet">
 {% endblock %}
+{% block header_scripts %}
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}
 {% block page_content %}
   <div class="flex-grow-1 container mt-5">
     <div class="row">
@@ -33,19 +36,26 @@
         </section>
 
         {% if minutes|length > 0 %}
-          {% for minutes in minutes %}
-            <article id="meeting-minutes-{{ minutes.id }}">
-              <form action="/admin/minutes/{{ meeting.id }}/{{ minutes.id }}" method="POST" class="col-12">
-                <textarea id="meeting_minutes" name="meeting_minutes" class="form-control">{{ minutes.notes }}</textarea>
-                <div><strong>Recorded By: {{ minutes.username_by }}</strong></div>
+          <article id="meeting-minutes">
+            <form action="/admin/minutes/{{ meeting.id }}/{{ minutes[0].id }}" method="POST" id="meeting-minutes-form" class="col-12">
+              <textarea id="meeting_minutes" name="meeting_minutes" class="form-control">{{ minutes[0].notes }}</textarea>
+              <div><strong>Recorded By: {{ minutes[0].username_by }}</strong></div>
+              <br>
+              <button type="submit" class="form-control form-control-lg">Save Minutes</button>
+            </form>
+            <br/>
+          </article>
+        {% else %}
+            <article id="meeting-minutes">
+              <form action="/admin/minutes/{{ meeting.id }}" method="POST" id="meeting-minutes-form" class="col-12">
+                <textarea id="meeting_minutes" name="meeting_minutes" class="form-control"></textarea>
+                <div><strong>Recorded By: {{ current_user.username }}</strong></div>
                 <br>
-                <button type="submit" class="form-control form-control-lg">Update Minutes</button>
+                <button type="submit" class="form-control form-control-lg">Save Minutes</button>
               </form>
               <br/>
             </article>
-          {% endfor %}
-        {% else %}
-            <p>No Meeting Records Found</p>
+
         {% endif %}
       </main>
       <aside class="col-lg-3 text-lg-end">
@@ -56,8 +66,8 @@
             {% endfor %}
         {% endif %}
           <section id="form" class="justify-content-right row">
-            <div class="col-4"></div>
-            <form action="/event/admin/attendees/{{ meeting.id }}" method="POST" class="col-8">
+            <div class="col-lg-4"></div>
+            <form action="/event/admin/attendees/{{ meeting.id }}" method="POST" class="col-lg-8">
                 <div class="form-floating mb-3 mt-3">
                 <input type="text" class="form-control form-control-lg" placeholder="Attendee Username" name="attendee_username" id="attendee_username" autocomplete="off">
                 <label for="meeting_code">Attendee Username</label>

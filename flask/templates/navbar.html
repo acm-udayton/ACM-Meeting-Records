@@ -23,7 +23,7 @@
   </div>
 </nav>
 <section id="flashed-messages" class="d-flex justify-content-center mt-3">
-    <div class="col-6">
+    <div class="col-6" id="error-row">
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             {% for category, message in messages %}

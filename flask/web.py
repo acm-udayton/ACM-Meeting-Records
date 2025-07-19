@@ -119,7 +119,7 @@ def loader_user(user_id):
     return db.session.get(Users, user_id)
 
 # Authentication routes.
-@app.route("/login", methods = ["GET", "POST"])
+@app.route("/login/", methods = ["GET", "POST"])
 def login():
     if request.method=="POST":
         """ Authenticate. """
@@ -149,7 +149,7 @@ def login():
     else:
         return render_template("login.html", page_title="User Log In")
 
-@app.route("/sign-up", methods=["GET", "POST"])
+@app.route("/sign-up/", methods=["GET", "POST"])
 def sign_up():
     if request.method == "POST":
         # Log the user out if active.
@@ -178,7 +178,7 @@ def sign_up():
     else:
         return render_template("sign_up.html", page_title="Create New Account")
 
-@app.route("/logout")
+@app.route("/logout/")
 @login_required
 def logout():
     """ De-authenticate. """
@@ -187,13 +187,13 @@ def logout():
 
 
 # Account management routes.
-@app.route("/my-account")
+@app.route("/my-account/")
 @login_required
 def my_account():
     """ View account details or log out. """
     return render_template("my_account.html", page_title="My Account")
 
-@app.route("/update-account", methods=["POST"])
+@app.route("/update-account/", methods=["POST"])
 def update_account():
     """ Update account details. """
     update_user = db.session.get(Users, current_user.get_id())
@@ -237,7 +237,7 @@ def events_list():
     print(all_meetings)
     return render_template("events.html", page_title="Meetings", meetings=all_meetings)
 
-@app.route("/event/<int:meeting_id>")
+@app.route("/event/<int:meeting_id>/")
 def user_event(meeting_id):
     meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
     attendees = Attendees.query.filter_by(meeting = meeting_id).all()
@@ -246,7 +246,7 @@ def user_event(meeting_id):
 
 
 # Admin web routes.
-@app.route("/admin/dashboard/<int:meeting_id>")
+@app.route("/admin/dashboard/<int:meeting_id>/")
 @login_required
 @admin_required
 def admin_dashboard(meeting_id):
@@ -255,7 +255,7 @@ def admin_dashboard(meeting_id):
     minutes = Minutes.query.filter_by(meeting = meeting_id).all()
     return render_template("admin/dashboard.html", page_title=f"Meeting - {meeting.title}", meeting=meeting, attendees=attendees, minutes=minutes)
 
-@app.route("/admin/create", methods=["POST"])
+@app.route("/admin/create/", methods=["POST"])
 @login_required
 @admin_required
 def event_create():
@@ -271,7 +271,7 @@ def event_create():
     db.session.commit()
     redirect(url_for("admin_dashboard"))
 
-@app.route("/admin/start/<int:meeting_id>", methods=["POST"])
+@app.route("/admin/start/<int:meeting_id>/", methods=["POST"])
 @login_required
 @admin_required
 def event_start(meeting_id):
@@ -295,7 +295,7 @@ def event_start(meeting_id):
             return_data = {"success": False, "meeting_id": meeting_id, "message": f"Meeting could not be started because it is already {meeting.state}."}
             return jsonify(return_data), 400
 
-@app.route("/admin/end/<int:meeting_id>", methods=["POST"])
+@app.route("/admin/end/<int:meeting_id>/", methods=["POST"])
 @login_required
 @admin_required
 def event_end(meeting_id):
@@ -316,7 +316,7 @@ def event_end(meeting_id):
             return_data = {"success": False, "meeting_id": meeting_id, "message": f"Meeting could not be ended because it is currently {meeting.state}."}
             return return_data, 400
 
-@app.route("/event/admin/attendees/<int:meeting_id>", methods=["POST"])
+@app.route("/event/admin/attendees/<int:meeting_id>/", methods=["POST"])
 @login_required
 @admin_required
 def event_attendees(meeting_id):
@@ -341,8 +341,8 @@ def event_attendees(meeting_id):
         return_data = {"success": False, "meeting_id": meeting_id, "message": "Specified meeting does not exist."}
         return jsonify(return_data), 400
 
-@app.route("/admin/minutes/<int:meeting_id>", methods=["POST"])
-@app.route("/admin/minutes/<int:meeting_id>/<int:minutes_id>", methods=["POST"])
+@app.route("/admin/minutes/<int:meeting_id>/", methods=["POST"])
+@app.route("/admin/minutes/<int:meeting_id>/<int:minutes_id>/", methods=["POST"])
 @login_required
 @admin_required
 def event_minutes(meeting_id, minutes_id=None):
@@ -352,8 +352,8 @@ def event_minutes(meeting_id, minutes_id=None):
         if minutes_id is not None:
             minutes_entry = Minutes.query.filter_by(id=minutes_id, meeting=meeting_id).first()
             if minutes_entry is not None:
-                if current_user.username not in minutes_entry.username:
-                    minutes_entry.username_by += current_user.username
+                if current_user.username not in minutes_entry.username_by:
+                    minutes_entry.username_by += f", {current_user.username}"
                 minutes_entry.notes = meeting_minutes
                 db.session.commit()
                 return_data = {"success": True, "meeting_id": meeting_id, "minutes_id":minutes_id, "message": "Meeting minutes saved successfully."}
@@ -375,7 +375,7 @@ def event_minutes(meeting_id, minutes_id=None):
 
 
 # Public routing.
-@app.route("/event/check-in/<int:meeting_id>", methods=["POST"])
+@app.route("/event/check-in/<int:meeting_id>/", methods=["POST"])
 @login_required
 def event_check_in(meeting_id):
     if Meetings.query.filter_by(id=meeting_id).first() is not None:
@@ -400,17 +400,17 @@ def event_check_in(meeting_id):
     return redirect(url_for("home"))
 
 # API Routing.
-@app.route("/api/event/attendees/<int:meeting_id>")
+@app.route("/api/event/attendees/<int:meeting_id>/")
 def api_event_attendees(meeting_id):
     attendees = Attendees.query.filter_by(meeting = meeting_id).all()
     return jsonify(attendees), 200
 
-@app.route("/api/event/notes/<int:meeting_id>")
+@app.route("/api/event/notes/<int:meeting_id>/")
 def api_event_minutes(meeting_id):
     minutes = Minutes.query.filter_by(meeting = meeting_id).all()
     return jsonify(minutes), 200
 
-@app.route("/api/event/state/<int:meeting_id>")
+@app.route("/api/event/state/<int:meeting_id>/")
 def api_event_state(meeting_id):
     meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
     return jsonify(meeting.state), 200
