@@ -220,7 +220,7 @@ def logout():
 @login_required
 def my_account():
     """ View account details or log out. """
-    return render_template("my_account.html", page_title="My Account")
+    return render_template("account.html", page_title="My Account")
 
 @app.route("/update-account/", methods=["POST"])
 def update_account():
@@ -298,7 +298,7 @@ def event_create():
                         code_hash=None)
     db.session.add(meeting)
     db.session.commit()
-    redirect(url_for("admin_dashboard"))
+    return redirect(url_for("admin_dashboard", meeting_id=meeting.id))
 
 @app.route("/admin/start/<int:meeting_id>/", methods=["POST"])
 @login_required
