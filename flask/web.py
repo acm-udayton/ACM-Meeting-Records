@@ -253,7 +253,6 @@ def sign_up():
 @login_required
 def logout():
     """ Logout the user and redirect home. """
-    """ De-authenticate. """
     logout_user()
     return redirect(url_for("home"))
 
@@ -263,7 +262,6 @@ def logout():
 @login_required
 def my_account():
     """ Show account details page with update form. """
-    """ View account details or log out. """
     return render_template("account.html", page_title = "My Account")
 
 @app.route("/update-account/", methods = ["POST"])
@@ -587,16 +585,20 @@ def event_check_in(meeting_id):
     if Meetings.query.filter_by(id = meeting_id).first() is not None:
         code = request.form["meeting_code"]
         meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
-        if meeting.state == "active":
-            if sha_hash(code) == meeting.code_hash:
-                # Meeting active, add the user as an attendee.
-                attendance = Attendees(username = current_user.username, meeting = meeting_id)
-                db.session.add(attendance)
-                db.session.commit()
-                flash("Check-in succeeded. Attendance updated successfully.")
+        if Attendees.query.filter_by(meeting=meeting_id).first() is not None:
+            if meeting.state == "active":
+                if sha_hash(code) == meeting.code_hash:
+                    # Meeting active, add the user as an attendee.
+                    attendance = Attendees(username = current_user.username, meeting = meeting_id)
+                    db.session.add(attendance)
+                    db.session.commit()
+                    flash("Check-in succeeded. Attendance updated successfully.")
+                else:
+                    # Invalid meeting code.
+                    flash("Check-in failed. Meeting code is invalid.")
             else:
-                # Invalid meeting code.
-                flash("Check-in failed. Meeting code is invalid.")
+                # Already an attendee.
+                flash("Check-in failed. You are already marked as an attendee.")
         else:
             # Meeting inactive, return an error message.
             flash("Check-in failed. Specified meeting is inactive.")
