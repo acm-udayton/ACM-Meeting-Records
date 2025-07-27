@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Project Name: AttendanceTaker
+Project Name: ACM-Meeting-Records
 Project Author(s): Joseph Lefkovitz (github.com/lefkovitz)
 Last Modified: 7/26/2025
 
@@ -11,6 +11,8 @@ File Purpose: Implement the webserver for the project.
 # Standard library imports.
 import datetime
 from functools import wraps
+import logging
+import logging.config
 import os
 import re
 
@@ -29,7 +31,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import desc
 
 # Local application imports.
-from utils import sha_hash, generate_meeting_code
+from utils import sha_hash, generate_meeting_code, get_logger_config
 
 def admin_required(f):
     """ Route decorator to restrict page access to admin users. """
@@ -55,6 +57,12 @@ db.init_app(app)
 # Configure flask-login.
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+# Configure logging.
+logging.config.dictConfig(get_logger_config())
+login_logger = logging.getLogger("login_logger")
+app_logger = logging.getLogger("werkzeug") # Flask's default logger
+
 
 # Define the app database.
 class Users(UserMixin, db.Model):

@@ -13,7 +13,7 @@ instance/*
 reports/*
 
 # Ignore logs.
-/app/logs/*
+/app/logs/
 
 # Ignore documentation/planning files.
 app/notes.txt

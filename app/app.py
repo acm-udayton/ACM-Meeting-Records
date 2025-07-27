@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Project Name: AttendanceTaker
+Project Name: ACM-Meeting-Records
 Project Author(s): Joseph Lefkovitz (github.com/lefkovitz)
 Last Modified: 7/26/2025
 
