@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block header_styles %}
+<link href="{{ url_for('static', filename='css/forms.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block page_content %}
+  <main class="main">
+    <section id="form-context" class="d-grid justify-content-center text-center">
+      <h2>{{ page_title }}</h2>
+      <p>Use this code to join the meeting: </p>
+      <h3 style='font-size:192px'>{{ code }}</h3><p>
+    </section>
+  </main>
+
+{% endblock %}
