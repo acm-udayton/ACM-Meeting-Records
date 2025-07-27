@@ -1,5 +1,5 @@
+python-dotenv
 Flask
 Flask-Login
 Flask-Mail
 Flask-SQLAlchemy
-qrcode
