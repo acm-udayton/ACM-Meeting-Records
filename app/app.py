@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+
+"""
+Project Name: AttendanceTaker
+Project Author(s): Joseph Lefkovitz (github.com/lefkovitz)
+Last Modified: 7/26/2025
+
+File Purpose: Import and run the webserver for the project.
+"""
+
+from web import app
+
+if __name__ == "__main__":
+    app.run()
