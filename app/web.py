@@ -44,6 +44,14 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_admin_required
 
+# Configure logging.
+logging.config.dictConfig(get_logger_config())
+login_logger = logging.getLogger("login_logger")
+app_logger = logging.getLogger("werkzeug") # Flask's default logger
+
+for handler in app_logger.handlers:
+    if isinstance(handler, logging.StreamHandler):
+        app_logger.removeHandler(handler)
 
 app = Flask(__name__)
 load_dotenv() # Load the .env file's contents as environment variables.
@@ -57,11 +65,6 @@ db.init_app(app)
 # Configure flask-login.
 login_manager = LoginManager()
 login_manager.init_app(app)
-
-# Configure logging.
-logging.config.dictConfig(get_logger_config())
-login_logger = logging.getLogger("login_logger")
-app_logger = logging.getLogger("werkzeug") # Flask's default logger
 
 
 # Define the app database.
@@ -668,6 +671,7 @@ def page_not_found(e):
 @app.errorhandler(405)
 def method_not_allowed(e):
     """ Handle HTTP 405. """
+    app_logger.error()
     return render_template(
         "error.html",
         page_title = "405 Error",
