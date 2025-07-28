@@ -22,10 +22,10 @@
             "backupCount": 10,
             "level": "ERROR"
         },
-        "logins_file": {
+        "user_file": {
             "class": "logging.handlers.RotatingFileHandler",
             "formatter": "default",
-            "filename": "logs/logins_log.txt",
+            "filename": "logs/user_log.txt",
             "maxBytes": 10240,
             "backupCount": 10
         }
@@ -36,8 +36,8 @@
             "level": "INFO",
             "propagate": true
         },
-        "login_logger": {
-            "handlers": ["logins_file"],
+        "userl_logger": {
+            "handlers": ["user_file"],
             "level": "INFO",
             "propagate": false
         }

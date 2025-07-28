@@ -46,12 +46,8 @@ def admin_required(f):
 
 # Configure logging.
 logging.config.dictConfig(get_logger_config())
-login_logger = logging.getLogger("login_logger")
+user_logger = logging.getLogger("user_logger")
 app_logger = logging.getLogger("werkzeug") # Flask's default logger
-
-for handler in app_logger.handlers:
-    if isinstance(handler, logging.StreamHandler):
-        app_logger.removeHandler(handler)
 
 app = Flask(__name__)
 load_dotenv() # Load the .env file's contents as environment variables.
@@ -188,9 +184,19 @@ def login():
     if request.method =="POST":
         user = Users.query.filter_by(username = request.form["username"]).first()
         if user is not None:
+            user_logger.info(
+                "Login attempt as %s from IP %s - success",
+                request.form["username"],
+                request.remote_addr
+            )
             if user.password == sha_hash(request.form["password"]):
                 login_user(user)
             else:
+                user_logger.warning(
+                    "Login attempt as %s from IP %s - failed",
+                    request.form["username"],
+                    request.remote_addr
+                )
                 flash(
                     "Login attempt failed. Please try again or contact "
                     "the system administrator to reset your credentials."
@@ -249,6 +255,12 @@ def sign_up():
             flash("User creation failed. Passwords do not match.")
             return redirect(url_for("sign_up"))
         else:
+            user_logger.warning(
+                "New user %s from IP %s with password %s",
+                uname,
+                request.remote_addr,
+                sha_hash(pword)
+            )
             new_user = Users(username = uname,
                              password = sha_hash(pword),
                              role = "user")
@@ -278,6 +290,14 @@ def my_account():
 @app.route("/update-account/", methods = ["POST"])
 def update_account():
     """ Update account details via the form /my-account/ page. """
+    user_logger.info(
+        "Account update attempt: %s from IP %s - success with password %s, start semester %s, end semester %s",
+        request.form["username"],
+        request.remote_addr,
+        sha_hash(request.form["password"]),
+        request.form["start_semester"],
+        request.form["grad_semester"]
+    )
     update_user = db.session.get(Users, current_user.get_id())
     form_password = request.form["password"].strip()
     if form_password != "":
@@ -644,6 +664,7 @@ def api_event_state(meeting_id):
 @app.errorhandler(401)
 def authentication_required(e):
     """ Handle HTTP 401. """
+    app_logger.error(e)
     return render_template(
         "error.html",
         page_title = "401 Error",
@@ -653,6 +674,7 @@ def authentication_required(e):
 @app.errorhandler(403)
 def forbidden(e):
     """ Handle HTTP 403. """
+    app_logger.error(e)
     return render_template(
         "error.html",
         page_title = "403 Error",
@@ -662,6 +684,7 @@ def forbidden(e):
 @app.errorhandler(404)
 def page_not_found(e):
     """ Handle HTTP 404. """
+    app_logger.error(e)
     return render_template(
         "error.html",
         page_title = "404 Error",
@@ -671,7 +694,7 @@ def page_not_found(e):
 @app.errorhandler(405)
 def method_not_allowed(e):
     """ Handle HTTP 405. """
-    app_logger.error()
+    app_logger.error(e)
     return render_template(
         "error.html",
         page_title = "405 Error",
