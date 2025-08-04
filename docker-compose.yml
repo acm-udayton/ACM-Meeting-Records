@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      # Set environment variables for database connection
+      MYSQL_HOST: db
+      MYSQL_USER: your_user
+      MYSQL_PASSWORD: your_password
+      MYSQL_DB: your_database
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: your_root_password
+      MYSQL_DATABASE: your_database
+      MYSQL_USER: your_user
+      MYSQL_PASSWORD: your_password
+    volumes:
+      - db_data:/var/lib/mysql # Persist database data
+
+volumes:
+  db_data:
