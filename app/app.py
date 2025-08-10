@@ -8,7 +8,7 @@ Last Modified: 7/26/2025
 File Purpose: Import and run the webserver for the project.
 """
 
-from web import app
+from .web import app # pylint: disable=relative-beyond-top-level
 
 if __name__ == "__main__":
     app.run()

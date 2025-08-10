@@ -1,17 +1,24 @@
-# Base Python image.
-FROM python:3.9-slim-buster
+# Use an official Python runtime as a parent image
+FROM python:3.9-slim
 
-WORKDIR app
+# Set the working directory in the container
+WORKDIR /app
 
-# Copy and install required dependencies.
+# Copy the requirements file into the container
 COPY requirements.txt .
+
+# Install the Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the source code.
+# Copy the entire application source code into the container
+# This copies everything from the local directory (where the Dockerfile is)
+# into the /app directory inside the container.
 COPY . .
 
-# Expose the flask application port.
-EXPOSE 5000
 
-# Command to run the Flask application
-CMD ["flask", "run", "--host=0.0.0.0"]
+# Expose the port that Gunicorn will listen on
+EXPOSE 8000
+
+# Command to run the application with Gunicorn
+# The module is 'app.app' and the app instance is named 'app'.
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "app.app:app"]

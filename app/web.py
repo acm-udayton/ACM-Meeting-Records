@@ -31,7 +31,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import desc
 
 # Local application imports.
-from utils import sha_hash, generate_meeting_code, get_logger_config
+from .utils import sha_hash, generate_meeting_code, get_logger_config # pylint: disable=relative-beyond-top-level
 
 def admin_required(f):
     """ Route decorator to restrict page access to admin users. """
