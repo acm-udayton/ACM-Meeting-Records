@@ -12,7 +12,6 @@ File Purpose: Implement the webserver for the project.
 import datetime
 from functools import wraps
 import logging
-import logging.config
 import os
 import re
 
@@ -31,7 +30,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import desc
 
 # Local application imports.
-from .utils import sha_hash, generate_meeting_code, get_logger_config # pylint: disable=relative-beyond-top-level
+from .utils import sha_hash, generate_meeting_code # pylint: disable=relative-beyond-top-level
 
 def admin_required(f):
     """ Route decorator to restrict page access to admin users. """
@@ -45,9 +44,13 @@ def admin_required(f):
     return decorated_admin_required
 
 # Configure logging.
-logging.config.dictConfig(get_logger_config())
-user_logger = logging.getLogger("user_logger")
-app_logger = logging.getLogger("werkzeug") # Flask's default logger
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
 
 app = Flask(__name__)
 load_dotenv() # Load the .env file's contents as environment variables.
@@ -184,7 +187,7 @@ def login():
     if request.method =="POST":
         user = Users.query.filter_by(username = request.form["username"]).first()
         if user is not None:
-            user_logger.info(
+            app.logger.info(
                 "Login attempt as %s from IP %s - success",
                 request.form["username"],
                 request.remote_addr
@@ -192,7 +195,7 @@ def login():
             if user.password == sha_hash(request.form["password"]):
                 login_user(user)
             else:
-                user_logger.warning(
+                app.logger.warning(
                     "Login attempt as %s from IP %s - failed",
                     request.form["username"],
                     request.remote_addr
@@ -255,7 +258,7 @@ def sign_up():
             flash("User creation failed. Passwords do not match.")
             return redirect(url_for("sign_up"))
         else:
-            user_logger.warning(
+            app.logger.warning(
                 "New user %s from IP %s with password %s",
                 uname,
                 request.remote_addr,
@@ -290,7 +293,7 @@ def my_account():
 @app.route("/update-account/", methods = ["POST"])
 def update_account():
     """ Update account details via the form /my-account/ page. """
-    user_logger.info(
+    app.logger.info(
         "Account update attempt: %s from IP %s - success with password %s, start semester %s, end semester %s",
         request.form["username"],
         request.remote_addr,
@@ -664,7 +667,7 @@ def api_event_state(meeting_id):
 @app.errorhandler(401)
 def authentication_required(e):
     """ Handle HTTP 401. """
-    app_logger.error(e)
+    app.logger.error(e)
     return render_template(
         "error.html",
         page_title = "401 Error",
@@ -674,7 +677,7 @@ def authentication_required(e):
 @app.errorhandler(403)
 def forbidden(e):
     """ Handle HTTP 403. """
-    app_logger.error(e)
+    app.logger.error(e)
     return render_template(
         "error.html",
         page_title = "403 Error",
@@ -684,7 +687,7 @@ def forbidden(e):
 @app.errorhandler(404)
 def page_not_found(e):
     """ Handle HTTP 404. """
-    app_logger.error(e)
+    app.logger.error(e)
     return render_template(
         "error.html",
         page_title = "404 Error",
@@ -694,7 +697,7 @@ def page_not_found(e):
 @app.errorhandler(405)
 def method_not_allowed(e):
     """ Handle HTTP 405. """
-    app_logger.error(e)
+    app.logger.error(e)
     return render_template(
         "error.html",
         page_title = "405 Error",
