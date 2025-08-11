@@ -293,21 +293,24 @@ def my_account():
 @app.route("/update-account/", methods = ["POST"])
 def update_account():
     """ Update account details via the form /my-account/ page. """
+
+    form_password = request.form.get("password", "").strip()
+    form_start = request.form.get("start_semester", "").strip().upper()
+    form_grad = request.form.get("grad_semester", "").strip().upper()
+
     app.logger.info(
         "Account update attempt: %s from IP %s - success with password %s, start semester %s, end semester %s",
-        request.form["username"],
+        current_user.username,
         request.remote_addr,
-        sha_hash(request.form["password"]),
-        request.form["start_semester"],
-        request.form["grad_semester"]
+        sha_hash(form_password),
+        form_start,
+        form_grad
     )
     update_user = db.session.get(Users, current_user.get_id())
-    form_password = request.form["password"].strip()
     if form_password != "":
         update_user.password = sha_hash(form_password)
     semester_regex = re.compile(r"^(FA|SP) \d{4}$|^$")
     # Validate start semester.
-    form_start = request.form["start_semester"].strip().upper()
     if not semester_regex.fullmatch(form_start):
         flash(
             'Invalid format for Start Semester. Use "FA YYYY" or '
@@ -317,7 +320,6 @@ def update_account():
         update_user.joined = form_start
 
     # Validate graduation semester.
-    form_grad = request.form["grad_semester"].strip().upper()
     if not semester_regex.fullmatch(form_grad):
         flash(
             'Invalid format for Graduation Semester. Use "FA YYYY" or '
