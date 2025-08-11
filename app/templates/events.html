@@ -8,7 +8,7 @@
           {% block header_styles %}
             <link href="{{ url_for('static', filename='css/forms.css') }}" rel="stylesheet">
           {% endblock %}
-            <form action="/admin/create" id="meeting-create-form" method="POST" class="col-lg-12">
+            <form action="/admin/create/" id="meeting-create-form" method="POST" class="col-lg-12">
               <div class="form-floating mb-3 mt-3">
                 <input type="text" class="form-control form-control-lg" placeholder="Meeting Title" name="meeting_title" id="meeting_title" autocomplete="off">
                 <label for="meeting_title">Meeting Title</label>

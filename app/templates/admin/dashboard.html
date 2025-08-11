@@ -17,12 +17,12 @@
         <section id="meeting-status">
         <p id="status-p"><strong>Current Status: </strong>{{ meeting.state | title }}
         {% if meeting.state == "not started" %}
-          <form action="/admin/start/{{ meeting.id }}" id="meeting-status-form" method="POST" class="col-lg-8">
+          <form action="/admin/start/{{ meeting.id }}/" id="meeting-status-form" method="POST" class="col-lg-8">
             <button type="submit" class="form-control form-control-lg" id="meeting-status-submit">Start Meeting</button>
           </form>
         {% elif meeting.state == "active" %}
           <strong>Meeting Code: </strong><a href="/admin/reset-code/{{ meeting.id }}" target="_blank">Reset Code</a></p>
-          <form action="/admin/end/{{ meeting.id }}" id="meeting-status-form" method="POST" class="col-lg-8">
+          <form action="/admin/end/{{ meeting.id }}/" id="meeting-status-form" method="POST" class="col-lg-8">
             <button type="submit" class="form-control form-control-lg" id="meeting-status-submit">End Meeting</button>
           </form>
         {% endif %}
@@ -40,7 +40,7 @@
 
         {% if minutes|length > 0 %}
           <article id="meeting-minutes">
-            <form action="/admin/minutes/{{ meeting.id }}/{{ minutes[-1].id }}" method="POST" id="meeting-minutes-form" class="col-12">
+            <form action="/admin/minutes/{{ meeting.id }}/{{ minutes[-1].id }}/" method="POST" id="meeting-minutes-form" class="col-12">
               <textarea id="meeting_minutes" name="meeting_minutes" class="form-control">{{ minutes[-1].notes }}</textarea>
               <div><strong>Recorded By: {{ minutes[-1].username_by }}</strong></div>
               <br>
@@ -50,7 +50,7 @@
           </article>
         {% else %}
             <article id="meeting-minutes">
-              <form action="/admin/minutes/{{ meeting.id }}" method="POST" id="meeting-minutes-form" class="col-12">
+              <form action="/admin/minutes/{{ meeting.id }}/" method="POST" id="meeting-minutes-form" class="col-12">
                 <textarea id="meeting_minutes" name="meeting_minutes" class="form-control"></textarea>
                 <div><strong>Recorded By: {{ current_user.username }}</strong></div>
                 <br>
@@ -72,7 +72,7 @@
         </p>
           <section id="form" class="justify-content-right row">
             <div class="col-lg-4"></div>
-            <form action="/admin/attendees/{{ meeting.id }}" id="meeting-attendees-form" method="POST" class="col-lg-8">
+            <form action="/admin/attendees/{{ meeting.id }}/" id="meeting-attendees-form" method="POST" class="col-lg-8">
                 <div class="form-floating mb-3 mt-3">
                 <input type="text" class="form-control form-control-lg" placeholder="Attendee Username" name="attendee_username" id="attendee_username" autocomplete="off">
                 <label for="meeting_code">Attendee Username</label>

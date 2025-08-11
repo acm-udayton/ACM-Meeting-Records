@@ -10,7 +10,7 @@
       <h2>Account Details</h2>
     </section>
     <section id="form" class="d-flex justify-content-center">
-      <form action="/update-account" method="POST" class="col-6" onsubmit="return validateSemesterFields(event);">
+      <form action="/update-account/" method="POST" class="col-6">
           <div class="form mb-3 mt-3">
             <label for="username">UD Email</label>
             <input type="text" class="form-control form-control-lg" placeholder="Username" name="username" id="username" autocomplete="on" disabled value="{{current_user.username}}">
@@ -32,7 +32,7 @@
         </form>        
     </section>
     <section id="log-out" class="d-flex justify-content-center">
-        <form action="/logout" class="col-6">
+        <form action="/logout/" class="col-6">
             <button type="submit" class="form-control form-control-lg red-button">Log Out</button>
         </form>
     </section>
