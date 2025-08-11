@@ -21,11 +21,11 @@
           </div>
           <div class="form mb-3 mt-3">
             <label for="start_semester">Start Semester</label>
-            <input type="text" class="form-control form-control-lg" placeholder="FA/SP YYYY" name="start_semester" id="start_semester" value="{{current_user.joined | default('')}}">
+            <input type="text" class="form-control form-control-lg" placeholder="FA/SP YYYY" name="start_semester" id="start_semester" value="{{current_user.joined or '' }}">
           </div>
           <div class="form mb-3 mt-3">
             <label for="grad_semester">Graduation Semester</label>
-            <input type="text" class="form-control form-control-lg" placeholder="FA/SP YYYY" name="grad_semester" id="grad_semester" value="{{current_user.graduated | default('')}}">
+            <input type="text" class="form-control form-control-lg" placeholder="FA/SP YYYY" name="grad_semester" id="grad_semester" value="{{current_user.graduated or '' }}">
           </div>
 
         <button type="submit" class="form-control form-control-lg red-button">Save Account Details</button>
