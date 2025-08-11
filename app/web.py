@@ -455,7 +455,7 @@ def reset_code(meeting_id):
             meeting.code_hash = sha_hash(meeting_code)
             # Add the user (officer) as an attendee.
             db.session.commit()
-            return redirect(f"/admin/show-code?code = {meeting_code}")
+            return redirect(f"/admin/show-code?code={meeting_code}")
         else:
             # Meeting cannot be activated.
             return render_template(
