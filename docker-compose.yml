@@ -6,7 +6,8 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - .:/app
+      - db-data:/app/instance
     command: gunicorn --bind 0.0.0.0:8000 --workers 1 --access-logfile - --log-level debug app.app:app
-    environment:
-      - FLASK_ENV=production
+
+volumes:
+  db-data:
