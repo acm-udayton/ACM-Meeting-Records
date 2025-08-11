@@ -21,4 +21,4 @@ EXPOSE 8000
 
 # Command to run the application with Gunicorn
 # The module is 'app.app' and the app instance is named 'app'.
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "app.app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "1", "--access-logfile", "-", "app.app:app"]
