@@ -63,12 +63,7 @@ To get a local copy up and running follow these simple example steps.
 
 ### Installation
 
-1. Ensure that Docker is installed on your system and the docker compose command is available.
-2. Download the source code for the project to a directory on your filesystem & navigate there in your terminal.
-3. Run the following command to start the webserver
-  ```sh
-  docker compose up --build -d
-  ```
+Check out the <a href="https://github.com/acm-udayton/ACM-Meeting-Records/blob/main/docs/quickstart.md">quickstart guide</a> for application setup!
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
