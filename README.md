@@ -38,7 +38,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 <div align="center">
-  <img src="documentation-images/application-demo.png" alt="Website demo screenshot" width="60%">
+  <img src="docs/application-demo.png" alt="Website demo screenshot" width="60%">
 </div>
 <br>
 This is a basic landing page for a new installation of the application.
