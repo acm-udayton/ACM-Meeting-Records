@@ -1,3 +1,11 @@
+"""
+Project Name: ACM-Meeting-Records
+Project Author(s): Joseph Lefkovitz (github.com/lefkovitz)
+Last Modified: 9/9/2025
+
+File Purpose: Utility to help create admins in DB.
+"""
+
 import hashlib
 import sys
 
@@ -9,22 +17,15 @@ def sha_hash(string_to_hash):
 
 def main():
     """ Process the main functionality of the file. """
-    role = input("Admin (enter 'a') or Secretary (enter 's'):").lower().strip()
-    if role == "a":
-        role = "ADMIN"
-    elif role == "s":
-        role = "SECRETARY"
-    else:
-        print("Invalid Role, must be Admin (a) or Secretary (s)")
-        sys.exit()
-    
+    role = "admin"
     uname = input("Username: ")
     pword = sha_hash(input("Password: "))
     pconf = sha_hash(input("Password (Confirm): "))
     if pword != pconf:
         print("Invalid Password, passwords must match")
         sys.exit()
-    output_message = f"{role}_USERNAME = \"{uname}\"\n{role}_PASSWORD = \"{pword}\""
+    output_message = ("INSERT into users (username, password, role) " +
+                      f"VALUES ('{uname}', '{pword}', '{role}');")
     return output_message
 
 
