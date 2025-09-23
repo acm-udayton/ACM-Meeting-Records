@@ -3,7 +3,7 @@
 """
 Project Name: ACM-Meeting-Records
 Project Author(s): Joseph Lefkovitz (github.com/lefkovitz)
-Last Modified: 7/26/2025
+Last Modified: 9/22/2025
 
 File Purpose: Implement the webserver for the project.
 """
@@ -38,7 +38,7 @@ def admin_required(f):
     def decorated_admin_required(*args, **kwargs):
         if not current_user.is_authenticated:
             return redirect(url_for("home"))
-        if current_user.role not in app.context["officers"].keys():
+        if current_user.role != "admin":
             abort(403)
         return f(*args, **kwargs)
     return decorated_admin_required
@@ -147,12 +147,6 @@ app.context["socials"] = {
 app.context["details"] = {"location": os.getenv("MEETING_LOCATION"),
                             "email": os.getenv("CONTACT_EMAIL")
                         }
-app.context["officers"] = {"admin": [os.getenv("ADMIN_USERNAME"), os.getenv("ADMIN_PASSWORD")],
-                            "secretary": [
-                                os.getenv("SECRETARY_USERNAME"),
-                                os.getenv("SECRETARY_PASSWORD")
-                            ]
-                        }
 app.context["source"] = os.getenv("GITHUB_SOURCE")
 app.logs["error"] = os.getenv("ERROR_LOG_PATH")
 app.logs["login"] = os.getenv("LOGIN_LOG_PATH")
@@ -205,32 +199,6 @@ def login():
                     "the system administrator to reset your credentials."
                 )
                 return redirect(url_for("login"))
-        elif (
-            request.form["username"] == app.context["officers"]["admin"][0]
-            and sha_hash(request.form["password"]) == app.context["officers"]["admin"][1]
-        ):
-            # User is a new admin.
-            user = Users(
-                username = app.context["officers"]["admin"][0],
-                password = app.context["officers"]["admin"][1],
-                role = "admin"
-            )
-            db.session.add(user)
-            db.session.commit()
-            login_user(user)
-        elif (
-            request.form["username"] == app.context["officers"]["secretary"][0]
-            and sha_hash(request.form["password"]) == app.context["officers"]["secretary"][1]
-        ):
-            # User is a new secretary.
-            user = Users(
-                username = app.context["officers"]["secretary"][0],
-                password = app.context["officers"]["secretary"][1],
-                role = "secretary"
-            )
-            db.session.add(user)
-            db.session.commit()
-            login_user(user)
         else:
             flash("Login attempt failed. User does not exist.")
             return redirect(url_for("login"))
@@ -408,7 +376,7 @@ def event_create():
 @admin_required
 def event_start(meeting_id):
     """ Start a single meeting from the administrator dashboard. """
-    if current_user.role not in app.context["officers"].keys():
+    if current_user.role != "admin":
         # User is not an officer, so prevent access.
         abort(403)
     else:
@@ -444,7 +412,7 @@ def event_start(meeting_id):
 @admin_required
 def reset_code(meeting_id):
     """ Reset the meeting join code for a single meeting. """
-    if current_user.role not in app.context["officers"].keys():
+    if current_user.role != "admin":
         # User is not an officer, so prevent access.
         abort(403)
     else:
@@ -484,7 +452,7 @@ def show_code():
 @admin_required
 def event_end(meeting_id):
     """ End a single meeting from the administrator dashboard. """
-    if current_user.role not in app.context["officers"].keys():
+    if current_user.role != "admin":
         # User is not an officer, so prevent access.
         abort(403)
     else:
