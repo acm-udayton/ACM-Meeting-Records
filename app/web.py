@@ -26,6 +26,7 @@ from flask_login import (
     logout_user,
     UserMixin
 )
+from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import desc
 
@@ -60,6 +61,7 @@ app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("SQLALCHEMY_DATABASE_URI")
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 db = SQLAlchemy()
 db.init_app(app)
+migrate = Migrate(app, db)
 
 # Configure flask-login.
 login_manager = LoginManager()
