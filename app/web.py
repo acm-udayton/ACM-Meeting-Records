@@ -598,11 +598,15 @@ def event_check_in(meeting_id):
         if Attendees.query.filter_by(meeting=meeting_id).first() is not None:
             if meeting.state == "active":
                 if sha_hash(code) == meeting.code_hash:
-                    # Meeting active, add the user as an attendee.
-                    attendance = Attendees(username = current_user.username, meeting = meeting_id)
-                    db.session.add(attendance)
-                    db.session.commit()
-                    flash("Check-in succeeded. Attendance updated successfully.")
+                    # Check for admin-only meeting status.
+                    if meeting.admin_only and current_user.role != "admin":
+                        flash("Check-in failed. This meeting is restricted to administrators only.")
+                    else:
+                        # Meeting active, add the user as an attendee.
+                        attendance = Attendees(username = current_user.username, meeting = meeting_id)
+                        db.session.add(attendance)
+                        db.session.commit()
+                        flash("Check-in succeeded. Attendance updated successfully.")
                 else:
                     # Invalid meeting code.
                     flash("Check-in failed. Meeting code is invalid.")
