@@ -3,7 +3,7 @@
 """
 Project Name: ACM-Meeting-Records
 Project Author(s): Joseph Lefkovitz (github.com/lefkovitz)
-Last Modified: 9/22/2025
+Last Modified: 9/23/2025
 
 File Purpose: Implement the webserver for the project.
 """
@@ -97,6 +97,7 @@ class Meetings(db.Model):
     event_start = db.Column(db.DateTime, nullable = True)
     event_end = db.Column(db.DateTime, nullable = True)
     code_hash = db.Column(db.String(250), nullable = True)
+    admin_only = db.Column(db.Boolean, nullable = True, default = False)
 
     def to_dict(self):
         """ Get meeting data values as a dictionary. """
@@ -364,11 +365,14 @@ def event_create():
     """ Create a new meeting based from form inputs. """
     meeting_title = request.form["meeting_title"]
     meeting_description = request.form["meeting_description"]
+    meeting_admin_only = request.form["meeting_admin_only"] == "on"
     meeting = Meetings(state = "not started",
                         title = meeting_title,
                         description = meeting_description,
                         host = f"{current_user.username} - ACM at UDayton",
-                        code_hash = None)
+                        code_hash = None,
+                        admin_only = meeting_admin_only
+                        )
     db.session.add(meeting)
     db.session.commit()
     return redirect(url_for("admin_dashboard", meeting_id = meeting.id))
