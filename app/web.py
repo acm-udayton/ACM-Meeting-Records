@@ -108,7 +108,8 @@ class Meetings(db.Model):
                 "host": self.host,
                 "event_start": self.event_start,
                 "event_end": self.event_end,
-                "code_hash": self.code_hash}
+                "code_hash": self.code_hash,
+                "admin_only": self.admin_only}
 
 class Attendees(db.Model):
     """ Store a list of meeting attendees. """
@@ -307,7 +308,10 @@ def update_account():
 @app.route("/")
 def home():
     """ Show the home page. """
-    recent_meetings = Meetings.query.order_by(desc(Meetings.id)).limit(4).all()
+    can_view_admin_only = not (current_user.is_authenticated and current_user.role == "admin")
+    print(can_view_admin_only)
+    recent_meetings = Meetings.query.filter(Meetings.admin_only != can_view_admin_only).order_by(desc(Meetings.id)).limit(4).all()
+    print(recent_meetings)
     if len(recent_meetings) != 0:
         featured_meeting = recent_meetings.pop(0)
     else:
@@ -323,8 +327,14 @@ def home():
 def events_list():
     """ Show the event list page. """
     all_meetings = Meetings.query.all()
-    print(all_meetings)
-    return render_template("events.html", page_title = "Meetings", meetings = all_meetings)
+    visible_meetings = []
+    if current_user.is_authenticated and current_user.role == "admin":
+        return render_template("events.html", page_title = "Meetings", meetings = all_meetings)
+    else:
+        for meeting in all_meetings:
+            if meeting.admin_only is not True:
+                visible_meetings.append(meeting)
+        return render_template("events.html", page_title = "Meetings", meetings = visible_meetings)
 
 @app.route("/event/<int:meeting_id>/")
 def user_event(meeting_id):
@@ -339,7 +349,6 @@ def user_event(meeting_id):
         all_minutes = minutes,
         all_attendees = attendees
     )
-
 
 # Admin web routes.
 @app.route("/admin/dashboard/<int:meeting_id>/")
