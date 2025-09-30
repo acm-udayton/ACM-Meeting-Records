@@ -604,8 +604,11 @@ def event_check_in(meeting_id):
     if Meetings.query.filter_by(id = meeting_id).first() is not None:
         code = request.form["meeting_code"]
         meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
-        if Attendees.query.filter_by(meeting=meeting_id).first() is not None:
-            if meeting.state == "active":
+        if meeting.state == "active":
+            if Attendees.query.filter_by(
+            meeting = meeting_id,
+            username = current_user.username
+            ).first() is None:
                 if sha_hash(code) == meeting.code_hash:
                     # Check for admin-only meeting status.
                     if meeting.admin_only and current_user.role != "admin":
@@ -622,6 +625,7 @@ def event_check_in(meeting_id):
             else:
                 # Already an attendee.
                 flash("Check-in failed. You are already marked as an attendee.")
+
         else:
             # Meeting inactive, return an error message.
             flash("Check-in failed. Specified meeting is inactive.")
