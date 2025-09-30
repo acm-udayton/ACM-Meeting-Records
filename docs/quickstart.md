@@ -20,19 +20,20 @@ To get a local copy up and running follow these simple example steps.
 1. Ensure that Docker is installed on your system and the ```docker compose``` command is available.
 2. Download the source code for the project to a directory on your filesystem & navigate there in your terminal.
 3. Copy the .env.example file to a .env file.
-4. Run the ```make_env_credentials.py``` utility to create the administrator and secretary accounts.
-Please note, the passwords are stored in a SHA 256 hash, so you cannot manually edit the database to update a password. You must either:
-* Go through the web UI
-* Create a SHA 256 hash of the password first, then use that to update the database.
-5. Run the following command to start the webserver:
+4. Run the following command to start the webserver:
   ```sh
   docker compose up --build -d
   ```
-6. Set up CLI for SQLITE3 (optional, but recommended):
+5. Set up CLI for SQLITE3:
   ```sh
   sudo apt update
   sudo apt-get install sqlite3
   ```
+6. Run the ```sql_manage_users.py``` utility to generate SQL queries to add administrator(s) to the SQLITE database.
+Execute these queries on the database via the SQLITE3 CLI within docker exec.
+Please note, the passwords are stored in a SHA 256 hash, so you cannot manually edit the database to update a password. You must either:
+* Go through the web UI
+* Create a SHA 256 hash of the password first, then use that to update the database.
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>

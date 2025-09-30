@@ -3,7 +3,7 @@
 """
 Project Name: ACM-Meeting-Records
 Project Author(s): Joseph Lefkovitz (github.com/lefkovitz)
-Last Modified: 7/26/2025
+Last Modified: 9/23/2025
 
 File Purpose: Implement the webserver for the project.
 """
@@ -26,6 +26,7 @@ from flask_login import (
     logout_user,
     UserMixin
 )
+from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import desc
 
@@ -38,7 +39,7 @@ def admin_required(f):
     def decorated_admin_required(*args, **kwargs):
         if not current_user.is_authenticated:
             return redirect(url_for("home"))
-        if current_user.role not in app.context["officers"].keys():
+        if current_user.role != "admin":
             abort(403)
         return f(*args, **kwargs)
     return decorated_admin_required
@@ -60,6 +61,7 @@ app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("SQLALCHEMY_DATABASE_URI")
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 db = SQLAlchemy()
 db.init_app(app)
+migrate = Migrate(app, db)
 
 # Configure flask-login.
 login_manager = LoginManager()
@@ -95,6 +97,7 @@ class Meetings(db.Model):
     event_start = db.Column(db.DateTime, nullable = True)
     event_end = db.Column(db.DateTime, nullable = True)
     code_hash = db.Column(db.String(250), nullable = True)
+    admin_only = db.Column(db.Boolean, nullable = True, default = False)
 
     def to_dict(self):
         """ Get meeting data values as a dictionary. """
@@ -105,7 +108,8 @@ class Meetings(db.Model):
                 "host": self.host,
                 "event_start": self.event_start,
                 "event_end": self.event_end,
-                "code_hash": self.code_hash}
+                "code_hash": self.code_hash,
+                "admin_only": self.admin_only}
 
 class Attendees(db.Model):
     """ Store a list of meeting attendees. """
@@ -146,12 +150,6 @@ app.context["socials"] = {
                         }
 app.context["details"] = {"location": os.getenv("MEETING_LOCATION"),
                             "email": os.getenv("CONTACT_EMAIL")
-                        }
-app.context["officers"] = {"admin": [os.getenv("ADMIN_USERNAME"), os.getenv("ADMIN_PASSWORD")],
-                            "secretary": [
-                                os.getenv("SECRETARY_USERNAME"),
-                                os.getenv("SECRETARY_PASSWORD")
-                            ]
                         }
 app.context["source"] = os.getenv("GITHUB_SOURCE")
 app.logs["error"] = os.getenv("ERROR_LOG_PATH")
@@ -205,32 +203,6 @@ def login():
                     "the system administrator to reset your credentials."
                 )
                 return redirect(url_for("login"))
-        elif (
-            request.form["username"] == app.context["officers"]["admin"][0]
-            and sha_hash(request.form["password"]) == app.context["officers"]["admin"][1]
-        ):
-            # User is a new admin.
-            user = Users(
-                username = app.context["officers"]["admin"][0],
-                password = app.context["officers"]["admin"][1],
-                role = "admin"
-            )
-            db.session.add(user)
-            db.session.commit()
-            login_user(user)
-        elif (
-            request.form["username"] == app.context["officers"]["secretary"][0]
-            and sha_hash(request.form["password"]) == app.context["officers"]["secretary"][1]
-        ):
-            # User is a new secretary.
-            user = Users(
-                username = app.context["officers"]["secretary"][0],
-                password = app.context["officers"]["secretary"][1],
-                role = "secretary"
-            )
-            db.session.add(user)
-            db.session.commit()
-            login_user(user)
         else:
             flash("Login attempt failed. User does not exist.")
             return redirect(url_for("login"))
@@ -299,7 +271,8 @@ def update_account():
     form_grad = request.form.get("grad_semester", "").strip().upper()
 
     app.logger.info(
-        "Account update attempt: %s from IP %s - success with password %s, start semester %s, end semester %s",
+        ("Account update attempt: %s from IP %s - "
+        "success with password %s, start semester %s, end semester %s"),
         current_user.username,
         request.remote_addr,
         sha_hash(form_password),
@@ -336,7 +309,12 @@ def update_account():
 @app.route("/")
 def home():
     """ Show the home page. """
-    recent_meetings = Meetings.query.order_by(desc(Meetings.id)).limit(4).all()
+    can_view_admin_only = not (current_user.is_authenticated and current_user.role == "admin")
+    print(can_view_admin_only)
+    recent_meetings = Meetings.query.filter(
+        Meetings.admin_only != can_view_admin_only
+    ).order_by(desc(Meetings.id)).limit(4).all()
+    print(recent_meetings)
     if len(recent_meetings) != 0:
         featured_meeting = recent_meetings.pop(0)
     else:
@@ -352,8 +330,14 @@ def home():
 def events_list():
     """ Show the event list page. """
     all_meetings = Meetings.query.all()
-    print(all_meetings)
-    return render_template("events.html", page_title = "Meetings", meetings = all_meetings)
+    visible_meetings = []
+    if current_user.is_authenticated and current_user.role == "admin":
+        return render_template("events.html", page_title = "Meetings", meetings = all_meetings)
+    else:
+        for meeting in all_meetings:
+            if meeting.admin_only is not True:
+                visible_meetings.append(meeting)
+        return render_template("events.html", page_title = "Meetings", meetings = visible_meetings)
 
 @app.route("/event/<int:meeting_id>/")
 def user_event(meeting_id):
@@ -368,7 +352,6 @@ def user_event(meeting_id):
         all_minutes = minutes,
         all_attendees = attendees
     )
-
 
 # Admin web routes.
 @app.route("/admin/dashboard/<int:meeting_id>/")
@@ -394,11 +377,14 @@ def event_create():
     """ Create a new meeting based from form inputs. """
     meeting_title = request.form["meeting_title"]
     meeting_description = request.form["meeting_description"]
+    meeting_admin_only = request.form["meeting_admin_only"] == "on"
     meeting = Meetings(state = "not started",
                         title = meeting_title,
                         description = meeting_description,
                         host = f"{current_user.username} - ACM at UDayton",
-                        code_hash = None)
+                        code_hash = None,
+                        admin_only = meeting_admin_only
+                        )
     db.session.add(meeting)
     db.session.commit()
     return redirect(url_for("admin_dashboard", meeting_id = meeting.id))
@@ -408,7 +394,7 @@ def event_create():
 @admin_required
 def event_start(meeting_id):
     """ Start a single meeting from the administrator dashboard. """
-    if current_user.role not in app.context["officers"].keys():
+    if current_user.role != "admin":
         # User is not an officer, so prevent access.
         abort(403)
     else:
@@ -444,7 +430,7 @@ def event_start(meeting_id):
 @admin_required
 def reset_code(meeting_id):
     """ Reset the meeting join code for a single meeting. """
-    if current_user.role not in app.context["officers"].keys():
+    if current_user.role != "admin":
         # User is not an officer, so prevent access.
         abort(403)
     else:
@@ -484,7 +470,7 @@ def show_code():
 @admin_required
 def event_end(meeting_id):
     """ End a single meeting from the administrator dashboard. """
-    if current_user.role not in app.context["officers"].keys():
+    if current_user.role != "admin":
         # User is not an officer, so prevent access.
         abort(403)
     else:
@@ -621,14 +607,23 @@ def event_check_in(meeting_id):
     if Meetings.query.filter_by(id = meeting_id).first() is not None:
         code = request.form["meeting_code"]
         meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
-        if Attendees.query.filter_by(meeting=meeting_id).first() is not None:
-            if meeting.state == "active":
+        if meeting.state == "active":
+            if Attendees.query.filter_by(
+            meeting = meeting_id,
+            username = current_user.username
+            ).first() is None:
                 if sha_hash(code) == meeting.code_hash:
-                    # Meeting active, add the user as an attendee.
-                    attendance = Attendees(username = current_user.username, meeting = meeting_id)
-                    db.session.add(attendance)
-                    db.session.commit()
-                    flash("Check-in succeeded. Attendance updated successfully.")
+                    # Check for admin-only meeting status.
+                    if meeting.admin_only and current_user.role != "admin":
+                        flash("Check-in failed. This meeting is restricted to administrators only.")
+                    else:
+                        # Meeting active, add the user as an attendee.
+                        attendance = Attendees(
+                            username = current_user.username,
+                            meeting = meeting_id)
+                        db.session.add(attendance)
+                        db.session.commit()
+                        flash("Check-in succeeded. Attendance updated successfully.")
                 else:
                     # Invalid meeting code.
                     flash("Check-in failed. Meeting code is invalid.")
