@@ -18,3 +18,6 @@ reports/*
 # Ignore documentation/planning files.
 app/notes.txt
 app/test.html
+
+# Testing config.
+test-config.sh
