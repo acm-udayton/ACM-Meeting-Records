@@ -271,7 +271,8 @@ def update_account():
     form_grad = request.form.get("grad_semester", "").strip().upper()
 
     app.logger.info(
-        "Account update attempt: %s from IP %s - success with password %s, start semester %s, end semester %s",
+        ("Account update attempt: %s from IP %s - "
+        "success with password %s, start semester %s, end semester %s"),
         current_user.username,
         request.remote_addr,
         sha_hash(form_password),
@@ -310,7 +311,9 @@ def home():
     """ Show the home page. """
     can_view_admin_only = not (current_user.is_authenticated and current_user.role == "admin")
     print(can_view_admin_only)
-    recent_meetings = Meetings.query.filter(Meetings.admin_only != can_view_admin_only).order_by(desc(Meetings.id)).limit(4).all()
+    recent_meetings = Meetings.query.filter(
+        Meetings.admin_only != can_view_admin_only
+    ).order_by(desc(Meetings.id)).limit(4).all()
     print(recent_meetings)
     if len(recent_meetings) != 0:
         featured_meeting = recent_meetings.pop(0)
@@ -615,7 +618,9 @@ def event_check_in(meeting_id):
                         flash("Check-in failed. This meeting is restricted to administrators only.")
                     else:
                         # Meeting active, add the user as an attendee.
-                        attendance = Attendees(username = current_user.username, meeting = meeting_id)
+                        attendance = Attendees(
+                            username = current_user.username,
+                            meeting = meeting_id)
                         db.session.add(attendance)
                         db.session.commit()
                         flash("Check-in succeeded. Attendance updated successfully.")
@@ -625,7 +630,6 @@ def event_check_in(meeting_id):
             else:
                 # Already an attendee.
                 flash("Check-in failed. You are already marked as an attendee.")
-
         else:
             # Meeting inactive, return an error message.
             flash("Check-in failed. Specified meeting is inactive.")
