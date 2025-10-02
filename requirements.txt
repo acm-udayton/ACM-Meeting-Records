@@ -5,3 +5,4 @@ Flask-Mail
 Flask-Migrate
 Flask-SQLAlchemy
 gunicorn
+psycopg2-binary

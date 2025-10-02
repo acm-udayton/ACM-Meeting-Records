@@ -73,7 +73,7 @@ class Users(UserMixin, db.Model):
     """ Store all Users in the database. """
     id = db.Column(db.Integer, primary_key = True)
     username = db.Column(db.String(250), unique = True, nullable = False)
-    password = db.Column(db.String(64), nullable = False)
+    password = db.Column(db.String(128), nullable = False)
     role = db.Column(db.String(64), nullable = False)
     joined = db.Column(db.String(7), nullable = True) # Store FA|SP YYYY
     graduated = db.Column(db.String(7), nullable = True) # Store FA|SP YYYY
