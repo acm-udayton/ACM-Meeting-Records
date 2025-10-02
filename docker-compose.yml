@@ -1,13 +1,25 @@
-version: '3.8'
-
 services:
   web:
     build: .
     ports:
       - "8000:8000"
-    volumes:
-      - db-data:/app/instance
     command: gunicorn --bind 0.0.0.0:8000 --workers 1 --access-logfile - --log-level debug app.app:app
-
-volumes:
-  db-data:
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://admin:password@db:5432/acm-meetings-db
+      - FLASK_APP=app.web:app
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: acm-meetings-db
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    healthcheck: # <--- NEW: Define how to check if the DB is ready
+      test: ["CMD-SHELL", "pg_isready -U admin -d acm-meetings-db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
