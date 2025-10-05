@@ -72,7 +72,7 @@ Check out the <a href="https://github.com/acm-udayton/ACM-Meeting-Records/blob/m
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-Visit localhost:5000 on the device that is running the server. Alternatively, visit your server's IP via port 5000 from another device on the network. 
+Visit localhost:8000 on the device that is running the server. Alternatively, visit your server's IP via port 8000 from another device on the network. 
 
 #### Web Application
 * Accounts & Autgentication (sign up, log in, sign out, update)
