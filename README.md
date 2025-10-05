@@ -48,7 +48,7 @@ This is a basic landing page for a new installation of the application.
 
 * Python
 * Flask
-* SQLITE3
+* PostgreSQL
 * Docker
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -76,12 +76,14 @@ Visit localhost:5000 on the device that is running the server. Alternatively, vi
 
 #### Web Application
 * Accounts & Autgentication (sign up, log in, sign out, update)
-* Meeting Management (create, start, end)
+* Meeting Management (create, start, end, admin-only)
 * Meeting Attendance (check-in, live attendee tracking)
 * Meeting Minutes (create, update, view)
 
 #### Administrator Utilities
-* Make ENV Credentials.
+* PostgreSQL client-based (psql) administrator account management.
+* Password hash generation.
+* On-demand database backup.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -134,7 +136,7 @@ Project Link: [https://github.com/acm-udayton/ACM-Meeting-Records](https://githu
 ## Acknowledgments
 
 * [Flask](https://pymupdf.readthedocs.io/), which runs the web server for the application.
-* [SQLITE3](https://www.sqlite.org/docs.html), which serves as the application's databse.
+* [PostgreSQL](https://www.postgresql.org/), which serves as the application's databse.
 * [Docker](https://docs.docker.com/), which is used for containerization of the application.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
