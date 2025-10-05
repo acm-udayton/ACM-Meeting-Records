@@ -1,7 +1,7 @@
 python-dotenv
 Flask
 Flask-Login
-Flask-Mail
 Flask-Migrate
 Flask-SQLAlchemy
 gunicorn
+psycopg2-binary

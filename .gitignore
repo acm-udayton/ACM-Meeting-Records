@@ -8,6 +8,8 @@ __pycache__
 # Ignore database folder and files.
 app/instance/*
 instance/*
+postgres_data/*
+*.sql
 
 # Ignore reports.
 reports/*
