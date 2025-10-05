@@ -29,6 +29,7 @@ from flask_login import (
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import desc
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Local application imports.
 from .utils import sha_hash, generate_meeting_code # pylint: disable=relative-beyond-top-level
@@ -73,10 +74,21 @@ class Users(UserMixin, db.Model):
     """ Store all Users in the database. """
     id = db.Column(db.Integer, primary_key = True)
     username = db.Column(db.String(250), unique = True, nullable = False)
-    password = db.Column(db.String(128), nullable = False)
+    password = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(64), nullable = False)
     joined = db.Column(db.String(7), nullable = True) # Store FA|SP YYYY
     graduated = db.Column(db.String(7), nullable = True) # Store FA|SP YYYY
+
+    def set_password(self, password):
+        """Werkzeug automatically generates a cryptographically secure salt
+        and incorporates it into the returned hash string."""
+        self.password = generate_password_hash(password, method='scrypt', salt_length=16)
+
+    def check_password(self, password):
+        """Werkzeug extracts the salt and hash from the stored string
+        and hashes the input password for comparison."""
+        return check_password_hash(self.password, password)
+
 
     def to_dict(self):
         """ Get user data values as a dictionary. """
@@ -185,13 +197,13 @@ def login():
     if request.method =="POST":
         user = Users.query.filter_by(username = request.form["username"]).first()
         if user is not None:
-            app.logger.info(
-                "Login attempt as %s from IP %s - success",
-                request.form["username"],
-                request.remote_addr
-            )
-            if user.password == sha_hash(request.form["password"]):
+            if user.check_password(request.form["password"]):
                 login_user(user)
+                app.logger.info(
+                    "Login attempt as %s from IP %s - success",
+                    request.form["username"],
+                    request.remote_addr
+                )
             else:
                 app.logger.warning(
                     "Login attempt as %s from IP %s - failed",
@@ -231,14 +243,13 @@ def sign_up():
             return redirect(url_for("sign_up"))
         else:
             app.logger.warning(
-                "New user %s from IP %s with password %s",
+                "New user %s from IP %s",
                 uname,
-                request.remote_addr,
-                sha_hash(pword)
+                request.remote_addr
             )
             new_user = Users(username = uname,
-                             password = sha_hash(pword),
                              role = "user")
+            new_user.set_password(pword)
             db.session.add(new_user)
             db.session.commit()
             flash("User creation succeeded. You can now log into your new account.")
@@ -272,16 +283,15 @@ def update_account():
 
     app.logger.info(
         ("Account update attempt: %s from IP %s - "
-        "success with password %s, start semester %s, end semester %s"),
+        "start semester %s, end semester %s"),
         current_user.username,
         request.remote_addr,
-        sha_hash(form_password),
         form_start,
         form_grad
     )
     update_user = db.session.get(Users, current_user.get_id())
     if form_password != "":
-        update_user.password = sha_hash(form_password)
+        update_user.set_password(form_password)
     semester_regex = re.compile(r"^(FA|SP) \d{4}$|^$")
     # Validate start semester.
     if not semester_regex.fullmatch(form_start):

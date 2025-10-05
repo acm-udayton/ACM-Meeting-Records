@@ -6,26 +6,25 @@ Last Modified: 9/9/2025
 File Purpose: Utility to help create admins in DB.
 """
 
-import hashlib
 import sys
+from werkzeug.security import generate_password_hash, check_password_hash
 
-def sha_hash(string_to_hash):
-    """ Wrapper function for hashlib's SHA-512 hash. """
-    m = hashlib.sha3_512()
-    m.update(bytes(string_to_hash, "utf-8"))
-    return m.hexdigest()
+def gen_hash(string_to_hash):
+    """ Wrapper function for werkzeug's bcrypt + salt hash. """
+    return generate_password_hash(string_to_hash, method='scrypt', salt_length=16)
+
 
 def create():
     """Process an admin creation."""
     role = "admin"
     uname = input("Username: ")
-    pword = sha_hash(input("Password: "))
-    pconf = sha_hash(input("Password (Confirm): "))
+    pword = input("Password: ")
+    pconf = input("Password (Confirm): ")
     if pword != pconf:
         print("Invalid Password, passwords must match")
         sys.exit()
     output_message = ("INSERT into users (username, password, role) "
-                      f"VALUES ('{uname}', '{pword}', '{role}');")
+                      f"VALUES ('{uname}', '{gen_hash(pword)}', '{role}');")
     return output_message
 
 def demote():
