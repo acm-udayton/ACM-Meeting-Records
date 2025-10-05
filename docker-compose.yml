@@ -1,5 +1,6 @@
 services:
   web:
+    container_name: acm-meeting-records-web
     build: .
     ports:
       - "8000:8000"
@@ -12,6 +13,7 @@ services:
       - FLASK_APP=app.web:app
   db:
     image: postgres:13
+    container_name: acm-meeting-records-db
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: password

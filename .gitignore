@@ -9,6 +9,7 @@ __pycache__
 app/instance/*
 instance/*
 postgres_data/*
+*.sql
 
 # Ignore reports.
 reports/*
