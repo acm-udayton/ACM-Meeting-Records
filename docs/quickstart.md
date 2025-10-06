@@ -24,13 +24,14 @@ To get a local copy up and running follow these simple example steps.
   ```sh
   docker compose up --build -d
   ```
-5. Set up CLI for SQLITE3:
+5. Run the following commands to initialize the database:
   ```sh
-  sudo apt update
-  sudo apt-get install sqlite3
+  docker compose exec web flask db init
+  docker compose exec web flask db migrate -m "Initial database schema"
+  docker compose exec web flask db upgrade
   ```
-6. Run the ```sql_manage_users.py``` utility to generate SQL queries to add administrator(s) to the SQLITE database.
-Execute these queries on the database via the SQLITE3 CLI within docker exec.
+6. Run the ```sql_manage_users.py``` utility to generate SQL queries to add administrator(s) to the PostgreSQL database.
+Execute these queries on the database via the psql CLI within docker exec.
 Please note, the passwords are stored in a SHA 256 hash, so you cannot manually edit the database to update a password. You must either:
 * Go through the web UI
 * Create a SHA 256 hash of the password first, then use that to update the database.
