@@ -8,6 +8,10 @@ form button[type=submit] {
     background-color: var(--ud-red) !important;
     color: white;
 }
+button[role=button].blue-link-btn {
+    background-color: var(--ud-blue) !important;
+    color: white;
+}
 section#meeting-delete button {
     background-color: var(--ud-red) !important;
     color: white;

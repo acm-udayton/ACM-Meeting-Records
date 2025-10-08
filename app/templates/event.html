@@ -19,6 +19,12 @@
             </form>
         </section>
         {% endif %}
+        {% if current_user.is_authenticated and current_user.role == "admin" %}
+          <h5>Administrator Tools</h5>
+          <section id="admin-dash">
+            <a href="/admin/dashboard/{{ meeting.id }}/"><button role="button" class="btn btn-primary blue-link-btn">Meeting Dashboard</button></a>
+          </section>
+        {% endif %}
         <hr class="d-sm-none">
 
       </aside>
