@@ -27,7 +27,35 @@
           </form>
         {% endif %}
         </section>
-        <hr class="d-sm-none">
+        <section id="meeting-delete" class="col-lg-8">
+          <button type="button" 
+                  class="form-control form-control-lg" 
+                  data-bs-toggle="modal" 
+                  data-bs-target="#confirmDeleteModal">
+              Delete Meeting
+          </button>
+          <!-- Delete Confirmation Modal -->
+          <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmDeleteModalLabel">Confirm Deletion</h5>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete this meeting? This action cannot be undone.
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" id="meeting-delete-cancel" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    
+                    <form method="POST" id="confirm-delete-form" action="/admin/delete/{{ meeting.id }}/">
+                      <button type="submit" class="btn btn-danger">Delete Permanently</button>
+                    </form>
+                </div>
+              </div>
+            </div>
+          </div>
+          <hr class="d-sm-none">
+        </section>
 
       </aside>
       <main class="col-lg-6">

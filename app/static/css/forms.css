@@ -8,8 +8,16 @@ form button[type=submit] {
     background-color: var(--ud-red) !important;
     color: white;
 }
+section#meeting-delete button {
+    background-color: var(--ud-red) !important;
+    color: white;
+}
 section#form-context {
     margin-top: 32px;
+}
+section#meeting-delete #meeting-delete-cancel {
+    background-color: var(--ud-blue) !important;
+    color: white;
 }
 section#form-context h2, section#form-context span, section#form-context span a {
     color: var(--ud-blue) !important;

@@ -268,3 +268,17 @@ def event_minutes(meeting_id, minutes_id = None):
             "message": "Specified meeting does not exist."
         }
         return jsonify(return_data), 400
+
+@admin_bp.route("/delete/<int:meeting_id>/", methods = ["POST"])
+@login_required
+@admin_required
+def event_delete(meeting_id):
+    """ Delete a single meeting from the administrator dashboard. """
+    meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
+
+    # Delete all associated attendees and minutes first.
+    Attendees.query.filter_by(meeting = meeting_id).delete()
+    Minutes.query.filter_by(meeting = meeting_id).delete()
+    db.session.delete(meeting)
+    db.session.commit()
+    return redirect(url_for("main.events_list"))
