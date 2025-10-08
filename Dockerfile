@@ -1,5 +1,5 @@
 # Use an official Python runtime as a parent image
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 # Set the working directory in the container
 WORKDIR /app
@@ -15,10 +15,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # into the /app directory inside the container.
 COPY . .
 
-
 # Expose the port that Gunicorn will listen on
 EXPOSE 8000
 
 # Command to run the application with Gunicorn
 # The module is 'app.app' and the app instance is named 'app'.
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "1", "--access-logfile", "-", "app.app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "5", "--access-logfile", "-", "app:create_app()"]

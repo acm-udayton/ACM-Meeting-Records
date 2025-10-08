@@ -23,3 +23,4 @@ app/test.html
 
 # Testing config.
 test-config.sh
+docker-compose.dev.yml
