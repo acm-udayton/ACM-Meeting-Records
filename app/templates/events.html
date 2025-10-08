@@ -10,11 +10,11 @@
           {% endblock %}
             <form action="/admin/create/" id="meeting-create-form" method="POST" class="col-lg-12">
               <div class="form-floating mb-3 mt-3">
-                <input type="text" class="form-control form-control-lg" placeholder="Meeting Title" name="meeting_title" id="meeting_title" autocomplete="off">
+                <input type="text" class="form-control form-control-lg" placeholder="Meeting Title" name="meeting_title" id="meeting_title" autocomplete="off" required>
                 <label for="meeting_title">Meeting Title</label>
               </div>
               <div class="form-floating mb-3 mt-3">
-                <input type="text" class="form-control form-control-lg" placeholder="Meeting Description" name="meeting_description" id="meeting_description" autocomplete="off">
+                <input type="text" class="form-control form-control-lg" placeholder="Meeting Description" name="meeting_description" id="meeting_description" autocomplete="off" required>
                 <label for="meeting_description">Meeting Description</label>
               </div>
               <div class="form-check form-switch">

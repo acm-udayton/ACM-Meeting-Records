@@ -48,7 +48,7 @@ def event_create():
     """ Create a new meeting based from form inputs. """
     meeting_title = request.form["meeting_title"]
     meeting_description = request.form["meeting_description"]
-    meeting_admin_only = request.form["meeting_admin_only"] == "on"
+    meeting_admin_only = request.form.get("meeting_admin_only") == "on"
     meeting = Meetings(state = "not started",
                         title = meeting_title,
                         description = meeting_description,
