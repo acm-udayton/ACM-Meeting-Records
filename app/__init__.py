@@ -33,6 +33,14 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_admin_required
 
+def datetime_format(value):
+    """Format a datetime object in a Jinja template to a custom string."""
+    time_format = "%d/%m/%Y %I:%M %p"
+    if value is None:
+        return "" # Handle None values gracefully
+    return value.strftime(time_format)
+
+
 def configure_logging():
     """Configure logging."""
     logging.basicConfig(
@@ -146,6 +154,9 @@ def create_app():
     # Initialize the database.
     with app.app_context():
         db.create_all()
+
+    # Add custom Jinja filters.
+    app.jinja_env.filters['datetime_format'] = datetime_format
 
     # Register the error handlers.
     register_error_handlers(app)

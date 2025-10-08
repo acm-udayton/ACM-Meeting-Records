@@ -75,7 +75,7 @@ def event_start(meeting_id):
             meeting_code = generate_meeting_code()
             meeting.code_hash = sha_hash(meeting_code)
             meeting.state = "active"
-            meeting.event_start = datetime.datetime.now()
+            meeting.event_start = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
             # Add the user (officer) as an attendee.
             attendance = Attendees(username = current_user.username, meeting = meeting_id)
             db.session.add(attendance)
@@ -149,7 +149,7 @@ def event_end(meeting_id):
         meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
         if meeting.state == "active":
             meeting.state = "ended"
-            meeting.event_end = datetime.datetime.now()
+            meeting.event_end = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
             db.session.commit()
             return_data = {
                 "success": True,

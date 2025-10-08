@@ -25,7 +25,7 @@
       <main class="col-lg-6">
         <section id="meeting-data" class="text-center">
             <h2>{{ meeting.title }}</h2>
-            <h5>{{ meeting.event_start|default("Start Time Unavailable", true) }} - {{ meeting.event_end|default("End Time Unavailable", true) }}<br/>{{ meeting.host }}</h5>
+            <h5>{{ meeting.event_start|datetime_format|default("Start Time Unavailable", true) }} - {{ meeting.event_end|datetime_format|default("End Time Unavailable", true) }}<br/>{{ meeting.host }}</h5>
             <p>{{ meeting.description }}</p>
             <hr>
         </section>
