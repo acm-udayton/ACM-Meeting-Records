@@ -4,12 +4,21 @@ form input {
     border-color: var(--ud-blue) !important;
     border-width: 2px !important;
 }
+form input.form-check-input:checked {
+    background-color: var(--ud-blue) !important;
+    border-color: var(--ud-red) !important;
+}
 form button[type=submit] {
     background-color: var(--ud-red) !important;
     color: white;
 }
-button[role=button].blue-link-btn {
+button[role=button].red-link-btn {
+    background-color: var(--ud-red) !important;
+    border-color: var(--ud-red) !important;
+    color: white;
+}button[role=button].blue-link-btn {
     background-color: var(--ud-blue) !important;
+    border-color: var(--ud-blue) !important;
     color: white;
 }
 section#meeting-delete button {

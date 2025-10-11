@@ -21,8 +21,8 @@
                 <input class="form-check-input" type="checkbox" id="meeting_admin_only" name="meeting_admin_only">
                 <label class="form-check-label" for="meeting_admin_only">Admin-only Meeting</label>
               </div>
-
-            <button type="submit" class="form-control form-control-lg">Create Meeting</button>
+              <br>
+            <button type="submit" class="form-control form-control-lg"><strong>Create Meeting</strong></button>
           </form>
 
 
@@ -37,7 +37,7 @@
               <h3 class="h5">{{ meeting.title }}</h3>
               <div class="fakeimg">{{ meeting.event_start|datetime_format|default("Start Time Unavailable", true) }} - {{ meeting.event_end|datetime_format|default("End Time Unavailable", true) }}</div>
               <p>{{ meeting.description }}</p>
-              <a href="/event/{{ meeting.id }}"><button role="button" class="btn btn-primary">Meeting Details ></button></a>
+              <a href="/event/{{ meeting.id }}"><button role="button" class="btn btn-primary blue-link-btn">Meeting Details ></button></a>
             </article>
           {% endfor %}
         {% else %}
