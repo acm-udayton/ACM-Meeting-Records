@@ -25,12 +25,12 @@ main_bp = Blueprint('main', __name__, template_folder='templates')
 @main_bp.route("/")
 def home():
     """ Show the home page. """
-    can_view_admin_only = not (current_user.is_authenticated and current_user.role == "admin")
-    print(can_view_admin_only)
-    recent_meetings = Meetings.query.filter(
-        Meetings.admin_only != can_view_admin_only
-    ).order_by(desc(Meetings.id)).limit(4).all()
-    print(recent_meetings)
+    if not (current_user.is_authenticated and current_user.role == "admin"):
+        recent_meetings = Meetings.query.filter(
+            Meetings.admin_only != True,
+        ).order_by(desc(Meetings.id)).limit(4).all()
+    else:
+        recent_meetings = Meetings.query.order_by(desc(Meetings.id)).limit(4).all()
     if len(recent_meetings) != 0:
         featured_meeting = recent_meetings.pop(0)
     else:
