@@ -211,6 +211,42 @@ def event_attendees(meeting_id):
         }
         return jsonify(return_data), 400
 
+@admin_bp.route("/remove-attendee/<int:meeting_id>/<int:attendee_id>/", methods = ["POST"])
+@login_required
+@admin_required
+def event_remove_attendee(meeting_id, attendee_id):
+    """ Remove an attendee from a single meeting from the administrator dashboard. """
+    if Meetings.query.filter_by(id = meeting_id).first() is not None:
+        # Handle attendee removal.
+        attendee = Attendees.query.filter_by(
+            id = attendee_id,
+            meeting = meeting_id
+        ).first()
+        if attendee is not None:
+            db.session.delete(attendee)
+            db.session.commit()
+            return_data = {
+                "success": True,
+                "meeting_id": meeting_id,
+                "message": "Attendee removed successfully."
+            }
+            return jsonify(return_data), 200
+        else:
+            return_data = {
+                "success": False,
+                "meeting_id": meeting_id,
+                "message": "Attendee could not be found."
+            }
+            return jsonify(return_data), 400
+    else:
+        # Meeting does not exist.
+        return_data = {
+            "success": False,
+            "meeting_id": meeting_id,
+            "message": "Specified meeting does not exist."
+        }
+        return jsonify(return_data), 400
+
 @admin_bp.route("/minutes/<int:meeting_id>/", methods = ["POST"])
 @admin_bp.route("/minutes/<int:meeting_id>/<int:minutes_id>/", methods = ["POST"])
 @login_required

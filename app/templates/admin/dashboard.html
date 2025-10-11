@@ -94,7 +94,11 @@
         <p id="attendee-list">
         {% if attendees|length > 0 %}
             {% for attendee in attendees %}
-                {{attendee.username}}<br/>
+                <span id="attendee-{{ attendee.id }}">
+                  {{attendee.username}} 
+                  <i class="fa-solid fa-user-minus remove-attendee-ajax" data-url="/admin/remove-attendee/{{ meeting.id }}/{{ attendee.id }}"></i>
+                </span>
+                <br/>
             {% endfor %}
         {% endif %}
         </p>

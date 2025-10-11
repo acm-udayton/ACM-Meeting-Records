@@ -1,5 +1,11 @@
 /* Form CSS */
 
+.remove-attendee-ajax {
+    width: 1em;
+    height: 1em;
+    color: var(--ud-red);
+}
+
 form input {
     border-color: var(--ud-blue) !important;
     border-width: 2px !important;
