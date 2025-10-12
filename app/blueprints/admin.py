@@ -428,9 +428,13 @@ def event_delete(meeting_id):
     """ Delete a single meeting from the administrator dashboard. """
     meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
 
-    # Delete all associated attendees and minutes first.
+    # Delete all associated attendees, minutes, and attachments first.
     Attendees.query.filter_by(meeting = meeting_id).delete()
     Minutes.query.filter_by(meeting = meeting_id).delete()
+    for attachment in Attachments.query.filter_by(meeting = meeting_id).all():
+        if os.path.exists(attachment.filepath):
+            os.remove(attachment.filepath)
+    Attachments.query.filter_by(meeting = meeting_id).delete()
     db.session.delete(meeting)
     db.session.commit()
     return redirect(url_for("main.events_list"))
