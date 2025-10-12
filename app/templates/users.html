@@ -28,7 +28,18 @@
                         <td>{{ user.joined|default("N/A", true) }}</td>
                         <td>{{ user.graduated|default("N/A", true) }}</td>
                         <td>
-                            {{ user.role|capitalize }}
+                            <div class="d-flex justify-content-left">
+                                {{ user.role|capitalize }}
+                                {% if user.role != 'admin' %}
+                                <form method="post" action="/admin/users/promote/{{ user.id }}">
+                                    <button type="submit" class="btn btn-sm green-link-btn"><i class="fa fa-arrow-up"></i></button>
+                                </form>
+                                {% else %}
+                                <form method="post" action="/admin/users/demote/{{ user.id }}">
+                                    <button type="submit" class="btn btn-sm red-link-btn"><i class="fa fa-arrow-down"></i></button>
+                                </form>
+                                {% endif %}
+                            </div>
                         </td>
                         <td>
                             <form method="post" action="/admin/users/reset-password/{{ user.id }}">

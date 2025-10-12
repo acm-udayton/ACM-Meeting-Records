@@ -340,3 +340,49 @@ def reset_user_password(user_id):
         "message": f"Password for user {user.username} reset successfully."
     }
     return jsonify(return_data), 200
+
+@admin_bp.route("/users/promote/<int:user_id>/", methods = ["POST"])
+@login_required
+@admin_required
+def promote_user(user_id):
+    """ Promote a user to an admin role. """
+    user = Users.query.filter_by(id = user_id).first_or_404()
+    if user.role != "admin":
+        user.role = "admin"
+        db.session.commit()
+        return_data = {
+            "success": True,
+            "user_id": user_id,
+            "message": f"User {user.username} promoted to admin successfully."
+        }
+        return jsonify(return_data), 200
+    else:
+        return_data = {
+            "success": False,
+            "user_id": user_id,
+            "message": f"User {user.username} is already an admin."
+        }
+        return jsonify(return_data), 400
+
+@admin_bp.route("/users/demote/<int:user_id>/", methods = ["POST"])
+@login_required
+@admin_required
+def demote_user(user_id):
+    """ Demote a user to a user role. """
+    user = Users.query.filter_by(id = user_id).first_or_404()
+    if user.role != "user":
+        user.role = "user"
+        db.session.commit()
+        return_data = {
+            "success": True,
+            "user_id": user_id,
+            "message": f"User {user.username} demoted to user successfully."
+        }
+        return jsonify(return_data), 200
+    else:
+        return_data = {
+            "success": False,
+            "user_id": user_id,
+            "message": f"User {user.username} is already a user."
+        }
+        return jsonify(return_data), 400
