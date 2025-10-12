@@ -10,7 +10,16 @@ File Purpose: Primary routes for the project.
 """
 
 # Third-party imports.
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    flash,
+    current_app,
+    send_from_directory
+)
 from flask_login import current_user, login_required
 from sqlalchemy import desc
 
@@ -106,3 +115,8 @@ def event_check_in(meeting_id):
         # Meeting does not exist.
         flash("Check-in failed. Specified meeting does not exist.")
     return redirect(url_for("main.home"))
+
+@main_bp.route('/uploads/<name>')
+def download_file(name):
+    """ Serve an uploaded file. """
+    return send_from_directory(current_app.config["UPLOAD_FOLDER"], name)
