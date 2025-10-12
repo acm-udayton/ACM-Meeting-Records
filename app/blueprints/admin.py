@@ -13,7 +13,7 @@ File Purpose: Admin routes for the project.
 import datetime
 
 # Third-party imports.
-from flask import Blueprint, render_template, request, jsonify, abort, redirect, url_for
+from flask import Blueprint, render_template, request, jsonify, abort, redirect, url_for, flash
 from flask_login import login_required, current_user
 
 # Local application imports.
@@ -323,7 +323,7 @@ def event_delete(meeting_id):
 def users_list():
     """ Show the users index page."""
     all_users = Users.query.all()
-    return render_template("users.html", page_title = "Users", users = all_users)
+    return render_template("admin/users.html", page_title = "Users", users = all_users)
 
 @admin_bp.route("/users/reset-password/<int:user_id>/", methods = ["POST"])
 @login_required
@@ -334,12 +334,8 @@ def reset_user_password(user_id):
     new_password = request.form["new_password"]
     user.set_password(new_password)
     db.session.commit()
-    return_data = {
-        "success": True,
-        "user_id": user_id,
-        "message": f"Password for user {user.username} reset successfully."
-    }
-    return jsonify(return_data), 200
+    flash(f"Password for user {user.username} reset successfully.")
+    return redirect(url_for("admin.users_list"))
 
 @admin_bp.route("/users/promote/<int:user_id>/", methods = ["POST"])
 @login_required
@@ -350,19 +346,11 @@ def promote_user(user_id):
     if user.role != "admin":
         user.role = "admin"
         db.session.commit()
-        return_data = {
-            "success": True,
-            "user_id": user_id,
-            "message": f"User {user.username} promoted to admin successfully."
-        }
-        return jsonify(return_data), 200
+        flash(f"User {user.username} promoted to admin successfully.")
+        return redirect(url_for("admin.users_list"))
     else:
-        return_data = {
-            "success": False,
-            "user_id": user_id,
-            "message": f"User {user.username} is already an admin."
-        }
-        return jsonify(return_data), 400
+        flash(f"User {user.username} is already an admin.")
+        return redirect(url_for("admin.users_list"))
 
 @admin_bp.route("/users/demote/<int:user_id>/", methods = ["POST"])
 @login_required
@@ -373,16 +361,8 @@ def demote_user(user_id):
     if user.role != "user":
         user.role = "user"
         db.session.commit()
-        return_data = {
-            "success": True,
-            "user_id": user_id,
-            "message": f"User {user.username} demoted to user successfully."
-        }
-        return jsonify(return_data), 200
+        flash(f"User {user.username} demoted to user successfully.")
+        return redirect(url_for("admin.users_list"))
     else:
-        return_data = {
-            "success": False,
-            "user_id": user_id,
-            "message": f"User {user.username} is already a user."
-        }
-        return jsonify(return_data), 400
+        flash(f"User {user.username} is already a user.")
+        return redirect(url_for("admin.users_list"))
