@@ -31,7 +31,10 @@
                             {{ user.role|capitalize }}
                         </td>
                         <td>
-                            {{ user.password }}
+                            <form method="post" action="/admin/users/reset-password/{{ user.id }}">
+                                <input type="password" name="new_password" id="new_password" value=""/>
+                                <button type="submit" class="btn btn-sm green-link-btn"><i class="fa fa-key"></i></button>
+                            </form>
                         </td>
                     </tr>
                     {% endfor %}

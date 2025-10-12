@@ -325,3 +325,18 @@ def users_list():
     all_users = Users.query.all()
     return render_template("users.html", page_title = "Users", users = all_users)
 
+@admin_bp.route("/users/reset-password/<int:user_id>/", methods = ["POST"])
+@login_required
+@admin_required
+def reset_user_password(user_id):
+    """ Reset a user's password. """
+    user = Users.query.filter_by(id = user_id).first_or_404()
+    new_password = request.form["new_password"]
+    user.set_password(new_password)
+    db.session.commit()
+    return_data = {
+        "success": True,
+        "user_id": user_id,
+        "message": f"Password for user {user.username} reset successfully."
+    }
+    return jsonify(return_data), 200
