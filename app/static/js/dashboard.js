@@ -7,11 +7,41 @@ function showMessage(message) {
 // Global declaration for the refresh function to be accessible by DOMContentLoaded
 let refresh;
 
+async function refreshAttachments() {
+    const attachmentList = document.getElementById('attachment-list');
+    if (!attachmentList) return;
+    try {
+        const response = await fetch(`/api/event/attachments/${CURRENT_MEETING_ID}/`, {
+            method: 'GET'
+        });
+        const attachments = await response.json();
+        // Clear the existing list content
+        attachmentList.innerHTML = '';
+        if (attachments.length > 0) {
+            attachments.forEach(attachment => {
+                const listItem = document.createElement('li');
+                listItem.id = `attachment-${attachment.id}`;
+                // Use the returned API data
+                listItem.innerHTML = `<a href="/uploads/meeting-${CURRENT_MEETING_ID}-${attachment.filename}" target="_blank">${attachment.filename}</a> <i class="fa-solid fa-trash remove-attachment-ajax" data-url="/admin/remove-attachment/${ CURRENT_MEETING_ID }/${ attachment.id }/" style="cursor: pointer;"></i>`;
+                attachmentList.appendChild(listItem);
+            });
+        } else {
+            // Display the 'No Attachments Found' message as a list item
+            attachmentList.innerHTML = '<li id="no-attachments-found">No Attachments Found</li>';
+        }
+    } catch (error) {
+        console.error('Error refreshing attachments:', error);
+        // You might consider adding a temporary error message to the list here.
+    }
+}
+
+
 setInterval(function() {
     // Execute the refresh function every 10 seconds (based on the interval value)
     if (typeof refresh === 'function') {
         refresh();
     }
+    refreshAttachments(); 
 }, 60000);
 
 
@@ -20,6 +50,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const meetingStatusForm = document.getElementById('meeting-status-form');
     const meetingAttendeesForm = document.getElementById('meeting-attendees-form');
     const attendeeList = document.getElementById("attendee-list");
+    const attachmentUploadForm = document.getElementById('attachment-upload-form');
+    const fileInput = document.getElementById('file-input');
+
 
     // Define the async refresh function which is now accessible globally
     refresh = async function() {
@@ -128,6 +161,61 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Get a reference to the attachment list
+    const attachmentList = document.getElementById('attachment-list'); 
+
+    // Attach a single event listener to the static parent container
+    if (attachmentList) {
+        attachmentList.addEventListener('click', function(event) {
+            const targetElement = event.target;
+            
+            // Check if the clicked element is the remove button
+            if (targetElement.classList.contains('remove-attachment-ajax')) {
+                event.preventDefault(); 
+                
+                // Confirm deletion with the user.
+                if (!confirm("Are you sure you want to permanently delete this attachment?")) {
+                    return; 
+                }
+
+                const targetUrl = targetElement.getAttribute('data-url');
+                // The element to remove is the outer <li>.
+                const rowToRemove = targetElement.closest('li'); 
+                
+                fetch(targetUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Remove the <li> element.
+                        if (rowToRemove) {
+                            rowToRemove.remove(); 
+                        }
+                        
+                        showMessage('Attachment removed successfully.');
+                        
+                        // Check if the list is now empty and display "No Attachments Found".
+                        if (attachmentList.children.length === 0) {
+                            attachmentList.innerHTML = '<li id="no-attachments-found">No Attachments Found</li>';
+                        }
+
+                        return; 
+                    } else {
+                        throw new Error(`Server responded with status: ${response.status}`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Attachment removal error:', error);
+                    showMessage('An error occurred during attachment removal.');
+                });
+            }
+        });
+    }
+
+
     // Form submission handlers with validation and AJAX.
     meetingMinutesForm.addEventListener('submit', async function(event) {
         event.preventDefault();
@@ -222,4 +310,48 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    attachmentUploadForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        
+        if (fileInput.files.length === 0 || fileInput.value === '') {
+            showMessage('Please select a file to upload.');
+            return;
+        }
+
+        const formData = new FormData(attachmentUploadForm);
+        const uploadButton = document.getElementById('upload-button');
+        
+        // Disable button and give user feedback
+        uploadButton.disabled = true;
+        uploadButton.textContent = 'Uploading...';
+
+        try {
+            const response = await fetch(attachmentUploadForm.action, {
+                method: 'POST',
+                // Note: Do NOT set Content-Type; the browser handles it for FormData.
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) { // Status 201 from Flask route
+                showMessage(result.message);
+                // Clear the file input
+                fileInput.value = ''; 
+                // Refresh the attachment list to show the new file
+                await refreshAttachments(); 
+            } else { // Status 400 from Flask route
+                // Display server-side error message
+                showMessage(result.message);
+            }
+        } catch (error) {
+            console.error('Error uploading attachment:', error);
+            showMessage('Network error or server unreachable during upload.');
+        } finally {
+            // Re-enable the button
+            uploadButton.disabled = false;
+            uploadButton.textContent = 'Upload';
+        }
+    });
+    
 });

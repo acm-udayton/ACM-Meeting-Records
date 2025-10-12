@@ -86,8 +86,37 @@
               </form>
               <br/>
             </article>
-
         {% endif %}
+        <article id="meeting-attachments">
+          <h5>Attachments</h5>
+          <ul id="attachment-list">
+          {% if attachments|length > 0 %}
+            {% for attachment in attachments %}
+              <li id="attachment-{{ attachment.id }}">
+                <a href="/uploads/meeting-{{ meeting.id }}-{{ attachment.filename }}" target="_blank">{{ attachment.filename }}</a>
+                <i class="fa-solid fa-trash remove-attachment-ajax" 
+                  data-url="/admin/remove-attachment/{{ meeting.id }}/{{ attachment.id }}/"
+                  style="cursor: pointer;">
+                </i>
+              </li>
+            {% endfor %}
+          {% else %}
+            <li id="no-attachments-found">No Attachments Found</li>
+          {% endif %}
+          </ul>
+          <form method="POST" 
+              id="attachment-upload-form" 
+              enctype="multipart/form-data" 
+              action="/admin/add-attachment/{{ meeting.id }}/" 
+              class="col-12 mt-3">
+            <div class="input-group">
+              <input type="file" name="file" class="form-control" id="file-input" required>
+              <button type="submit" class="btn btn-secondary" id="upload-button">Upload</button>
+            </div>
+          </form>
+          <br>
+        </article>
+
       </main>
       <aside class="col-lg-3 text-lg-end">
         <h5>Meeting Attendees</h5>

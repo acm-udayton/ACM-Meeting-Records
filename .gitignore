@@ -11,6 +11,9 @@ instance/*
 postgres_data/*
 *.sql
 
+# Ignore uplaods.
+app/uploads/*
+
 # Ignore reports.
 reports/*
 

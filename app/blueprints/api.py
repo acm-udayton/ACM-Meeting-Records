@@ -13,7 +13,7 @@ File Purpose: API routes for the project.
 from flask import Blueprint, jsonify
 
 # Local application imports.
-from app.models import Meetings, Attendees, Minutes
+from app.models import Meetings, Attendees, Minutes, Attachments
 
 api_bp = Blueprint('api', __name__, template_folder='templates')
 
@@ -37,3 +37,10 @@ def api_event_state(meeting_id):
     """ Get current state of a single meeting. """
     meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
     return jsonify(meeting.state.title()), 200
+
+@api_bp.route("/event/attachments/<int:meeting_id>/")
+def api_event_attachments(meeting_id):
+    """ Get attachments for a single meeting. """
+    attachments = Attachments.query.filter_by(meeting = meeting_id).all()
+    attachments_data = [attachment.to_dict() for attachment in attachments]
+    return jsonify(attachments_data), 200

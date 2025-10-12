@@ -10,12 +10,21 @@ File Purpose: Primary routes for the project.
 """
 
 # Third-party imports.
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    flash,
+    current_app,
+    send_from_directory
+)
 from flask_login import current_user, login_required
 from sqlalchemy import desc
 
 # Local application imports.
-from app.models import Meetings, Attendees, Minutes
+from app.models import Meetings, Attendees, Minutes, Attachments
 from app.extensions import db
 from app.utils import sha_hash
 
@@ -61,12 +70,14 @@ def user_event(meeting_id):
     meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
     attendees = Attendees.query.filter_by(meeting = meeting_id).all()
     minutes = Minutes.query.filter_by(meeting = meeting_id).all()
+    attachments = Attachments.query.filter_by(meeting = meeting_id).all()
     return render_template(
         "event.html",
         page_title = f"Meeting - {meeting.title}",
         meeting = meeting,
         all_minutes = minutes,
-        all_attendees = attendees
+        all_attendees = attendees,
+        all_attachments = attachments
     )
 
 @main_bp.route("/event/check-in/<int:meeting_id>/", methods = ["POST"])
@@ -106,3 +117,8 @@ def event_check_in(meeting_id):
         # Meeting does not exist.
         flash("Check-in failed. Specified meeting does not exist.")
     return redirect(url_for("main.home"))
+
+@main_bp.route('/uploads/<name>')
+def download_file(name):
+    """ Serve an uploaded file. """
+    return send_from_directory(current_app.config["UPLOAD_FOLDER"], name)

@@ -95,3 +95,17 @@ class Minutes(db.Model):
                 "notes": self.notes,
                 "username_by": self.username_by,
                 "meeting": self.meeting}
+
+class Attachments(db.Model):
+    """ Store a list of meeting attachments. """
+    id = db.Column(db.Integer, primary_key = True, nullable = False)
+    filename = db.Column(db.String(250), nullable = False)
+    filepath = db.Column(db.String(250), nullable = False)
+    meeting = db.Column(db.Integer, nullable = False)
+
+    def to_dict(self):
+        """ Get attachment data values as a dictionary. """
+        return {"id": self.id,
+                "filename": self.filename,
+                "filepath": self.filepath,
+                "meeting": self.meeting}

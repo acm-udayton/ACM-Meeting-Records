@@ -47,6 +47,23 @@
         {% else %}
             <p>No Meeting Records Found</p>
         {% endif %}
+
+        <article id="meeting-attachments">
+          <h5>Attachments</h5>
+          <ul id="attachment-list">
+          {% if all_attachments|length > 0 %}
+            {% for attachment in all_attachments %}
+              <li id="attachment-{{ attachment.id }}">
+                <a href="/uploads/meeting-{{ meeting.id }}-{{ attachment.filename }}" target="_blank">{{ attachment.filename }}</a>
+              </li>
+            {% endfor %}
+          {% else %}
+            <li id="no-attachments-found">No Attachments Found</li>
+          {% endif %}
+          </ul>
+          <br>
+        </article>
+
       </main>
       <aside class="col-lg-3 text-lg-end">
         {% if all_attendees|length > 0 %}
