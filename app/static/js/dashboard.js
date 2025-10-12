@@ -22,7 +22,7 @@ async function refreshAttachments() {
                 const listItem = document.createElement('li');
                 listItem.id = `attachment-${attachment.id}`;
                 // Use the returned API data
-                listItem.innerHTML = `<a href="/uploads/${attachment.filename}" target="_blank">${attachment.filename}</a>`;
+                listItem.innerHTML = `<a href="/uploads/meeting-${CURRENT_MEETING_ID}-${attachment.filename}" target="_blank">${attachment.filename}</a> <i class="fa-solid fa-trash remove-attachment-ajax" data-url="/admin/remove-attachment/${ CURRENT_MEETING_ID }/${ attachment.id }/" style="cursor: pointer;"></i>`;
                 attachmentList.appendChild(listItem);
             });
         } else {
@@ -160,6 +160,61 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+
+    // Get a reference to the attachment list
+    const attachmentList = document.getElementById('attachment-list'); 
+
+    // Attach a single event listener to the static parent container
+    if (attachmentList) {
+        attachmentList.addEventListener('click', function(event) {
+            const targetElement = event.target;
+            
+            // Check if the clicked element is the remove button
+            if (targetElement.classList.contains('remove-attachment-ajax')) {
+                event.preventDefault(); 
+                
+                // Confirm deletion with the user.
+                if (!confirm("Are you sure you want to permanently delete this attachment?")) {
+                    return; 
+                }
+
+                const targetUrl = targetElement.getAttribute('data-url');
+                // The element to remove is the outer <li>.
+                const rowToRemove = targetElement.closest('li'); 
+                
+                fetch(targetUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Remove the <li> element.
+                        if (rowToRemove) {
+                            rowToRemove.remove(); 
+                        }
+                        
+                        showMessage('Attachment removed successfully.');
+                        
+                        // Check if the list is now empty and display "No Attachments Found".
+                        if (attachmentList.children.length === 0) {
+                            attachmentList.innerHTML = '<li id="no-attachments-found">No Attachments Found</li>';
+                        }
+
+                        return; 
+                    } else {
+                        throw new Error(`Server responded with status: ${response.status}`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Attachment removal error:', error);
+                    showMessage('An error occurred during attachment removal.');
+                });
+            }
+        });
+    }
+
 
     // Form submission handlers with validation and AJAX.
     meetingMinutesForm.addEventListener('submit', async function(event) {
