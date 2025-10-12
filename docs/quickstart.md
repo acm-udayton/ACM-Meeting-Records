@@ -30,6 +30,10 @@ To get a local copy up and running follow these simple example steps.
   docker compose exec web flask db migrate -m "Initial database schema"
   docker compose exec web flask db upgrade
   ```
+  If you have issues with these commands, you can also run:
+  ```sh
+  docker compose run --rm web /bin/sh -c "flask db init && flask db migrate -m 'Update schema' && flask db upgrade"
+  ```
 6. Run the ```sql_manage_users.py``` utility to generate SQL queries to add administrator(s) to the PostgreSQL database.
 Execute these queries on the database via the psql CLI within docker exec.
 Please note, the passwords are stored in a SHA 256 hash, so you cannot manually edit the database to update a password. You must either:
