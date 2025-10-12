@@ -12,6 +12,9 @@ services:
       - DATABASE_URL=postgresql://admin:password@db:5432/acm-meetings-db
       - FLASK_APP=app
       - TZ=America/New_York
+      - UPLOAD_FOLDER=/app/uploads
+    volumes:
+      - ./app/uploads:/app/uploads
   db:
     image: postgres:13
     container_name: acm-meeting-records-db
