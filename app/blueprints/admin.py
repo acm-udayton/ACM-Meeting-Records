@@ -318,3 +318,10 @@ def event_delete(meeting_id):
     db.session.delete(meeting)
     db.session.commit()
     return redirect(url_for("main.events_list"))
+
+@admin_bp.route("/users/")
+def users_list():
+    """ Show the users index page."""
+    all_users = Users.query.all()
+    return render_template("users.html", page_title = "Users", users = all_users)
+

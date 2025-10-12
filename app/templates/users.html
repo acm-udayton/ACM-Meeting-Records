@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block page_content %}
+  <div class="flex-grow-1 container mt-5">
+    <div class="row">
+      <main class="col-12">
+        <h2>Registered Users</h2>
+        
+        <br/>
+        <article>
+            <table class="table">
+                <thead class="thead-light">
+                    <tr>
+                    <th scope="col">ID #</th>
+                    <th scope="col">Username</th>
+                    <th scope="col">Start Semester</th>
+                    <th scope="col">End Semester</th>
+                    <th scope="col">Role</th>
+                    <th scope="col">Reset Password</th>
+                    </tr>
+                </thead>
+                
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <th scope="row">{{ user.id }}</th>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.joined|default("N/A", true) }}</td>
+                        <td>{{ user.graduated|default("N/A", true) }}</td>
+                        <td>
+                            {{ user.role|capitalize }}
+                        </td>
+                        <td>
+                            {{ user.password }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </article>
+        <br/>
+      </main>
+    </div>
+  </div>
+{% endblock %}
