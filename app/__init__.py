@@ -105,6 +105,7 @@ def create_app():
     app = Flask(__name__)
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("SQLALCHEMY_DATABASE_URI")
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
+    app.config["UPLOAD_FOLDER"] = os.getenv("UPLOAD_FOLDER")
 
     # Initialize the app extensions.
     db.init_app(app)

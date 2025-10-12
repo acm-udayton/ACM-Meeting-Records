@@ -96,7 +96,7 @@ class Minutes(db.Model):
                 "username_by": self.username_by,
                 "meeting": self.meeting}
 
-class Attachments(db.model):
+class Attachments(db.Model):
     """ Store a list of meeting attachments. """
     id = db.Column(db.Integer, primary_key = True, nullable = False)
     filename = db.Column(db.String(250), nullable = False)
