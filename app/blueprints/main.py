@@ -24,7 +24,7 @@ from flask_login import current_user, login_required
 from sqlalchemy import desc
 
 # Local application imports.
-from app.models import Meetings, Attendees, Minutes
+from app.models import Meetings, Attendees, Minutes, Attachments
 from app.extensions import db
 from app.utils import sha_hash
 
@@ -70,12 +70,14 @@ def user_event(meeting_id):
     meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
     attendees = Attendees.query.filter_by(meeting = meeting_id).all()
     minutes = Minutes.query.filter_by(meeting = meeting_id).all()
+    attachments = Attachments.query.filter_by(meeting = meeting_id).all()
     return render_template(
         "event.html",
         page_title = f"Meeting - {meeting.title}",
         meeting = meeting,
         all_minutes = minutes,
-        all_attendees = attendees
+        all_attendees = attendees,
+        all_attachments = attachments
     )
 
 @main_bp.route("/event/check-in/<int:meeting_id>/", methods = ["POST"])
