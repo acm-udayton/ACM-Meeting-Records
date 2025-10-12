@@ -11,14 +11,26 @@ File Purpose: Admin routes for the project.
 
 # Standard library imports.
 import datetime
+import os
 
 # Third-party imports.
-from flask import Blueprint, render_template, request, jsonify, abort, redirect, url_for, flash
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    jsonify,
+    abort,
+    redirect,
+    url_for,
+    flash,
+    current_app
+)
 from flask_login import login_required, current_user
+from werkzeug.utils import secure_filename
 
 # Local application imports.
 from app.extensions import db
-from app.models import Users, Meetings, Attendees, Minutes
+from app.models import Users, Meetings, Attendees, Minutes, Attachments
 from app.utils import generate_meeting_code, sha_hash
 from app.__init__ import admin_required
 
@@ -33,12 +45,14 @@ def admin_dashboard(meeting_id):
     meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
     attendees = Attendees.query.filter_by(meeting = meeting_id).all()
     minutes = Minutes.query.filter_by(meeting = meeting_id).all()
+    attachments = Attachments.query.filter_by(meeting = meeting_id).all()
     return render_template(
         "admin/dashboard.html",
         page_title = f"Meeting - {meeting.title}",
         meeting = meeting,
         attendees = attendees,
-        minutes = minutes
+        minutes = minutes,
+        attachments = attachments
     )
 
 @admin_bp.route("/create/", methods = ["POST"])
@@ -304,6 +318,66 @@ def event_minutes(meeting_id, minutes_id = None):
             "message": "Specified meeting does not exist."
         }
         return jsonify(return_data), 400
+
+@admin_bp.route("/add-attachment/<int:meeting_id>/", methods = ["POST"])
+@login_required
+@admin_required
+def event_add_attachment(meeting_id):
+    """ Add an attachment to a single meeting from the administrator dashboard. """
+    if Meetings.query.filter_by(id = meeting_id).first() is not None:
+        if 'file' not in request.files:
+            return_data = {
+                "success": False,
+                "meeting_id": meeting_id,
+                "message": "No file part in the request."
+            }
+            return jsonify(), 400
+
+        # File was uploaded, so process it.
+        file = request.files['file']
+        if request.files['file'].filename == '':
+            return_data = {
+                "success": False,
+                "meeting_id": meeting_id,
+                "message": "No selected file."
+            }
+            return jsonify(return_data), 400
+        else:
+            # Only permit certain file types.
+            allowed_extensions = ['pptx', 'pdf', 'docx', 'txt', 'png', 'jpg', 'jpeg', 'gif']
+            if file.filename.lower().split('.')[-1] in allowed_extensions:
+                # Save the file to the docker volume directory and database.
+                filename = secure_filename(file.filename)
+                file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
+                attachment = Attachments(
+                    meeting = meeting_id,
+                    filename = file.filename,
+                    filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename),
+                )
+                db.session.add(attachment)
+                db.session.commit()
+                return_data = {
+                    "success": True,
+                    "meeting_id": meeting_id,
+                    "message": "Attachment added successfully."
+                }
+                return jsonify(return_data), 201
+            else:
+                return_data = {
+                    "success": False,
+                    "meeting_id": meeting_id,
+                    "message": "File type not allowed."
+                }
+                return jsonify(return_data), 400
+    else:
+        # Meeting does not exist.
+        return_data = {
+            "success": False,
+            "meeting_id": meeting_id,
+            "message": "Specified meeting does not exist."
+        }
+        return jsonify(return_data), 400
+
 
 @admin_bp.route("/delete/<int:meeting_id>/", methods = ["POST"])
 @login_required
