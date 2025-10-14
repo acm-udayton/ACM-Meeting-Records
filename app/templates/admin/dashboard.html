@@ -27,13 +27,41 @@
           </form>
         {% endif %}
         </section>
-        <hr class="d-sm-none">
+        <section id="meeting-delete" class="col-lg-8">
+          <button type="button" 
+                  class="form-control form-control-lg" 
+                  data-bs-toggle="modal" 
+                  data-bs-target="#confirmDeleteModal">
+              Delete Meeting
+          </button>
+          <!-- Delete Confirmation Modal -->
+          <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmDeleteModalLabel">Confirm Deletion</h5>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete this meeting? This action cannot be undone.
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" id="meeting-delete-cancel" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    
+                    <form method="POST" id="confirm-delete-form" action="/admin/delete/{{ meeting.id }}/">
+                      <button type="submit" class="btn btn-danger">Delete Permanently</button>
+                    </form>
+                </div>
+              </div>
+            </div>
+          </div>
+          <hr class="d-sm-none">
+        </section>
 
       </aside>
       <main class="col-lg-6">
         <section id="meeting-data" class="text-center">
             <h2>{{ meeting.title }}</h2>
-            <h5>{{ meeting.event_start|default("Start Time Unavailable", true) }} - {{ meeting.event_end|default("End Time Unavailable", true) }}<br/>{{ meeting.host }}</h5>
+            <h5>{{ meeting.event_start|datetime_format|default("Start Time Unavailable", true) }} - {{ meeting.event_end|datetime_format|default("End Time Unavailable", true) }}<br/>{{ meeting.host }}</h5>
             <p>{{ meeting.description }}</p>
             <hr>
         </section>
@@ -58,15 +86,48 @@
               </form>
               <br/>
             </article>
-
         {% endif %}
+        <article id="meeting-attachments">
+          <h5>Attachments</h5>
+          <ul id="attachment-list">
+          {% if attachments|length > 0 %}
+            {% for attachment in attachments %}
+              <li id="attachment-{{ attachment.id }}">
+                <a href="/uploads/meeting-{{ meeting.id }}-{{ attachment.filename }}" target="_blank">{{ attachment.filename }}</a>
+                <i class="fa-solid fa-trash remove-attachment-ajax" 
+                  data-url="/admin/remove-attachment/{{ meeting.id }}/{{ attachment.id }}/"
+                  style="cursor: pointer;">
+                </i>
+              </li>
+            {% endfor %}
+          {% else %}
+            <li id="no-attachments-found">No Attachments Found</li>
+          {% endif %}
+          </ul>
+          <form method="POST" 
+              id="attachment-upload-form" 
+              enctype="multipart/form-data" 
+              action="/admin/add-attachment/{{ meeting.id }}/" 
+              class="col-12 mt-3">
+            <div class="input-group">
+              <input type="file" name="file" class="form-control" id="file-input" required>
+              <button type="submit" class="btn btn-secondary" id="upload-button">Upload</button>
+            </div>
+          </form>
+          <br>
+        </article>
+
       </main>
       <aside class="col-lg-3 text-lg-end">
         <h5>Meeting Attendees</h5>
         <p id="attendee-list">
         {% if attendees|length > 0 %}
             {% for attendee in attendees %}
-                {{attendee.username}}<br/>
+                <span id="attendee-{{ attendee.id }}">
+                  {{attendee.username}} 
+                  <i class="fa-solid fa-user-minus remove-attendee-ajax" data-url="/admin/remove-attendee/{{ meeting.id }}/{{ attendee.id }}"></i>
+                </span>
+                <br/>
             {% endfor %}
         {% endif %}
         </p>

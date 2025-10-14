@@ -10,19 +10,19 @@
           {% endblock %}
             <form action="/admin/create/" id="meeting-create-form" method="POST" class="col-lg-12">
               <div class="form-floating mb-3 mt-3">
-                <input type="text" class="form-control form-control-lg" placeholder="Meeting Title" name="meeting_title" id="meeting_title" autocomplete="off">
+                <input type="text" class="form-control form-control-lg" placeholder="Meeting Title" name="meeting_title" id="meeting_title" autocomplete="off" required>
                 <label for="meeting_title">Meeting Title</label>
               </div>
               <div class="form-floating mb-3 mt-3">
-                <input type="text" class="form-control form-control-lg" placeholder="Meeting Description" name="meeting_description" id="meeting_description" autocomplete="off">
+                <input type="text" class="form-control form-control-lg" placeholder="Meeting Description" name="meeting_description" id="meeting_description" autocomplete="off" required>
                 <label for="meeting_description">Meeting Description</label>
               </div>
               <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" id="meeting_admin_only" name="meeting_admin_only">
                 <label class="form-check-label" for="meeting_admin_only">Admin-only Meeting</label>
               </div>
-
-            <button type="submit" class="form-control form-control-lg">Create Meeting</button>
+              <br>
+            <button type="submit" class="form-control form-control-lg"><strong>Create Meeting</strong></button>
           </form>
 
 
@@ -35,9 +35,9 @@
             <br/>
             <article>
               <h3 class="h5">{{ meeting.title }}</h3>
-              <div class="fakeimg">{{ meeting.event_start|default("Start Time Unavailable", true) }} - {{ meeting.event_end|default("End Time Unavailable", true) }}</div>
+              <div class="fakeimg">{{ meeting.event_start|datetime_format|default("Start Time Unavailable", true) }} - {{ meeting.event_end|datetime_format|default("End Time Unavailable", true) }}</div>
               <p>{{ meeting.description }}</p>
-              <a href="/event/{{ meeting.id }}"><button role="button" class="btn btn-primary">Meeting Details ></button></a>
+              <a href="/event/{{ meeting.id }}"><button role="button" class="btn btn-primary blue-link-btn">Meeting Details ></button></a>
             </article>
           {% endfor %}
         {% else %}
