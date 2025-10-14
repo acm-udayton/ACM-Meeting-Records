@@ -4,16 +4,22 @@ services:
     build: .
     ports:
       - "8000:8000"
-    command: gunicorn --bind 0.0.0.0:8000 --workers 1 --access-logfile - --log-level debug app.app:app
+    command: gunicorn --bind 0.0.0.0:8000 --workers 5 --access-logfile - --log-level debug 'app:create_app()'
     depends_on:
       db:
         condition: service_healthy
     environment:
       - DATABASE_URL=postgresql://admin:password@db:5432/acm-meetings-db
-      - FLASK_APP=app.web:app
+      - FLASK_APP=app
+      - TZ=America/New_York
+      - UPLOAD_FOLDER=/app/uploads
+    volumes:
+      - ./app/uploads:/app/uploads
   db:
     image: postgres:13
     container_name: acm-meeting-records-db
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: password
