@@ -24,4 +24,4 @@
               pip install pylint
 
           - name: Run Pylint
-            run: timeout 10m pylint --fail-under=9.5 $(find . -name "*.py")
+            run: timeout 10m pylint --rcfile=.github/workflows/.pylintrc $(find . -name "*.py")
