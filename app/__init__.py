@@ -127,8 +127,10 @@ def create_app():
                                 "instagram": os.getenv("INSTAGRAM_URL"),
                                 "github": os.getenv("GITHUB_URL")
                             }
-    app.context["details"] = {"location": os.getenv("MEETING_LOCATION"),
-                                "email": os.getenv("CONTACT_EMAIL")
+    app.context["details"] = {
+                                "location": os.getenv("MEETING_LOCATION"),
+                                "email": os.getenv("CONTACT_EMAIL"),
+                                "organization": os.getenv("ORGANIZATION_NAME")
                             }
     app.context["source"] = os.getenv("GITHUB_SOURCE")
     app.logs["error"] = os.getenv("ERROR_LOG_PATH")
@@ -148,6 +150,7 @@ def create_app():
                         social_github = app.context["socials"]["github"],
                         contact_location = app.context["details"]["location"],
                         contact_email = app.context["details"]["email"],
+                        organization_name = app.context["details"]["organization"],
                         current_user = current_user,
                         )
         return context
