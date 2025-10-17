@@ -54,7 +54,7 @@ def home():
 @main_bp.route("/events/")
 def events_list():
     """ Show the event list page. """
-    all_meetings = Meetings.query.all()
+    all_meetings = Meetings.query.order_by(desc(Meetings.id)).all()
     visible_meetings = []
     if current_user.is_authenticated and current_user.role == "admin":
         return render_template("events.html", page_title = "Meetings", meetings = all_meetings)

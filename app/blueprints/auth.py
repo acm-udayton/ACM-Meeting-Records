@@ -71,6 +71,14 @@ def sign_up():
                 "User creation failed. Username already registered. "
                 "Try logging in instead or contact an administrator.")
             return redirect(url_for("auth.sign_up"))
+        elif (current_app.context["usernames"]["enforce_usernames"] == "True" and
+              not uname.endswith(
+                  current_app.context["usernames"]["username_email_domain"])):
+            flash(
+                ("User creation failed. Username must end with "
+                f"{current_app.context['usernames']['username_email_domain']}.")
+                )
+            return redirect(url_for("auth.sign_up"))
         elif pword != conf_pword:
             flash("User creation failed. Passwords do not match.")
             return redirect(url_for("auth.sign_up"))
