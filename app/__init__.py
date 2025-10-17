@@ -132,6 +132,10 @@ def create_app():
                                 "email": os.getenv("CONTACT_EMAIL"),
                                 "organization": os.getenv("ORGANIZATION_NAME")
                             }
+    app.context["usernames"] = {
+                                "enforce_usernames": os.getenv("ENFORCE_USERNAMES"),
+                                "username_email_domain": os.getenv("USERNAME_EMAIL_DOMAIN")
+                            }
     app.context["source"] = os.getenv("GITHUB_SOURCE")
     app.logs["error"] = os.getenv("ERROR_LOG_PATH")
     app.logs["login"] = os.getenv("LOGIN_LOG_PATH")
