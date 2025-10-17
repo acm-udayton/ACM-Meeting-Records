@@ -4,7 +4,7 @@ services:
     build: .
     ports:
       - "8000:8000"
-    command: gunicorn --bind 0.0.0.0:8000 --workers 5 --access-logfile - --log-level debug 'app:create_app()'
+    command: gunicorn --bind 0.0.0.0:8000 --workers 10 --access-logfile - --log-level debug 'app:create_app()'
     depends_on:
       db:
         condition: service_healthy
