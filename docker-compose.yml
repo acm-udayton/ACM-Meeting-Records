@@ -2,31 +2,32 @@ services:
   web:
     container_name: acm-meeting-records-web
     build: .
-    ports:
+    ports: # Expose the web app on port 8000.
       - "8000:8000"
+    # Run the flask app within Gunicorn WQGI server with 10 workers.
     command: gunicorn --bind 0.0.0.0:8000 --workers 10 --access-logfile - --log-level debug 'app:create_app()'
-    depends_on:
+    depends_on: # Ensure the DB is available before starting the web app.
       db:
         condition: service_healthy
-    environment:
+    environment: # Specify environment variables for the web app.
       - DATABASE_URL=postgresql://admin:password@db:5432/acm-meetings-db
       - FLASK_APP=app
       - TZ=America/New_York
       - UPLOAD_FOLDER=/app/uploads
-    volumes:
+    volumes: # Mount a volume for persistent uploads storage.
       - ./app/uploads:/app/uploads
   db:
     image: postgres:13
     container_name: acm-meeting-records-db
-    ports:
+    ports: # Expose Postgres port for external access if needed.
       - "5432:5432"
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: password
       POSTGRES_DB: acm-meetings-db
-    volumes:
+    volumes: # Mount a volume for persistent database storage.
       - ./postgres_data:/var/lib/postgresql/data
-    healthcheck: # <--- NEW: Define how to check if the DB is ready
+    healthcheck: # Define how to check if the DB is ready.
       test: ["CMD-SHELL", "pg_isready -U admin -d acm-meetings-db"]
       interval: 5s
       timeout: 5s
