@@ -106,6 +106,7 @@ def create_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("SQLALCHEMY_DATABASE_URI")
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
     app.config["UPLOAD_FOLDER"] = os.getenv("UPLOAD_FOLDER")
+    app.config["TOTP_ISSUER_NAME"] = f"Meeting Records - {os.getenv('ORGANIZATION_NAME')}"
 
     # Initialize the app extensions.
     db.init_app(app)

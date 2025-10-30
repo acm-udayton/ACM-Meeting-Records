@@ -10,7 +10,9 @@ File Purpose: Create the database models for the project.
 """
 
 # Third-party imports.
+from flask import current_app
 from flask_login import UserMixin
+import pyotp
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # Local application imports.
@@ -26,6 +28,11 @@ class Users(UserMixin, db.Model):
     joined = db.Column(db.String(7), nullable = True) # Store FA|SP YYYY
     graduated = db.Column(db.String(7), nullable = True) # Store FA|SP YYYY
 
+    mfa_active = db.Column(db.Boolean, nullable = True, default = False)
+    totp_secret = db.Column(db.String(16), nullable = True)
+    totp_active = db.Column(db.Boolean, nullable = True, default = False)
+    recovery_codes = db.Column(db.Text, nullable = True) # Store as JSON object.
+
     def set_password(self, password):
         """Werkzeug automatically generates a cryptographically secure salt
         and incorporates it into the returned hash string."""
@@ -36,6 +43,20 @@ class Users(UserMixin, db.Model):
         and hashes the input password for comparison."""
         return check_password_hash(self.password, password)
 
+    def generate_totp_secret(self):
+        """ Generate a new OTP secret for the user. """
+        self.totp_secret = pyotp.random_base32()
+
+    def get_topt_uri(self):
+        """ Get the OTP URI for the user. """
+        issuer_name = current_app.config.get("TOTP_ISSUER_NAME")
+        totp = pyotp.TOTP(self.otp_secret)
+        return totp.provisioning_uri(name=self.username, issuer_name=issuer_name)
+
+    def verify_totp(self, token):
+        """ Check against the current token AND tokens immediately before/after (drift) """
+        return pyotp.totp.TOTP(self.totp_secret).verify(token, valid_window=1)
+
 
     def to_dict(self):
         """ Get user data values as a dictionary. """
@@ -44,7 +65,9 @@ class Users(UserMixin, db.Model):
                 "password": self.password,
                 "role": self.role,
                 "joined": self.joined,
-                "graduated": self.graduated}
+                "graduated": self.graduated,
+                "otp_secret": self.otp_secret,
+                "otp_active": self.otp_active}
 
 class Meetings(db.Model):
     """ Store a list of meetings. """
