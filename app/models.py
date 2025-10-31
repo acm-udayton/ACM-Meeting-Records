@@ -29,7 +29,7 @@ class Users(UserMixin, db.Model):
     graduated = db.Column(db.String(7), nullable = True) # Store FA|SP YYYY
 
     mfa_active = db.Column(db.Boolean, nullable = True, default = False)
-    totp_secret = db.Column(db.String(16), nullable = True)
+    totp_secret = db.Column(db.String(32), nullable = True)
     totp_active = db.Column(db.Boolean, nullable = True, default = False)
     recovery_codes = db.Column(db.Text, nullable = True) # Store as JSON object.
 
@@ -47,10 +47,10 @@ class Users(UserMixin, db.Model):
         """ Generate a new OTP secret for the user. """
         self.totp_secret = pyotp.random_base32()
 
-    def get_topt_uri(self):
+    def get_totp_uri(self):
         """ Get the OTP URI for the user. """
         issuer_name = current_app.config.get("TOTP_ISSUER_NAME")
-        totp = pyotp.TOTP(self.otp_secret)
+        totp = pyotp.TOTP(self.totp_secret)
         return totp.provisioning_uri(name=self.username, issuer_name=issuer_name)
 
     def verify_totp(self, token):
