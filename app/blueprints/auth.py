@@ -31,7 +31,7 @@ import qrcode
 
 # Local application imports.
 from app.extensions import db
-from app.models import Users
+from app.models import Users, RecoveryCodes
 
 auth_bp = Blueprint('auth', __name__, template_folder='templates')
 
@@ -73,7 +73,62 @@ def login():
     else:
         return render_template("login.html", page_title = "User Log In")
 
-@auth_bp.route('/verify-2fa', methods=['GET', 'POST'])
+@auth_bp.route('/reset-recovery-codes/', methods=['GET'])
+def reset_recovery_codes():
+    """ Generate new recovery codes for the user. """
+    # Clear old codes and generate new codes.
+    for old_code in RecoveryCodes.query.filter_by(user_id=current_user.id).all():
+        db.session.delete(old_code)
+
+    # Store codes for display in template.
+    codes = ""
+
+    # Create 10 new codes.
+    for _ in range(10):
+        new_code = RecoveryCodes(user_id=current_user.id)
+        code_value = new_code.generate_code()
+        db.session.add(new_code)
+        codes += f"{code_value}\t" if not codes.endswith("\t") else f"{code_value}\n"
+
+    # Save to database.
+    db.session.commit()
+    return f"<h1>New Recovery Codes</h1><p>Store these codes securely. Each code can be used once.</p><pre>{codes}</pre>"
+
+@auth_bp.route('/verify-recovery-code/', methods=['GET', 'POST'])
+def verify_recovery_code():
+    """ Authenticate with a recovery code during 2FA login. """
+    user_id = session.get('2fa_user_id')
+    if not user_id:
+        flash('You must log in before using a recovery code.', 'warning')
+        return redirect(url_for('auth.login'))
+
+    user = Users.query.get(user_id)
+    if not user:
+        flash('User not found.', 'danger')
+        return redirect(url_for('auth.login'))
+
+    if request.method == 'POST':
+        code = request.form.get('recovery_code')
+        recovery_code_entry = RecoveryCodes.query.filter_by(user_id=user.id).all()
+        for entry in recovery_code_entry:
+            if entry.check_code(code):
+                # Code used, so delete it.
+                db.session.delete(entry)
+                db.session.commit()
+                login_user(user)
+                session.pop('2fa_user_id', None)
+                current_app.logger.info(
+                    "Login attempt as %s from IP %s - success with recovery code",
+                    user.username,
+                    request.remote_addr
+                )
+                return redirect(url_for('main.home'))
+        flash('Invalid recovery code.', 'danger')
+
+    return '<h1>Recovery Code Verification</h1><p>Enter one of your recovery codes:</p><form method="POST"><input name="recovery_code" placeholder="Recovery code"><br><button type="submit">Verify</button></form>'
+
+
+@auth_bp.route('/verify-2fa/', methods=['GET', 'POST'])
 def verify_2fa():
     """ Handle the 2FA verification step during login. """
     # Ensure the user has passed the password stage
@@ -108,7 +163,7 @@ def verify_2fa():
     return '<h1>2FA Verification</h1><p>Enter the code from your Authenticator App:</p><form method="POST"><input name="token" placeholder="6-digit code"><br><button type="submit">Verify</button></form>'
 
 
-@auth_bp.route('/setup-2fa')
+@auth_bp.route('/setup-2fa/')
 @login_required
 def setup_2fa():
     """ Setup Two-Factor Authentication for the current user. """
@@ -143,7 +198,7 @@ def setup_2fa():
         <button type="submit">Verify Setup</button>
     </form>
     '''
-@auth_bp.route('/verify-setup', methods=['POST'])
+@auth_bp.route('/verify-setup/', methods=['POST'])
 @login_required
 def verify_setup():
     """ Verify the TOTP code entered by the user during 2FA setup. """
@@ -169,7 +224,7 @@ def verify_setup():
         return redirect(url_for('auth.setup_2fa'))
 
 
-@auth_bp.route('/disable-2fa')
+@auth_bp.route('/disable-2fa/')
 @login_required
 def disable_2fa():
     """ Disable Two-Factor Authentication for the current user. """

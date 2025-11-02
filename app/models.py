@@ -8,11 +8,14 @@ Last Modified: 10/7/2025
 
 File Purpose: Create the database models for the project.
 """
+# Standard library imports.
+import secrets
 
 # Third-party imports.
 from flask import current_app
 from flask_login import UserMixin
 import pyotp
+
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # Local application imports.
@@ -31,7 +34,6 @@ class Users(UserMixin, db.Model):
     mfa_active = db.Column(db.Boolean, nullable = True, default = False)
     totp_secret = db.Column(db.String(32), nullable = True)
     totp_active = db.Column(db.Boolean, nullable = True, default = False)
-    recovery_codes = db.Column(db.Text, nullable = True) # Store as JSON object.
 
     def set_password(self, password):
         """Werkzeug automatically generates a cryptographically secure salt
@@ -68,6 +70,28 @@ class Users(UserMixin, db.Model):
                 "graduated": self.graduated,
                 "otp_secret": self.otp_secret,
                 "otp_active": self.otp_active}
+
+class RecoveryCodes(db.Model):
+    """ Store recovery codes for users. """
+    id = db.Column(db.Integer, primary_key = True, nullable = False)
+    user_id = db.Column(db.Integer, nullable = False)
+    code_hash = db.Column(db.String(255), nullable = True)
+
+    def generate_code(self):
+        """ Initialize a recovery code for a user. """
+        code = secrets.token_urlsafe(8)
+        self.code_hash = generate_password_hash(code, method='scrypt', salt_length=16)
+        return code 
+    
+    def check_code(self, code):
+        """ Verify a recovery code for a user. """
+        return check_password_hash(self.code_hash, code)
+
+    def to_dict(self):
+        """ Get recovery code data values as a dictionary. """
+        return {"id": self.id,
+                "user_id": self.user_id,
+                "code_hash": self.code_hash}
 
 class Meetings(db.Model):
     """ Store a list of meetings. """
