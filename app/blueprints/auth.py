@@ -125,7 +125,7 @@ def verify_recovery_code():
                 return redirect(url_for('main.home'))
         flash('Invalid recovery code.', 'danger')
 
-    return '<h1>Recovery Code Verification</h1><p>Enter one of your recovery codes:</p><form method="POST"><input name="recovery_code" placeholder="Recovery code"><br><button type="submit">Verify</button></form>'
+    return render_template('auth/verify-code.html', page_title='Verify Recovery Code')
 
 
 @auth_bp.route('/verify-2fa/', methods=['GET', 'POST'])
@@ -160,8 +160,7 @@ def verify_2fa():
 
         flash('Invalid 2FA code.', 'danger')
 
-    return '<h1>2FA Verification</h1><p>Enter the code from your Authenticator App:</p><form method="POST"><input name="token" placeholder="6-digit code"><br><button type="submit">Verify</button></form>'
-
+    return render_template('auth/verify-2fa.html', page_title='Two-Factor Authentication')
 
 @auth_bp.route('/setup-2fa/')
 @login_required
@@ -198,6 +197,7 @@ def setup_2fa():
         <button type="submit">Verify Setup</button>
     </form>
     '''
+
 @auth_bp.route('/verify-setup/', methods=['POST'])
 @login_required
 def verify_setup():

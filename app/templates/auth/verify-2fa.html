@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block header_styles %}
+<link href="{{ url_for('static', filename='css/forms.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block page_content %}
+  <main class="main">
+    <section id="form-context" class="d-grid justify-content-center text-center">
+      <h2>Account Login</h2>
+      <span>Having trouble verifying? Try <a href="/verify-recovery-code">another way</a> instead!</span>
+    </section>
+    <section id="form" class="d-flex justify-content-center">
+      <form action="/verify-2fa" method="POST" class="col-6">
+          <div class="form-floating mb-3 mt-3">
+            <input type="text" class="form-control form-control-lg" placeholder="6-digit code" name="token" id="token" autocomplete="off">
+            <label for="token">Authenticator App Code</label>
+          </div>
+
+        <button type="submit" class="form-control form-control-lg">Log In</button>
+      </form>
+    </section>
+  </main>
+
+{% endblock %}
