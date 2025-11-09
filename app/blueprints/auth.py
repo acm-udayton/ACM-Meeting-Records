@@ -92,7 +92,7 @@ def reset_recovery_codes():
 
     # Save to database.
     db.session.commit()
-    return f"<h1>New Recovery Codes</h1><p>Store these codes securely. Each code can be used once.</p><pre>{codes}</pre>"
+    return render_template("auth/reset-codes.html", page_title="Recovery Codes", codes=codes)
 
 @auth_bp.route('/verify-recovery-code/', methods=['GET', 'POST'])
 def verify_recovery_code():
