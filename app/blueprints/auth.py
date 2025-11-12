@@ -41,10 +41,12 @@ def login():
         if user is not None:
             if user.check_password(request.form["password"]):
                 # Check if 2FA is enabled for the user.
-                if user.totp_active:
+                if user.two_factor_enabled:
                     # Store the user ID in the session temporarily - do not login yet.
                     session['2fa_user_id'] = user.id
                     return redirect(url_for('auth.verify_2fa'))
+                
+                flash("Please enable two-factor authentication for this administrator account!")
                 login_user(user)
                 current_app.logger.info(
                     "Login attempt as %s from IP %s - success",
