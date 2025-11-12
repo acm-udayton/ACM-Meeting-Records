@@ -175,8 +175,10 @@ def create_app():
     from .blueprints.auth import auth_bp
     from .blueprints.main import main_bp
     from .blueprints.api import api_bp
+    from .blueprints.mfa import mfa_bp
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(auth_bp)
+    app.register_blueprint(mfa_bp, url_prefix="/mfa")
     app.register_blueprint(main_bp)
     app.register_blueprint(api_bp, url_prefix="/api")
 
