@@ -8,7 +8,7 @@
   <main class="main">
     <section id="form-context" class="d-grid justify-content-center text-center">
       <h2>Account Login</h2>
-      <span>Having trouble verifying? Try <a href="{{ url_for('mfa.verify_2fa') }}">another way</a> instead!</span>
+      <span>Having trouble verifying? Try <a href="{{ url_for('mfa.verify_totp') }}">another way</a> instead!</span>
     </section>
     <section id="form" class="d-flex justify-content-center">
       <form action="{{ url_for('mfa.verify_recovery_code') }}" method="POST" class="col-6">

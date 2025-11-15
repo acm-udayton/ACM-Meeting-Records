@@ -42,6 +42,10 @@ def reset_recovery_codes():
     # Clear old codes and generate new codes.
     for old_code in RecoveryCodes.query.filter_by(user_id=current_user.id).all():
         db.session.delete(old_code)
+    
+    # Ensure MFA is active for the user.
+    user = Users.query.get(current_user.id)
+    user.mfa_active = True
 
     # Store codes for display in template.
     codes = ""
@@ -90,10 +94,9 @@ def verify_recovery_code():
 
     return render_template('auth/verify-code.html', page_title='Verify Recovery Code')
 
-
-@mfa_bp.route('/verify-2fa/', methods=['GET', 'POST'])
-def verify_2fa():
-    """ Handle the 2FA verification step during login. """
+@mfa_bp.route('/verify-totp/', methods=['GET', 'POST'])
+def verify_totp():
+    """ Handle the TOTP verification step during login. """
     # Ensure the user has passed the password stage
     user_id = session.get('2fa_user_id')
     print(f"User ID: {user_id}")
@@ -125,13 +128,13 @@ def verify_2fa():
 
     return render_template('auth/verify-2fa.html', page_title='Two-Factor Authentication')
 
-@mfa_bp.route('/setup-2fa/')
+@mfa_bp.route('/setup-totp/')
 @login_required
-def setup_2fa():
+def setup_totp():
     """ Setup Two-Factor Authentication for the current user. """
     # If 2FA is already enabled, just show the status and offer to disable/re-setup.
     if current_user.totp_active:
-        return '<h1>2FA is Enabled</h1><p>You can regenerate your key if needed.</p><a href="/disable-2fa">Disable 2FA</a>'
+        return '<h1>2FA is Enabled</h1><p>You can regenerate your key if needed.</p><a href="/disable-totp">Disable 2FA</a>'
 
     # 1. Get the provisioning URI
     current_user.generate_totp_secret()
@@ -155,15 +158,15 @@ def setup_2fa():
     <p>Scan this QR code with your authenticator app (e.g., Google Authenticator, Authy).</p>
     <img src="data:image/png;base64,{qr_data}" alt="QR Code">
     <p>Alternatively, enter the secret key manually: <strong>{current_user.totp_secret}</strong></p>
-    <form action="{url_for('mfa.verify_setup')}" method="POST">
+    <form action="{url_for('mfa.verify_totp_setup')}" method="POST">
         <input name="token" placeholder="Enter code from app to confirm setup">
         <button type="submit">Verify Setup</button>
     </form>
     '''
 
-@mfa_bp.route('/verify-setup/', methods=['POST'])
+@mfa_bp.route('/verify-totp-setup/', methods=['POST'])
 @login_required
-def verify_setup():
+def verify_totp_setup():
     """ Verify the TOTP code entered by the user during 2FA setup. """
     token = request.form.get('token')
 
@@ -172,11 +175,12 @@ def verify_setup():
 
     if not secret:
         flash('2FA setup session expired. Start over.', 'danger')
-        return redirect(url_for('mfa.setup_2fa'))
+        return redirect(url_for('mfa.setup_totp'))
 
     # Create a TOTP object with the secret from the session and verify the code
     if pyotp.TOTP(secret).verify(token):
         # Finalize setup: save the secret (already on the model) and enable 2FA
+        current_user.mfa_active = True
         current_user.totp_active = True
         db.session.commit()
         flash('Two-Factor Authentication successfully enabled!', 'success')
@@ -184,15 +188,26 @@ def verify_setup():
     else:
         # If verification fails, we don't save the secret or enable 2FA
         flash('Invalid code. Please try scanning and verifying again.', 'danger')
-        return redirect(url_for('mfa.setup_2fa'))
+        return redirect(url_for('mfa.setup_totp'))
 
 
-@mfa_bp.route('/disable-2fa/')
+@mfa_bp.route('/disable-totp/')
 @login_required
-def disable_2fa():
+def disable_totp():
     """ Disable Two-Factor Authentication for the current user. """
     current_user.totp_active = False
     current_user.generate_totp_secret()
     db.session.commit()
-    flash('Two-Factor Authentication has been disabled.', 'success')
+    flash('Two-Factor TOTP Authentication has been disabled.', 'success')
+    return redirect(url_for('main.home'))
+
+@mfa_bp.route('/disable-mfa/')
+@login_required
+def disable_mfa():
+    """ Disable Multi-Factor Authentication for the current user. """
+    current_user.mfa_active = False
+    current_user.totp_active = False
+    current_user.totp_secret = None
+    db.session.commit()
+    flash('Multi-Factor Authentication has been disabled.', 'success')
     return redirect(url_for('main.home'))

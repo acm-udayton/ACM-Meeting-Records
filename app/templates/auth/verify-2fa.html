@@ -11,7 +11,7 @@
       <span>Having trouble verifying? Try <a href="{{ url_for('mfa.verify_recovery_code') }}">another way</a> instead!</span>
     </section>
     <section id="form" class="d-flex justify-content-center">
-      <form action="{{ url_for('mfa.verify_2fa') }}" method="POST" class="col-6">
+      <form action="{{ url_for('mfa.verify_totp') }}" method="POST" class="col-6">
           <div class="form-floating mb-3 mt-3">
             <input type="text" class="form-control form-control-lg" placeholder="6-digit code" name="token" id="token" autocomplete="off">
             <label for="token">Authenticator App Code</label>

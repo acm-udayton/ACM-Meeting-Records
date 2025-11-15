@@ -44,7 +44,10 @@ def login():
                 if user.mfa_active:
                     # Store the user ID in the session temporarily - do not login yet.
                     session['2fa_user_id'] = user.id
-                    return redirect(url_for('auth.verify_2fa'))
+                    if user.totp_active:
+                        return redirect(url_for('mfa.verify_totp'))
+                    else:
+                        return redirect(url_for('mfa.verify_recovery_code'))
                 
                 if user.role == "admin":
                     flash("Please enable multi-factor authentication for this administrator account!")
