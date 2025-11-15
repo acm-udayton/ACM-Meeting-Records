@@ -17,6 +17,7 @@
                     <th scope="col">End Semester</th>
                     <th scope="col">Role</th>
                     <th scope="col">Reset Password</th>
+                    <th scope="col">MFA Status</th>
                     </tr>
                 </thead>
                 
@@ -46,6 +47,17 @@
                                 <input type="password" name="new_password" id="new_password" value=""/>
                                 <button type="submit" class="btn btn-sm green-link-btn"><i class="fa fa-key"></i></button>
                             </form>
+                        </td>
+                        <td>
+                            {% if user.mfa_active %}
+                            <form method="post" action="/admin/users/disable-mfa/{{ user.id }}">
+                                <button type="submit" class="btn btn-sm green-link-btn container d-flex justify-content-center align-items-center"><i class="ud-red-text fa fa-lock"></i></button>
+                            </form>
+                            {% else %}
+                            <div class="container d-flex justify-content-center align-items-center">
+                                <i class="ud-blue-text fa fa-unlock"></i>
+                            </div>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}

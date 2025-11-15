@@ -486,3 +486,20 @@ def demote_user(user_id):
     else:
         flash(f"User {user.username} is already a user.")
         return redirect(url_for("admin.users_list"))
+
+@admin_bp.route("/users/disable-mfa/<int:user_id>/", methods = ["POST"])
+@login_required
+@admin_required
+def disable_user_mfa(user_id):
+    """ Disable two-factor authentication for a user. """
+    user = Users.query.filter_by(id = user_id).first_or_404()
+    if user.mfa_active:
+        user.mfa_active = False
+        user.totp_active = False
+        user.totp_secret = None
+        db.session.commit()
+        flash(f"Two-factor authentication for user {user.username} disabled successfully.")
+        return redirect(url_for("admin.users_list"))
+    else:
+        flash(f"User {user.username} does not have two-factor authentication enabled.")
+        return redirect(url_for("admin.users_list"))
