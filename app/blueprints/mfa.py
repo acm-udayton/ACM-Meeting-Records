@@ -59,7 +59,7 @@ def reset_recovery_codes():
 
     # Save to database.
     db.session.commit()
-    return render_template("auth/reset-codes.html", page_title="Recovery Codes", codes=codes)
+    return render_template("auth/reset-codes.html", page_title="MFA Recovery Codes", codes=codes)
 
 @mfa_bp.route('/verify-recovery-code/', methods=['GET', 'POST'])
 def verify_recovery_code():
@@ -92,7 +92,7 @@ def verify_recovery_code():
                 return redirect(url_for('main.home'))
         flash('Invalid recovery code.', 'danger')
 
-    return render_template('auth/verify-code.html', page_title='Verify Recovery Code')
+    return render_template('auth/verify-code.html', page_title='Verify MFA Recovery Code')
 
 @mfa_bp.route('/verify-totp/', methods=['GET', 'POST'])
 def verify_totp():
@@ -126,7 +126,7 @@ def verify_totp():
 
         flash('Invalid TOTP MFA code.', 'danger')
 
-    return render_template('auth/verify-totp.html', page_title='Two-Factor Authentication')
+    return render_template('auth/verify-totp.html', page_title='Verify MFA TOTP Code')
 
 @mfa_bp.route('/setup-totp/')
 @login_required
@@ -156,6 +156,7 @@ def setup_totp():
     session['mfa_setup_secret'] = current_user.totp_secret
 
     return render_template('auth/setup-totp.html',
+                           page_title='Setup TOTP MFA',
                            qr_data=qr_data,
                            totp_secret=current_user.totp_secret)
 
@@ -178,7 +179,11 @@ def verify_totp_setup():
         current_user.mfa_active = True
         current_user.totp_active = True
         db.session.commit()
-        flash('Two-Factor Authentication successfully enabled!', 'success')
+        flash('TOTP MFA successfully enabled!', 'success')
+
+        # Prompt user to set up recovery codes if not already present.
+        if not RecoveryCodes.query.filter_by(user_id=current_user.id).first():
+            return redirect(url_for('mfa.reset_recovery_codes'))
         return redirect(url_for('auth.my_account'))
     else:
         # If verification fails, we don't save the secret or enable MFA
@@ -203,6 +208,7 @@ def disable_mfa():
     current_user.mfa_active = False
     current_user.totp_active = False
     current_user.totp_secret = None
+    RecoveryCodes.query.filter_by(user_id=current_user.id).delete()
     db.session.commit()
     flash('Multi-Factor Authentication has been disabled.', 'success')
     return redirect(url_for('auth.my_account'))
