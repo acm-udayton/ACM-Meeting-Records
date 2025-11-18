@@ -40,10 +40,10 @@ def login():
         user = Users.query.filter_by(username = request.form["username"]).first()
         if user is not None:
             if user.check_password(request.form["password"]):
-                # Check if 2FA is enabled for the user.
+                # Check if MFA is enabled for the user.
                 if user.mfa_active:
                     # Store the user ID in the session temporarily - do not login yet.
-                    session['2fa_user_id'] = user.id
+                    session['mfa_user_id'] = user.id
                     if user.totp_active:
                         return redirect(url_for('mfa.verify_totp'))
                     else:

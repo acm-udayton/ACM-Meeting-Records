@@ -63,8 +63,8 @@ def reset_recovery_codes():
 
 @mfa_bp.route('/verify-recovery-code/', methods=['GET', 'POST'])
 def verify_recovery_code():
-    """ Authenticate with a recovery code during 2FA login. """
-    user_id = session.get('2fa_user_id')
+    """ Authenticate with a recovery code during MFA login. """
+    user_id = session.get('mfa_user_id')
     if not user_id:
         flash('You must log in before using a recovery code.', 'warning')
         return redirect(url_for('auth.login'))
@@ -83,7 +83,7 @@ def verify_recovery_code():
                 db.session.delete(entry)
                 db.session.commit()
                 login_user(user)
-                session.pop('2fa_user_id', None)
+                session.pop('mfa_user_id', None)
                 current_app.logger.info(
                     "Login attempt as %s from IP %s - success with recovery code",
                     user.username,
@@ -98,15 +98,15 @@ def verify_recovery_code():
 def verify_totp():
     """ Handle the TOTP verification step during login. """
     # Ensure the user has passed the password stage
-    user_id = session.get('2fa_user_id')
+    user_id = session.get('mfa_user_id')
     print(f"User ID: {user_id}")
     if not user_id:
-        flash('You must log in before using 2FA.', 'warning')
+        flash('You must log in before using TOTP MFA.', 'warning')
         return redirect(url_for('auth.login'))
 
     user = Users.query.get(user_id)
     if not user or not user.totp_active:
-        flash('2FA not required or user not found.', 'danger')
+        flash('TOTP MFA not required or user not found.', 'danger')
         return redirect(url_for('auth.login'))
 
     if request.method == 'POST':
@@ -116,23 +116,23 @@ def verify_totp():
         if user.verify_totp(token):
             # Success - log the user in and clear the temporary session variable
             login_user(user)
-            session.pop('2fa_user_id', None)
+            session.pop('mfa_user_id', None)
             current_app.logger.info(
-                    "Login attempt as %s from IP %s - success with 2FA",
+                    "Login attempt as %s from IP %s - success with TOTP MFA",
                     user.username,
                     request.remote_addr
             )
             return redirect(url_for('main.home'))
 
-        flash('Invalid 2FA code.', 'danger')
+        flash('Invalid TOTP MFA code.', 'danger')
 
-    return render_template('auth/verify-2fa.html', page_title='Two-Factor Authentication')
+    return render_template('auth/verify-totp.html', page_title='Two-Factor Authentication')
 
 @mfa_bp.route('/setup-totp/')
 @login_required
 def setup_totp():
     """ Setup Two-Factor Authentication for the current user. """
-    # If 2FA is already enabled, just show the status and offer to disable/re-setup.
+    # If TOTP MFA is already enabled, just show the status and offer to disable/re-setup.
     if current_user.totp_active:
         
         flash("MFA with TOTP is already enabled. Disable it first please!", 'info')
@@ -153,7 +153,7 @@ def setup_totp():
     qr_data = base64.b64encode(stream.getvalue()).decode('utf-8')
 
     # Store the URI or secret temporarily if needed for verification in a separate route
-    session['2fa_setup_secret'] = current_user.totp_secret
+    session['mfa_setup_secret'] = current_user.totp_secret
 
     return render_template('mfa/setup-totp.html',
                            qr_data=qr_data,
@@ -162,26 +162,26 @@ def setup_totp():
 @mfa_bp.route('/verify-totp-setup/', methods=['POST'])
 @login_required
 def verify_totp_setup():
-    """ Verify the TOTP code entered by the user during 2FA setup. """
+    """ Verify the TOTP code entered by the user during setup. """
     token = request.form.get('token')
 
     # Use the temporary secret stored in the session for verification
-    secret = session.pop('2fa_setup_secret', None)
+    secret = session.pop('mfa_setup_secret', None)
 
     if not secret:
-        flash('2FA setup session expired. Start over.', 'danger')
+        flash('TOTP MFA setup session expired. Start over.', 'danger')
         return redirect(url_for('mfa.setup_totp'))
 
     # Create a TOTP object with the secret from the session and verify the code
     if pyotp.TOTP(secret).verify(token):
-        # Finalize setup: save the secret (already on the model) and enable 2FA
+        # Finalize setup: save the secret (already on the model) and enable MFA
         current_user.mfa_active = True
         current_user.totp_active = True
         db.session.commit()
         flash('Two-Factor Authentication successfully enabled!', 'success')
         return redirect(url_for('auth.my_account'))
     else:
-        # If verification fails, we don't save the secret or enable 2FA
+        # If verification fails, we don't save the secret or enable MFA
         flash('Invalid code. Please try scanning and verifying again.', 'danger')
         return redirect(url_for('mfa.setup_totp'))
 
