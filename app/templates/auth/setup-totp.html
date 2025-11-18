@@ -10,9 +10,9 @@
       <h2>Account MFA Setup - TOTP</h2>
       <span>Set up Time-based One-Time Password (TOTP) as an option for MFA authentication on your account.</span>
     </section>
-    <section id="totp-setup" class="d-flex justify-content-center">
+    <section id="totp-setup" class="justify-content-center text-center">
         <p>Scan this QR code with your authenticator app (e.g., Google Authenticator, Duo Mobile).</p>
-        <img src="data:image/png;base64,{{ qr_data }}" alt="TOTP Setup QR Code">
+        <img src="data:image/png;base64,{{ qr_data }}" alt="TOTP Setup QR Code" class="w-25">
         <p>Alternatively, enter the secret key manually: <strong>{{ totp_secret }}</strong></p>
     </section>
     <section id="form" class="d-flex justify-content-center">
