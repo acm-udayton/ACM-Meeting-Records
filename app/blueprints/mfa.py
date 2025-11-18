@@ -155,7 +155,7 @@ def setup_totp():
     # Store the URI or secret temporarily if needed for verification in a separate route
     session['mfa_setup_secret'] = current_user.totp_secret
 
-    return render_template('mfa/setup-totp.html',
+    return render_template('auth/setup-totp.html',
                            qr_data=qr_data,
                            totp_secret=current_user.totp_secret)
 
@@ -194,7 +194,7 @@ def disable_totp():
     current_user.generate_totp_secret()
     db.session.commit()
     flash('Two-Factor TOTP Authentication has been disabled.', 'success')
-    return redirect(url_for('main.home'))
+    return redirect(url_for('auth.my_account'))
 
 @mfa_bp.route('/disable-mfa/')
 @login_required
@@ -205,4 +205,4 @@ def disable_mfa():
     current_user.totp_secret = None
     db.session.commit()
     flash('Multi-Factor Authentication has been disabled.', 'success')
-    return redirect(url_for('main.home'))
+    return redirect(url_for('auth.my_account'))

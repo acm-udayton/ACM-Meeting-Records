@@ -27,7 +27,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 
 # Local application imports.
 from app.extensions import db
-from app.models import Users
+from app.models import Users, RecoveryCodes
 
 auth_bp = Blueprint('auth', __name__, template_folder='templates')
 
@@ -132,7 +132,8 @@ def logout():
 @login_required
 def my_account():
     """ Show account details page with update form. """
-    return render_template("account.html", page_title = "My Account")
+    num_codes = RecoveryCodes.query.filter_by(user_id=current_user.id).count()
+    return render_template("account.html", page_title = "My Account", num_codes=num_codes)
 
 @auth_bp.route("/update-account/", methods = ["POST"])
 def update_account():
