@@ -134,7 +134,9 @@ def setup_totp():
     """ Setup Two-Factor Authentication for the current user. """
     # If 2FA is already enabled, just show the status and offer to disable/re-setup.
     if current_user.totp_active:
-        return '<h1>2FA is Enabled</h1><p>You can regenerate your key if needed.</p><a href="/disable-totp">Disable 2FA</a>'
+        
+        flash("MFA with TOTP is already enabled. Disable it first please!", 'info')
+        return redirect(url_for('auth.my_account'))
 
     # 1. Get the provisioning URI
     current_user.generate_totp_secret()
@@ -153,16 +155,9 @@ def setup_totp():
     # Store the URI or secret temporarily if needed for verification in a separate route
     session['2fa_setup_secret'] = current_user.totp_secret
 
-    return f'''
-    <h1>Setup Two-Factor Authentication</h1>
-    <p>Scan this QR code with your authenticator app (e.g., Google Authenticator, Authy).</p>
-    <img src="data:image/png;base64,{qr_data}" alt="QR Code">
-    <p>Alternatively, enter the secret key manually: <strong>{current_user.totp_secret}</strong></p>
-    <form action="{url_for('mfa.verify_totp_setup')}" method="POST">
-        <input name="token" placeholder="Enter code from app to confirm setup">
-        <button type="submit">Verify Setup</button>
-    </form>
-    '''
+    return render_template('mfa/setup-totp.html',
+                           qr_data=qr_data,
+                           totp_secret=current_user.totp_secret)
 
 @mfa_bp.route('/verify-totp-setup/', methods=['POST'])
 @login_required
@@ -184,7 +179,7 @@ def verify_totp_setup():
         current_user.totp_active = True
         db.session.commit()
         flash('Two-Factor Authentication successfully enabled!', 'success')
-        return redirect(url_for('main.home'))
+        return redirect(url_for('auth.my_account'))
     else:
         # If verification fails, we don't save the secret or enable 2FA
         flash('Invalid code. Please try scanning and verifying again.', 'danger')
