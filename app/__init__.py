@@ -35,7 +35,7 @@ def admin_required(f):
 
 def datetime_format(value):
     """Format a datetime object in a Jinja template to a custom string."""
-    time_format = "%d/%m/%Y %I:%M %p"
+    time_format = "%m/%d/%Y %I:%M %p"
     if value is None:
         return "" # Handle None values gracefully
     return value.strftime(time_format)
