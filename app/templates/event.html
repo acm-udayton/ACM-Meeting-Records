@@ -39,7 +39,7 @@
         {% if all_minutes|length > 0 %}
           {% for minutes in all_minutes %}
             <article id="meeting-minutes-{{ minutes.id }}">
-              <div>{{ minutes.notes|safe }}</div>
+              <div>{{ minutes.notes|replace('\n','<br/>')|safe }}</div>
               <div><strong>Recorded By: {{ minutes.username_by }}</strong></div>
               <br/>
             </article>
