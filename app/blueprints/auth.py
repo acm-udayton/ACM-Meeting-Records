@@ -136,7 +136,12 @@ def update_account():
     )
     update_user = db.session.get(Users, current_user.get_id())
     if form_password != "":
-        update_user.set_password(form_password)
+        check_result = update_user.check_password(form_password)
+        if not check_result:
+            update_user.set_password(form_password)
+            flash("Password updated successfully.", "success")
+        else:
+            flash("Password unchanged, current password entered.", "danger")
     semester_regex = re.compile(r"^(FA|SP) \d{4}$|^$")
     # Validate start semester.
     if not semester_regex.fullmatch(form_start):
@@ -145,6 +150,9 @@ def update_account():
             '"SP YYYY" or leave it empty.', 'danger'
         )
     else:
+        if form_start != update_user.joined:
+            flash("Start Semester updated successfully.", "success")
+
         update_user.joined = form_start
 
     # Validate graduation semester.
@@ -154,6 +162,9 @@ def update_account():
             '"SP YYYY" or leave it empty.', 'danger'
         )
     else:
+        if form_grad != update_user.graduated:
+            flash("Graduation Semester updated successfully.", "success")
+        
         update_user.graduated = form_grad
     # Update database and redirect.
     db.session.commit()
