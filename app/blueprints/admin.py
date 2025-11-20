@@ -456,7 +456,7 @@ def reset_user_password(user_id):
     new_password = request.form["new_password"]
     user.set_password(new_password)
     db.session.commit()
-    flash(f"Password for user {user.username} reset successfully.")
+    flash(f"Password for user {user.username} reset successfully.", "success")
     return redirect(url_for("admin.users_list"))
 
 @admin_bp.route("/users/promote/<int:user_id>/", methods = ["POST"])
@@ -468,10 +468,10 @@ def promote_user(user_id):
     if user.role != "admin":
         user.role = "admin"
         db.session.commit()
-        flash(f"User {user.username} promoted to admin successfully.")
+        flash(f"User {user.username} promoted to admin successfully.", "success")
         return redirect(url_for("admin.users_list"))
     else:
-        flash(f"User {user.username} is already an admin.")
+        flash(f"User {user.username} is already an admin.", "danger")
         return redirect(url_for("admin.users_list"))
 
 @admin_bp.route("/users/demote/<int:user_id>/", methods = ["POST"])
@@ -483,8 +483,8 @@ def demote_user(user_id):
     if user.role != "user":
         user.role = "user"
         db.session.commit()
-        flash(f"User {user.username} demoted to user successfully.")
+        flash(f"User {user.username} demoted to user successfully.", "success")
         return redirect(url_for("admin.users_list"))
     else:
-        flash(f"User {user.username} is already a user.")
+        flash(f"User {user.username} is already a user.", "danger")
         return redirect(url_for("admin.users_list"))
