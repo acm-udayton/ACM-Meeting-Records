@@ -343,6 +343,8 @@ def event_add_attachment(meeting_id):
             }
             return jsonify(return_data), 400
         else:
+            # Replace spaces with underscores in the filename.
+            file.filename = file.filename.replace(" ", "_")
             # Only permit certain file types.
             allowed_extensions = ['pptx', 'pdf', 'docx', 'txt', 'png', 'jpg', 'jpeg', 'gif']
             if file.filename.lower().split('.')[-1] in allowed_extensions:
