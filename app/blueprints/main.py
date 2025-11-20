@@ -95,7 +95,7 @@ def event_check_in(meeting_id):
                 if sha_hash(code) == meeting.code_hash:
                     # Check for admin-only meeting status.
                     if meeting.admin_only and current_user.role != "admin":
-                        flash("Check-in failed. This meeting is restricted to administrators only.")
+                        flash("Check-in failed. This meeting is restricted to administrators only.", "danger")
                     else:
                         # Meeting active, add the user as an attendee.
                         attendance = Attendees(
@@ -103,19 +103,19 @@ def event_check_in(meeting_id):
                             meeting = meeting_id)
                         db.session.add(attendance)
                         db.session.commit()
-                        flash("Check-in succeeded. Attendance updated successfully.")
+                        flash("Check-in succeeded. Attendance updated successfully.", "success")
                 else:
                     # Invalid meeting code.
-                    flash("Check-in failed. Meeting code is invalid.")
+                    flash("Check-in failed. Meeting code is invalid.", "danger")
             else:
                 # Already an attendee.
-                flash("Check-in failed. You are already marked as an attendee.")
+                flash("Check-in failed. You are already marked as an attendee.", "danger")
         else:
             # Meeting inactive, return an error message.
-            flash("Check-in failed. Specified meeting is inactive.")
+            flash("Check-in failed. Specified meeting is inactive.", "danger")
     else:
         # Meeting does not exist.
-        flash("Check-in failed. Specified meeting does not exist.")
+        flash("Check-in failed. Specified meeting does not exist.", "danger")
     return redirect(url_for("main.home"))
 
 @main_bp.route('/uploads/<name>')
