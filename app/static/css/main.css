@@ -2,6 +2,7 @@
     /* Define Global Variables */
     --ud-blue: #171b48;
     --ud-red: #ee0019;
+    --green: #00d455;
 }
 
 /* Background classes. */
@@ -39,7 +40,12 @@ footer .footer-contact a {
     color: white;
 }
 
-div [role=alert] {
+/* Alert classes */
+.alert-success {
+    background-color: var(--green);
+    color: white;
+}
+.alert-danger {
     background-color: var(--ud-red);
     color: white;
 }

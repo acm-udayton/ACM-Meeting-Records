@@ -46,10 +46,11 @@ def login():
                 flash(
                     "Login attempt failed. Please try again or contact "
                     "the system administrator to reset your credentials."
+                    , "danger"
                 )
                 return redirect(url_for("auth.login"))
         else:
-            flash("Login attempt failed. User does not exist.")
+            flash("Login attempt failed. User does not exist.", "danger")
             return redirect(url_for("auth.login"))
         return redirect(url_for("main.home"))
     else:
@@ -69,7 +70,9 @@ def sign_up():
         if Users.query.filter_by(username = uname).first() is not None:
             flash(
                 "User creation failed. Username already registered. "
-                "Try logging in instead or contact an administrator.")
+                "Try logging in instead or contact an administrator."
+                , "danger"
+                )
             return redirect(url_for("auth.sign_up"))
         elif (current_app.context["usernames"]["enforce_usernames"] == "True" and
               not uname.endswith(
@@ -77,10 +80,11 @@ def sign_up():
             flash(
                 ("User creation failed. Username must end with "
                 f"{current_app.context['usernames']['username_email_domain']}.")
+                , "danger"
                 )
             return redirect(url_for("auth.sign_up"))
         elif pword != conf_pword:
-            flash("User creation failed. Passwords do not match.")
+            flash("User creation failed. Passwords do not match.", "danger")
             return redirect(url_for("auth.sign_up"))
         else:
             current_app.logger.warning(
@@ -93,7 +97,7 @@ def sign_up():
             new_user.set_password(pword)
             db.session.add(new_user)
             db.session.commit()
-            flash("User creation succeeded. You can now log into your new account.")
+            flash("User creation succeeded. You can now log into your new account.", "success")
             return redirect(url_for("auth.login"))
     # Handle GET requests.
     else:
@@ -138,7 +142,7 @@ def update_account():
     if not semester_regex.fullmatch(form_start):
         flash(
             'Invalid format for Start Semester. Use "FA YYYY" or '
-            '"SP YYYY" or leave it empty.', 'error'
+            '"SP YYYY" or leave it empty.', 'danger'
         )
     else:
         update_user.joined = form_start
@@ -147,7 +151,7 @@ def update_account():
     if not semester_regex.fullmatch(form_grad):
         flash(
             'Invalid format for Graduation Semester. Use "FA YYYY" or '
-            '"SP YYYY" or leave it empty.', 'error'
+            '"SP YYYY" or leave it empty.', 'danger'
         )
     else:
         update_user.graduated = form_grad
