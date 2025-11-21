@@ -1,7 +1,7 @@
 // Helper function to display messages.
-function showMessage(message) {
+function showMessage(message, category = 'danger') {
     const element = document.getElementById('error-row');
-    element.innerHTML += '<div class="alert alert-dismissible fade show" role="alert">' + message + '<button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button></div>';
+    element.innerHTML += '<div class="alert alert-' + category + ' alert-dismissible fade show" role="alert">' + message + '<button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button></div>';
 }
 
 // Global declaration for the refresh function to be accessible by DOMContentLoaded
@@ -22,7 +22,7 @@ async function refreshAttachments() {
                 const listItem = document.createElement('li');
                 listItem.id = `attachment-${attachment.id}`;
                 // Use the returned API data
-                listItem.innerHTML = `<a href="/uploads/meeting-${CURRENT_MEETING_ID}-${attachment.filename}" target="_blank">${attachment.filename}</a> <i class="fa-solid fa-trash remove-attachment-ajax" data-url="/admin/remove-attachment/${ CURRENT_MEETING_ID }/${ attachment.id }/" style="cursor: pointer;"></i>`;
+                listItem.innerHTML = `<a href="/uploads/meeting-${CURRENT_MEETING_ID}-${attachment.filename}" target="_blank">${attachment.filename}</a> <i class="fa-solid fa-trash remove-attachment-ajax" data-url="/admin/remove-attachment/${CURRENT_MEETING_ID}/${attachment.id}/" style="cursor: pointer;"></i>`;
                 attachmentList.appendChild(listItem);
             });
         } else {
@@ -36,16 +36,16 @@ async function refreshAttachments() {
 }
 
 
-setInterval(function() {
+setInterval(function () {
     // Execute the refresh function every 10 seconds (based on the interval value)
     if (typeof refresh === 'function') {
         refresh();
     }
-    refreshAttachments(); 
+    refreshAttachments();
 }, 60000);
 
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const meetingMinutesForm = document.getElementById('meeting-minutes-form');
     const meetingStatusForm = document.getElementById('meeting-status-form');
     const meetingAttendeesForm = document.getElementById('meeting-attendees-form');
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     // Define the async refresh function which is now accessible globally
-    refresh = async function() {
+    refresh = async function () {
         // Update meeting status.
         try {
             const statusResponse = await fetch(`/api/event/state/${CURRENT_MEETING_ID}`, {
@@ -64,7 +64,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const statusData = await statusResponse.json();
             var submitButton = document.getElementById("meeting-status-submit");
             var statusP = document.getElementById("status-p");
-            
             if (statusData == "Not Started") {
                 statusP.innerHTML = `<strong>Current Status: </strong> ${statusData}`;
                 if (submitButton) submitButton.innerHTML = "Start Meeting";
@@ -77,20 +76,16 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Status refresh error:', error);
         }
-        
         // Update meeting attendees list.
         try {
             const attendeesResponse = await fetch(`/api/event/attendees/${CURRENT_MEETING_ID}`, {
                 method: 'GET'
             });
             const attendeesData = await attendeesResponse.json();
-            
             // Clear the list before rebuilding
             attendeeList.innerHTML = "";
-            
             for (let i = 0; i < attendeesData.length; i++) {
                 const attendee = attendeesData[i];
-                
                 // Use a template literal to construct the full HTML structure
                 const attendeeHtml = `
                     <span id="attendee-${attendee.id}">
@@ -103,7 +98,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     </span>
                     <br/>
                 `;
-                
                 // Append the new HTML to the list
                 attendeeList.innerHTML += attendeeHtml;
             }
@@ -111,113 +105,99 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Attendees refresh error:', error);
         }
     };
-    
     // Initial call to populate data on page load
-    refresh(); 
-    
+    refresh();
     // Attach a single event listener to the static parent container
-    attendeeList.addEventListener('click', function(event) {
+    attendeeList.addEventListener('click', function (event) {
         const targetElement = event.target;
-        
         // Check if the clicked element is the remove button
         if (targetElement.classList.contains('remove-attendee-ajax')) {
-            event.preventDefault(); 
-            
+            event.preventDefault();
             const targetUrl = targetElement.getAttribute('data-url');
             // The row to remove is the outer <span>
             const rowToRemove = targetElement.closest('span'); // Use .closest('span') for precision
-            
             // Identify the <br> element immediately following the <span>
             const brToRemove = rowToRemove ? rowToRemove.nextElementSibling : null;
-
             fetch(targetUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
             })
-            .then(response => {
-                if (response.ok) {
-                    // Remove the <span> element
-                    if (rowToRemove) {
-                        rowToRemove.remove(); 
+                .then(response => {
+                    if (response.ok) {
+                        // Remove the <span> element
+                        if (rowToRemove) {
+                            rowToRemove.remove();
+                        }
+                        // Remove the <br> element if it exists and is the next sibling
+                        if (brToRemove && brToRemove.nodeName.toLowerCase() === 'br') {
+                            brToRemove.remove();
+                        }
+                        showMessage('Attendee removed successfully.', 'success');
+                        return;
                     }
-                    
-                    // Remove the <br> element if it exists and is the next sibling
-                    if (brToRemove && brToRemove.nodeName.toLowerCase() === 'br') {
-                        brToRemove.remove();
+                    else {
+                        throw new Error(`Server responded with status: ${response.status}`);
                     }
-                    
-                    showMessage('Attendee removed successfully.');
-                    return; 
-                } else {
-                    throw new Error(`Server responded with status: ${response.status}`);
-                }
-            })
-            .catch(error => {
-                console.error('Removal error:', error);
-                showMessage('An error occurred during removal.');
-            });
+                })
+                .catch(error => {
+                    console.error('Removal error:', error);
+                    showMessage('An error occurred during removal.');
+                });
         }
     });
 
     // Get a reference to the attachment list
-    const attachmentList = document.getElementById('attachment-list'); 
+    const attachmentList = document.getElementById('attachment-list');
 
     // Attach a single event listener to the static parent container
     if (attachmentList) {
-        attachmentList.addEventListener('click', function(event) {
+        attachmentList.addEventListener('click', function (event) {
             const targetElement = event.target;
-            
             // Check if the clicked element is the remove button
             if (targetElement.classList.contains('remove-attachment-ajax')) {
-                event.preventDefault(); 
-                
+                event.preventDefault();
                 // Confirm deletion with the user.
                 if (!confirm("Are you sure you want to permanently delete this attachment?")) {
-                    return; 
+                    return;
                 }
-
                 const targetUrl = targetElement.getAttribute('data-url');
                 // The element to remove is the outer <li>.
-                const rowToRemove = targetElement.closest('li'); 
-                
+                const rowToRemove = targetElement.closest('li');
                 fetch(targetUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                 })
-                .then(response => {
-                    if (response.ok) {
-                        // Remove the <li> element.
-                        if (rowToRemove) {
-                            rowToRemove.remove(); 
+                    .then(response => {
+                        if (response.ok) {
+                            // Remove the <li> element.
+                            if (rowToRemove) {
+                                rowToRemove.remove();
+                            }
+                            showMessage('Attachment removed successfully.', 'success');
+                            // Check if the list is now empty and display "No Attachments Found".
+                            if (attachmentList.children.length === 0) {
+                                attachmentList.innerHTML = '<li id="no-attachments-found">No Attachments Found</li>';
+                            }
+                            return;
+                        } else {
+                            throw new Error(`Server responded with status: ${response.status}`);
                         }
-                        
-                        showMessage('Attachment removed successfully.');
-                        
-                        // Check if the list is now empty and display "No Attachments Found".
-                        if (attachmentList.children.length === 0) {
-                            attachmentList.innerHTML = '<li id="no-attachments-found">No Attachments Found</li>';
-                        }
-
-                        return; 
-                    } else {
-                        throw new Error(`Server responded with status: ${response.status}`);
-                    }
-                })
-                .catch(error => {
-                    console.error('Attachment removal error:', error);
-                    showMessage('An error occurred during attachment removal.');
-                });
+                    })
+                    .catch(error => {
+                        console.error('Attachment removal error:', error);
+                        showMessage('An error occurred during attachment removal.');
+                    });
             }
         });
     }
 
 
     // Form submission handlers with validation and AJAX.
-    meetingMinutesForm.addEventListener('submit', async function(event) {
+    meetingMinutesForm.addEventListener('submit', async function (event) {
         event.preventDefault();
         if (!this.checkValidity()) {
             event.stopPropagation();
@@ -232,9 +212,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: formData
             });
             const result = await response.json();
-            if (response.ok) { 
+            if (response.ok) {
                 console.log(result);
                 meetingMinutesForm.action = "/admin/minutes/" + result.meeting_id + "/" + result.minutes_id;
+                showMessage(result.message, 'success');
             } else {
                 showMessage(result.message);
             }
@@ -245,7 +226,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     if (meetingStatusForm) {
-        meetingStatusForm.addEventListener('submit', async function(event) {
+        meetingStatusForm.addEventListener('submit', async function (event) {
             event.preventDefault();
             if (!this.checkValidity()) {
                 event.stopPropagation();
@@ -260,7 +241,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     body: formData
                 });
                 const result = await response.json();
-                if (response.ok) { 
+                if (response.ok) {
                     console.log(result);
                     submitButton = document.getElementById("meeting-status-submit");
                     statusP = document.getElementById("status-p");
@@ -283,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    meetingAttendeesForm.addEventListener('submit', async function(event) {
+    meetingAttendeesForm.addEventListener('submit', async function (event) {
         event.preventDefault();
         if (!this.checkValidity()) {
             event.stopPropagation();
@@ -298,7 +279,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: formData
             });
             const result = await response.json();
-            if (response.ok) { 
+            if (response.ok) {
                 console.log(result);
                 refresh();
             } else {
@@ -310,9 +291,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    attachmentUploadForm.addEventListener('submit', async function(event) {
+    attachmentUploadForm.addEventListener('submit', async function (event) {
         event.preventDefault();
-        
+
         if (fileInput.files.length === 0 || fileInput.value === '') {
             showMessage('Please select a file to upload.');
             return;
@@ -320,7 +301,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const formData = new FormData(attachmentUploadForm);
         const uploadButton = document.getElementById('upload-button');
-        
+
         // Disable button and give user feedback
         uploadButton.disabled = true;
         uploadButton.textContent = 'Uploading...';
@@ -331,15 +312,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Note: Do NOT set Content-Type; the browser handles it for FormData.
                 body: formData
             });
-            
+
             const result = await response.json();
-            
+
             if (response.ok) { // Status 201 from Flask route
-                showMessage(result.message);
+                showMessage(result.message, 'success');
                 // Clear the file input
-                fileInput.value = ''; 
+                fileInput.value = '';
                 // Refresh the attachment list to show the new file
-                await refreshAttachments(); 
+                await refreshAttachments();
             } else { // Status 400 from Flask route
                 // Display server-side error message
                 showMessage(result.message);
@@ -353,5 +334,4 @@ document.addEventListener('DOMContentLoaded', function() {
             uploadButton.textContent = 'Upload';
         }
     });
-    
 });
