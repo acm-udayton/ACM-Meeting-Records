@@ -18,6 +18,7 @@
                     <th scope="col">Role</th>
                     <th scope="col">Reset Password</th>
                     <th scope="col">MFA Status</th>
+                    <th scope="col">Account Activation</th>
                     </tr>
                 </thead>
                 
@@ -59,6 +60,16 @@
                             </div>
                             {% endif %}
                         </td>
+                        <td>
+                            {% if user.activated %}
+                            <form method="post" action="/admin/users/disable-account/{{ user.id }}">
+                                <button type="submit" class="btn btn-sm red-link-btn container d-flex justify-content-center align-items-center"><i class="fa fa-user-xmark"></i></button>
+                            </form>
+                            {% else %}
+                            <form method="post" action="/admin/users/enable-account/{{ user.id }}">
+                                <button type="submit" class="btn btn-sm green-link-btn container d-flex justify-content-center align-items-center"><i class="fa fa-user-check"></i></button>
+                            </form>
+                            {% endif %}
                     </tr>
                     {% endfor %}
                 </tbody>

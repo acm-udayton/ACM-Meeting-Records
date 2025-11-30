@@ -503,3 +503,33 @@ def disable_user_mfa(user_id):
     else:
         flash(f"User {user.username} does not have two-factor authentication enabled.")
         return redirect(url_for("admin.users_list"))
+
+@admin_bp.route("/users/disable-account/<int:user_id>/", methods = ["POST"])
+@login_required
+@admin_required
+def disable_user_account(user_id):
+    """ Disable a user's account. """
+    user = Users.query.filter_by(id = user_id).first_or_404()
+    if user.activated:
+        user.activated = False
+        db.session.commit()
+        flash(f"Account for user {user.username} disabled successfully.")
+        return redirect(url_for("admin.users_list"))
+    else:
+        flash(f"User {user.username}'s account is already disabled.")
+        return redirect(url_for("admin.users_list"))
+
+@admin_bp.route("/users/enable-account/<int:user_id>/", methods = ["POST"])
+@login_required
+@admin_required
+def enable_user_account(user_id):
+    """ Enable a user's account. """
+    user = Users.query.filter_by(id = user_id).first_or_404()
+    if not user.activated:
+        user.activated = True
+        db.session.commit()
+        flash(f"Account for user {user.username} enabled successfully.")
+        return redirect(url_for("admin.users_list"))
+    else:
+        flash(f"User {user.username}'s account is already enabled.")
+        return redirect(url_for("admin.users_list"))
