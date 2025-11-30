@@ -38,6 +38,12 @@ def login():
     """ Show a login page and process submissions. """
     if request.method =="POST":
         user = Users.query.filter_by(username = request.form["username"]).first()
+        if user.activated is False:
+            flash(
+                "Login attempt failed. Account is not activated. "
+                "Please contact the system administrator for approval."
+            )
+            return redirect(url_for("auth.login"))
         if user is not None:
             if user.check_password(request.form["password"]):
                 # Check if MFA is enabled for the user.
