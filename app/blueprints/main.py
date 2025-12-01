@@ -20,7 +20,7 @@ from flask import (
     current_app,
     send_from_directory
 )
-from flask_login import current_user, login_required
+from flask_login import current_user, login_required, logout_user
 from sqlalchemy import desc
 
 # Local application imports.
@@ -97,6 +97,11 @@ def event_check_in(meeting_id):
                     if meeting.admin_only and current_user.role != "admin":
                         flash("Check-in failed. This meeting is restricted to administrators only.")
                     else:
+                        if current_user.activated is False:
+                            # User not activated, log them out and return an error.
+                            logout_user()
+                            flash("Check-in failed. Your account is not activated. Please check in again.")
+                            return redirect(url_for("auth.login"))
                         # Meeting active, add the user as an attendee.
                         attendance = Attendees(
                             username = current_user.username,
