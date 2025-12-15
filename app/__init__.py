@@ -18,6 +18,9 @@ import os
 from dotenv import load_dotenv
 from flask import Flask, render_template, abort, redirect, url_for
 from flask_login import current_user
+from flask_wtf import CSRFProtect
+
+csrf = CSRFProtect()
 
 # Local application imports.
 from .extensions import db, login_manager, migrate
@@ -107,11 +110,13 @@ def create_app():
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
     app.config["UPLOAD_FOLDER"] = os.getenv("UPLOAD_FOLDER")
     app.config["TOTP_ISSUER_NAME"] = f"Meeting Records - {os.getenv('ORGANIZATION_NAME')}"
+    app.config["WTF_CSRF_ENABLED"] = True
 
     # Initialize the app extensions.
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
+    csrf.init_app(app)
 
     # Configure Flask-Login.
     from .models import Users  # pylint: disable=import-outside-toplevel

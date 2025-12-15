@@ -3,6 +3,7 @@ Flask
 Flask-Login
 Flask-Migrate
 Flask-SQLAlchemy
+Flask-WTF
 gunicorn
 psycopg2-binary
 pyotp
