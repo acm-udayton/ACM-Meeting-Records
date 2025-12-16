@@ -27,6 +27,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 
 # Local application imports.
 from app.extensions import db
+from app.forms import LoginForm
 from app.models import Users, RecoveryCodes
 
 auth_bp = Blueprint('auth', __name__, template_folder='templates')
@@ -36,50 +37,60 @@ auth_bp = Blueprint('auth', __name__, template_folder='templates')
 @auth_bp.route("/login/", methods = ["GET", "POST"])
 def login():
     """ Show a login page and process submissions. """
-    if request.method =="POST":
-        user = Users.query.filter_by(username = request.form["username"]).first()
+
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = Users.query.filter_by(username = form.username.data).first()
+
+        # Existence check.
+        if user is None:
+            flash("Login attempt failed. User does not exist.")
+            return redirect(url_for("auth.login"))
+        
+        # Activation check.
         if user.activated is False:
             flash(
                 "Login attempt failed. Account is not activated. "
                 "Please contact the system administrator for approval."
             )
             return redirect(url_for("auth.login"))
-        if user is not None:
-            if user.check_password(request.form["password"]):
-                # Check if MFA is enabled for the user.
-                if user.mfa_active:
-                    # Store the user ID in the session temporarily - do not login yet.
-                    session['mfa_user_id'] = user.id
-                    if user.totp_active:
-                        return redirect(url_for('mfa.verify_totp'))
-                    else:
-                        return redirect(url_for('mfa.verify_recovery_code'))
-                
-                if user.role == "admin":
-                    flash("Please enable multi-factor authentication for this administrator account!")
-                login_user(user)
-                current_app.logger.info(
-                    "Login attempt as %s from IP %s - success",
-                    request.form["username"],
-                    request.remote_addr
-                )
-            else:
-                current_app.logger.warning(
-                    "Login attempt as %s from IP %s - failed",
-                    request.form["username"],
-                    request.remote_addr
-                )
-                flash(
-                    "Login attempt failed. Please try again or contact "
-                    "the system administrator to reset your credentials."
-                )
-                return redirect(url_for("auth.login"))
-        else:
-            flash("Login attempt failed. User does not exist.")
+        
+        # Password check.
+        if not user.check_password(form.password.data):
+            current_app.logger.warning(
+                "Login attempt as %s from IP %s - failed",
+                form.username.data,
+                request.remote_addr
+            )
+            flash(
+                "Login attempt failed. Please try again or contact "
+                "the system administrator to reset your credentials."
+            )
             return redirect(url_for("auth.login"))
+        
+        # MFA check.
+        if user.mfa_active:
+            # Store the user ID in the session temporarily - do not login yet.
+            session['mfa_user_id'] = user.id
+            if user.totp_active:
+                return redirect(url_for('mfa.verify_totp'))
+            else:
+                return redirect(url_for('mfa.verify_recovery_code'))
+
+        # Admin without MFA warning.    
+        if user.role == "admin":
+            flash("Please enable multi-factor authentication for this administrator account!")
+        
+        login_user(user)
+        current_app.logger.info(
+            "Login attempt as %s from IP %s - success",
+            form.username.data,
+            request.remote_addr
+        )
         return redirect(url_for("main.home"))
-    else:
-        return render_template("login.html", page_title = "User Log In")
+    
+    # Process GET requests or failed validation.
+    return render_template("login.html", page_title = "User Log In", form=form)
 
 @auth_bp.route("/sign-up/", methods = ["GET", "POST"])
 def sign_up():

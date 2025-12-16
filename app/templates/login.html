@@ -10,20 +10,32 @@
       <h2>Account Login</h2>
       <span>No Account? <a href="/sign-up">Create one!</a></span>
     </section>
+    
     <section id="form" class="d-flex justify-content-center">
-      <form action="/login" method="POST" class="col-6">
-          <div class="form-floating mb-3 mt-3">
-            <input type="text" class="form-control form-control-lg" placeholder="Username" name="username" id="username" autocomplete="on">
-            <label for="username">Email</label>
-          </div>
-          <div class="form-floating mb-3 mt-3">
-            <input type="password" class="form-control form-control-lg" placeholder="Password" name="password" id="password" autocomplete="off">
-            <label for="password">Password</label>
-          </div>
+      <form action="{{ url_for('auth.login') }}" method="POST" class="col-6"> 
+        
+        {{ form.hidden_tag() }} 
 
-        <button type="submit" class="form-control form-control-lg">Log In</button>
+        <div class="form-floating mb-3 mt-3">
+          {{ form.username(class="form-control form-control-lg", placeholder="Username", autocomplete="on") }}
+          <label for="{{ form.username.id }}">Email</label>
+          
+          {% for error in form.username.errors %}
+            <span class="text-danger">{{ error }}</span>
+          {% endfor %}
+        </div>
+
+        <div class="form-floating mb-3 mt-3">
+          {{ form.password(class="form-control form-control-lg", placeholder="Password", autocomplete="off") }}
+          <label for="{{ form.password.id }}">Password</label>
+
+          {% for error in form.password.errors %}
+            <span class="text-danger">{{ error }}</span>
+          {% endfor %}
+        </div>
+
+        {{ form.submit(class="form-control form-control-lg") }}
       </form>
     </section>
   </main>
-
 {% endblock %}
