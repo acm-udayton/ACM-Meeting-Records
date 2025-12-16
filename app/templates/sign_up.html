@@ -12,19 +12,36 @@
     </section>
     <section id="form" class="d-flex justify-content-center">
       <form action="/sign-up/" method="POST" class="col-6">
+        {{ form.hidden_tag() }}
+          {% for error in form.username.errors %}
+            <span class="text-danger">{{ error }}</span>
+          {% endfor %}
+
           <div class="form mb-3 mt-3">
-            <label for="username">Email</label>
-            <input type="text" class="form-control form-control-lg" placeholder="Username" name="username" id="username" autocomplete="on">
+            <label for="{{ form.username.id }}">Email</label>
+            {{ form.username(class="form-control form-control-lg", placeholder="Email", autocomplete="off") }}
           </div>
+          {% for error in form.password.errors %}
+            <span class="text-danger">{{ error }}</span>
+          {% endfor %}
           <div class="form mb-3 mt-3">
-            <label for="password">Password</label>
-            <input type="password" class="form-control form-control-lg" placeholder="Password" name="password" id="password" autocomplete="off">
+            <label for="{{ form.password.id }}">Password</label>
+            {{ form.password(class="form-control form-control-lg", placeholder="Password", autocomplete="off") }}
           </div>
+          {% for error in form.confirm_password.errors %}
+            <span class="text-danger">{{ error }}</span>
+          {% endfor %}
           <div class="form mb-3 mt-3">
-            <label for="confirm_password">Confim Password</label>
-            <input type="password" class="form-control form-control-lg" placeholder="Confirm Password" name="confirm_password" id="confirm_password" autocomplete="off">
+            <label for="{{ form.confirm_password.id }}">Confirm Password</label>
+            {{ form.confirm_password(class="form-control form-control-lg", placeholder="Confirm Password", autocomplete="off") }}
           </div>
-        <button type="submit" class="form-control form-control-lg red-button">Save Account Details</button>
+          {% for error in form.recaptcha.errors %}
+            <span class="text-danger">{{ error }}</span>
+          {% endfor %}
+          <p>
+            {{ form.recaptcha }}
+          </p>
+        {{ form.submit(class="form-control form-control-lg red-button") }}
         </form>        
     </section>
   </main>

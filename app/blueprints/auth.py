@@ -24,7 +24,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 
 # Local application imports.
 from app.extensions import db
-from app.forms import LoginForm, AccountUpdateForm
+from app.forms import LoginForm, SignUpForm, AccountUpdateForm
 from app.models import Users, RecoveryCodes
 
 auth_bp = Blueprint('auth', __name__, template_folder='templates')
@@ -91,7 +91,9 @@ def login():
 @auth_bp.route("/sign-up/", methods = ["GET", "POST"])
 def sign_up():
     """ Show a sign-up page and process submissions. """
-    if request.method == "POST":
+    form = SignUpForm()
+
+    if form.validate_on_submit():
         # Log the user out if active.
         if not current_user.is_anonymous:
             logout_user()
@@ -103,17 +105,6 @@ def sign_up():
             flash(
                 "User creation failed. Username already registered. "
                 "Try logging in instead or contact an administrator.")
-            return redirect(url_for("auth.sign_up"))
-        elif (current_app.context["usernames"]["enforce_usernames"] == "True" and
-              not uname.endswith(
-                  current_app.context["usernames"]["username_email_domain"])):
-            flash(
-                ("User creation failed. Username must end with "
-                f"{current_app.context['usernames']['username_email_domain']}.")
-                )
-            return redirect(url_for("auth.sign_up"))
-        elif pword != conf_pword:
-            flash("User creation failed. Passwords do not match.")
             return redirect(url_for("auth.sign_up"))
         else:
             current_app.logger.warning(
@@ -130,7 +121,7 @@ def sign_up():
             return redirect(url_for("auth.login"))
     # Handle GET requests.
     else:
-        return render_template("sign_up.html", page_title = "Create New Account")
+        return render_template("sign_up.html", page_title = "Create New Account", form = form)
 
 @auth_bp.route("/logout/")
 @login_required

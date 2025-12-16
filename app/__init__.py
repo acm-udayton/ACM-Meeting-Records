@@ -111,6 +111,9 @@ def create_app():
     app.config["UPLOAD_FOLDER"] = os.getenv("UPLOAD_FOLDER")
     app.config["TOTP_ISSUER_NAME"] = f"Meeting Records - {os.getenv('ORGANIZATION_NAME')}"
     app.config["WTF_CSRF_ENABLED"] = True
+    app.config["RECAPTCHA_PUBLIC_KEY"] = os.getenv("RECAPTCHA_SITE_KEY")
+    app.config["RECAPTCHA_PRIVATE_KEY"] = os.getenv("RECAPTCHA_SECRET_KEY")
+    app.config['RECAPTCHA_SKIP_IP_CHECK'] = True
 
     # Initialize the app extensions.
     db.init_app(app)
