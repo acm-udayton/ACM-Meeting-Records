@@ -27,7 +27,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 
 # Local application imports.
 from app.extensions import db
-from app.forms import LoginForm
+from app.forms import LoginForm, AccountUpdateForm
 from app.models import Users, RecoveryCodes
 
 auth_bp = Blueprint('auth', __name__, template_folder='templates')
@@ -149,46 +149,54 @@ def logout():
 @login_required
 def my_account():
     """ Show account details page with update form. """
+    account_updated_form = AccountUpdateForm()
     num_codes = RecoveryCodes.query.filter_by(user_id=current_user.id).count()
-    return render_template("account.html", page_title = "My Account", num_codes=num_codes)
+    return render_template("account.html", page_title = "My Account", num_codes=num_codes, account_update_form=account_updated_form)
 
 @auth_bp.route("/update-account/", methods = ["POST"])
 def update_account():
     """ Update account details via the form /my-account/ page. """
+    form = AccountUpdateForm()
 
-    form_password = request.form.get("password", "").strip()
-    form_start = request.form.get("start_semester", "").strip().upper()
-    form_grad = request.form.get("grad_semester", "").strip().upper()
+    if form.validate_on_submit():
 
-    current_app.logger.info(
-        ("Account update attempt: %s from IP %s - "
-        "start semester %s, end semester %s"),
-        current_user.username,
-        request.remote_addr,
-        form_start,
-        form_grad
-    )
-    update_user = db.session.get(Users, current_user.get_id())
-    if form_password != "":
-        update_user.set_password(form_password)
-    semester_regex = re.compile(r"^(FA|SP) \d{4}$|^$")
-    # Validate start semester.
-    if not semester_regex.fullmatch(form_start):
-        flash(
-            'Invalid format for Start Semester. Use "FA YYYY" or '
-            '"SP YYYY" or leave it empty.', 'error'
+        current_app.logger.info(
+            ("Account update attempt - success: %s from IP %s - "
+            "start semester %s, end semester %s"),
+            current_user.username,
+            request.remote_addr,
+            form.start_semester.data,
+            form.grad_semester.data
         )
+        update_user = db.session.get(Users, current_user.get_id())
+        if form.password.data != "":
+            update_user.set_password(form.password.data)
+        
+        # Update semesters (join and grad).
+        update_user.joined = form.start_semester.data
+        update_user.graduated = form.grad_semester.data
+        
+        # Update database and redirect.
+        db.session.commit()
+        flash("Account updated successfully.", "success")
     else:
-        update_user.joined = form_start
+        for field, errors in form.errors.items():
+            for error in errors:
+                if field == 'csrf_token':
+                    flash("Security Error: Invalid or missing form data. Please refresh and try again.", 'error')
+                else:
+                    flash(f"Error in the {getattr(form, field).label.text} field - {error}", "danger")
+                current_app.logger.info(
+                    ("Account update attempt - failure: %s from IP %s - "
+                    "Field: %s, Error: %s"),
+                    current_user.username,
+                    request.remote_addr,
+                    field,
+                    error
+                )
+                # Only show the first error message to the user.
+                break  
+            break
 
-    # Validate graduation semester.
-    if not semester_regex.fullmatch(form_grad):
-        flash(
-            'Invalid format for Graduation Semester. Use "FA YYYY" or '
-            '"SP YYYY" or leave it empty.', 'error'
-        )
-    else:
-        update_user.graduated = form_grad
-    # Update database and redirect.
-    db.session.commit()
+    # Return to account page for success or failure.
     return redirect(url_for("auth.my_account"))
