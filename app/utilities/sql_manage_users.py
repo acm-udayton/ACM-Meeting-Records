@@ -7,7 +7,7 @@ File Purpose: Utility to help create admins in DB.
 """
 
 import sys
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import generate_password_hash
 
 def gen_hash(string_to_hash):
     """ Wrapper function for werkzeug's bcrypt + salt hash. """

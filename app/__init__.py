@@ -20,10 +20,10 @@ from flask import Flask, render_template, abort, redirect, url_for
 from flask_login import current_user
 from flask_wtf import CSRFProtect
 
-csrf = CSRFProtect()
-
 # Local application imports.
 from .extensions import db, login_manager, migrate
+
+csrf = CSRFProtect()
 
 def admin_required(f):
     """ Route decorator to restrict page access to admin users. """
@@ -176,11 +176,11 @@ def create_app():
     register_error_handlers(app)
 
     # Register the blueprints.
-    from .blueprints.admin import admin_bp
-    from .blueprints.auth import auth_bp
-    from .blueprints.main import main_bp
-    from .blueprints.api import api_bp
-    from .blueprints.mfa import mfa_bp
+    from .blueprints.admin import admin_bp # pylint: disable=import-outside-toplevel
+    from .blueprints.auth import auth_bp # pylint: disable=import-outside-toplevel
+    from .blueprints.main import main_bp # pylint: disable=import-outside-toplevel
+    from .blueprints.api import api_bp # pylint: disable=import-outside-toplevel
+    from .blueprints.mfa import mfa_bp # pylint: disable=import-outside-toplevel
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(auth_bp)
     app.register_blueprint(mfa_bp, url_prefix="/mfa")

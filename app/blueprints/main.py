@@ -100,7 +100,8 @@ def event_check_in(meeting_id):
                         if current_user.activated is False:
                             # User not activated, log them out and return an error.
                             logout_user()
-                            flash("Check-in failed. Your account is not activated. Please check in again.")
+                            flash(("Check-in failed. "
+                                  "Your account is not activated. Please check in again."))
                             return redirect(url_for("auth.login"))
                         # Meeting active, add the user as an attendee.
                         attendance = Attendees(

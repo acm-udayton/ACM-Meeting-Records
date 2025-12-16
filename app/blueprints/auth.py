@@ -4,13 +4,10 @@
 """
 Project Name: ACM-Meeting-Records
 Project Author(s): Joseph Lefkovitz (github.com/lefkovitz)
-Last Modified: 10/7/2025
+Last Modified: 12/15/2025
 
 File Purpose: Authentication routes for the project.
 """
-
-# Standard library imports.
-import re
 
 # Third-party imports.
 from flask import (
@@ -37,7 +34,6 @@ auth_bp = Blueprint('auth', __name__, template_folder='templates')
 @auth_bp.route("/login/", methods = ["GET", "POST"])
 def login():
     """ Show a login page and process submissions. """
-
     form = LoginForm()
     if form.validate_on_submit():
         user = Users.query.filter_by(username = form.username.data).first()
@@ -46,7 +42,7 @@ def login():
         if user is None:
             flash("Login attempt failed. User does not exist.")
             return redirect(url_for("auth.login"))
-        
+
         # Activation check.
         if user.activated is False:
             flash(
@@ -54,7 +50,7 @@ def login():
                 "Please contact the system administrator for approval."
             )
             return redirect(url_for("auth.login"))
-        
+
         # Password check.
         if not user.check_password(form.password.data):
             current_app.logger.warning(
@@ -67,7 +63,7 @@ def login():
                 "the system administrator to reset your credentials."
             )
             return redirect(url_for("auth.login"))
-        
+
         # MFA check.
         if user.mfa_active:
             # Store the user ID in the session temporarily - do not login yet.
@@ -77,10 +73,10 @@ def login():
             else:
                 return redirect(url_for('mfa.verify_recovery_code'))
 
-        # Admin without MFA warning.    
+        # Admin without MFA warning.
         if user.role == "admin":
             flash("Please enable multi-factor authentication for this administrator account!")
-        
+
         login_user(user)
         current_app.logger.info(
             "Login attempt as %s from IP %s - success",
@@ -88,7 +84,7 @@ def login():
             request.remote_addr
         )
         return redirect(url_for("main.home"))
-    
+
     # Process GET requests or failed validation.
     return render_template("login.html", page_title = "User Log In", form=form)
 
@@ -151,7 +147,10 @@ def my_account():
     """ Show account details page with update form. """
     account_updated_form = AccountUpdateForm()
     num_codes = RecoveryCodes.query.filter_by(user_id=current_user.id).count()
-    return render_template("account.html", page_title = "My Account", num_codes=num_codes, account_update_form=account_updated_form)
+    return render_template("account.html",
+                           page_title = "My Account",
+                           num_codes=num_codes,
+                           account_update_form=account_updated_form)
 
 @auth_bp.route("/update-account/", methods = ["POST"])
 def update_account():
@@ -171,11 +170,11 @@ def update_account():
         update_user = db.session.get(Users, current_user.get_id())
         if form.password.data != "":
             update_user.set_password(form.password.data)
-        
+
         # Update semesters (join and grad).
         update_user.joined = form.start_semester.data
         update_user.graduated = form.grad_semester.data
-        
+
         # Update database and redirect.
         db.session.commit()
         flash("Account updated successfully.", "success")
@@ -183,9 +182,11 @@ def update_account():
         for field, errors in form.errors.items():
             for error in errors:
                 if field == 'csrf_token':
-                    flash("Security Error: Invalid or missing form data. Please refresh and try again.", 'error')
+                    flash("Security Error: Invalid or missing form data." \
+                    " Please refresh and try again.", 'error')
                 else:
-                    flash(f"Error in the {getattr(form, field).label.text} field - {error}", "danger")
+                    flash((f"Error in the {getattr(form, field).label.text} "
+                        f" field - {error}", "danger"))
                 current_app.logger.info(
                     ("Account update attempt - failure: %s from IP %s - "
                     "Field: %s, Error: %s"),
@@ -195,7 +196,7 @@ def update_account():
                     error
                 )
                 # Only show the first error message to the user.
-                break  
+                break
             break
 
     # Return to account page for success or failure.

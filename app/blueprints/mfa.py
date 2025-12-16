@@ -42,7 +42,7 @@ def reset_recovery_codes():
     # Clear old codes and generate new codes.
     for old_code in RecoveryCodes.query.filter_by(user_id=current_user.id).all():
         db.session.delete(old_code)
-    
+
     # Ensure MFA is active for the user.
     user = Users.query.get(current_user.id)
     user.mfa_active = True
@@ -134,7 +134,7 @@ def setup_totp():
     """ Setup Two-Factor Authentication for the current user. """
     # If TOTP MFA is already enabled, just show the status and offer to disable/re-setup.
     if current_user.totp_active:
-        
+
         flash("MFA with TOTP is already enabled. Disable it first please!", 'info')
         return redirect(url_for('auth.my_account'))
 
