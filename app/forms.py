@@ -43,6 +43,17 @@ def email_domain_validator(form, field):
         else:
             raise ValidationError('Invalid email format.')
 
+class TotpVerifyForm(FlaskForm):
+    """ Form for verifying TOTP setup. """
+    token = StringField(
+        'Authentication Code',
+        validators=[
+            InputRequired(),
+            Length(min=6, max=6, message='The authentication code must be 6 digits long.')
+        ]
+    )
+    submit = SubmitField('Verify')
+
 class LoginForm(FlaskForm):
     """ Form for user login. """
     username = StringField(

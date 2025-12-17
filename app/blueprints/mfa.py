@@ -29,6 +29,7 @@ from flask import (
 from flask_login import login_user, login_required, current_user
 
 # Local application imports.
+from app.forms import TotpVerifyForm
 from app.extensions import db
 from app.models import Users, RecoveryCodes
 
@@ -97,20 +98,21 @@ def verify_recovery_code():
 @mfa_bp.route('/verify-totp/', methods=['GET', 'POST'])
 def verify_totp():
     """ Handle the TOTP verification step during login. """
-    # Ensure the user has passed the password stage
+    # Ensure the user has passed the password stage.
     user_id = session.get('mfa_user_id')
-    print(f"User ID: {user_id}")
     if not user_id:
         flash('You must log in before using TOTP MFA.', 'warning')
         return redirect(url_for('auth.login'))
 
+    # Verify that the user exists and has TOTP active.
     user = Users.query.get(user_id)
     if not user or not user.totp_active:
         flash('TOTP MFA not required or user not found.', 'danger')
         return redirect(url_for('auth.login'))
 
-    if request.method == 'POST':
-        token = request.form.get('token')
+    form = TotpVerifyForm()
+    if form.validate_on_submit():
+        token = form.token.data
 
         # Step 2: Verify TOTP Code
         if user.verify_totp(token):
@@ -126,7 +128,7 @@ def verify_totp():
 
         flash('Invalid TOTP MFA code.', 'danger')
 
-    return render_template('auth/verify-totp.html', page_title='Verify MFA TOTP Code')
+    return render_template('auth/verify-totp.html', page_title='Verify MFA TOTP Code', form=form)
 
 @mfa_bp.route('/setup-totp/')
 @login_required
