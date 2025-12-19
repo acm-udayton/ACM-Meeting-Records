@@ -29,7 +29,7 @@ from flask import (
 from flask_login import login_user, login_required, current_user
 
 # Local application imports.
-from app.forms import TotpVerifyForm, TotpSetupForm
+from app.forms import TotpVerifyForm, TotpSetupForm, RecoveryCodeVerifyForm
 from app.extensions import db
 from app.models import Users, RecoveryCodes
 
@@ -74,9 +74,10 @@ def verify_recovery_code():
     if not user:
         flash('User not found.', 'danger')
         return redirect(url_for('auth.login'))
-
-    if request.method == 'POST':
-        code = request.form.get('recovery_code')
+    
+    form = RecoveryCodeVerifyForm()
+    if form.validate_on_submit():
+        code = form.token.data
         recovery_code_entry = RecoveryCodes.query.filter_by(user_id=user.id).all()
         for entry in recovery_code_entry:
             if entry.check_code(code):
@@ -93,7 +94,7 @@ def verify_recovery_code():
                 return redirect(url_for('main.home'))
         flash('Invalid recovery code.', 'danger')
 
-    return render_template('auth/verify-code.html', page_title='Verify MFA Recovery Code')
+    return render_template('auth/verify-code.html', page_title='Verify MFA Recovery Code', form=form)
 
 @mfa_bp.route('/verify-totp/', methods=['GET', 'POST'])
 def verify_totp():

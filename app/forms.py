@@ -43,6 +43,16 @@ def email_domain_validator(form, field):
         else:
             raise ValidationError('Invalid email format.')
 
+class RecoveryCodeVerifyForm(FlaskForm):
+    """ Form for verifying recovery code. """
+    token = StringField(
+        'Recovery Code',
+        validators=[
+            InputRequired()
+        ]
+    )
+    submit = SubmitField('Verify')
+
 class TotpVerifyForm(FlaskForm):
     """ Form for verifying TOTP setup. """
     token = StringField(

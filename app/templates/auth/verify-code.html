@@ -12,11 +12,14 @@
     </section>
     <section id="form" class="d-flex justify-content-center">
       <form action="{{ url_for('mfa.verify_recovery_code') }}" method="POST" class="col-6">
+        {{ form.hidden_tag() }}
+          {% for error in form.token.errors %}
+            <span class="text-danger">{{ error }}</span>
+          {% endfor %}
           <div class="form-floating mb-3 mt-3">
-            <input type="text" class="form-control form-control-lg" placeholder="6-digit code" name="recovery_code" id="recovery_code" autocomplete="off">
-            <label for="recovery_code">Recovery Code</label>
+            {{ form.token(class="form-control form-control-lg", placeholder="Recovery Code", autocomplete="off") }}
+            <label for="{{ form.token.id }}">Recovery Code</label>
           </div>
-
         <button type="submit" class="form-control form-control-lg">Log In</button>
       </form>
     </section>
