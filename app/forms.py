@@ -43,6 +43,17 @@ def email_domain_validator(form, field):
         else:
             raise ValidationError('Invalid email format.')
 
+class MeetingCheckinForm(FlaskForm):
+    """ Form for check-in to a meeting. """
+    code = StringField(
+        'Meeting Code',
+        validators=[
+            InputRequired(),
+            Length(min=1, max=64)
+        ]
+    )
+    submit = SubmitField('Check In')
+
 class RecoveryCodeVerifyForm(FlaskForm):
     """ Form for verifying recovery code. """
     token = StringField(

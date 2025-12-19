@@ -24,6 +24,7 @@ from flask_login import current_user, login_required, logout_user
 from sqlalchemy import desc
 
 # Local application imports.
+from app.forms import MeetingCheckinForm
 from app.models import Meetings, Attendees, Minutes, Attachments
 from app.extensions import db
 from app.utils import sha_hash
@@ -85,40 +86,45 @@ def user_event(meeting_id):
 def event_check_in(meeting_id):
     """ Check into a single meeting from the homepage. """
     if Meetings.query.filter_by(id = meeting_id).first() is not None:
-        code = request.form["meeting_code"]
-        meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
-        if meeting.state == "active":
-            if Attendees.query.filter_by(
-            meeting = meeting_id,
-            username = current_user.username
-            ).first() is None:
-                if sha_hash(code) == meeting.code_hash:
-                    # Check for admin-only meeting status.
-                    if meeting.admin_only and current_user.role != "admin":
-                        flash("Check-in failed. This meeting is restricted to administrators only.")
+        form = MeetingCheckinForm()
+        if form.validate_on_submit():
+            code = form.code.data
+            meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
+            if meeting.state == "active":
+                if Attendees.query.filter_by(
+                meeting = meeting_id,
+                username = current_user.username
+                ).first() is None:
+                    if sha_hash(code) == meeting.code_hash:
+                        # Check for admin-only meeting status.
+                        if meeting.admin_only and current_user.role != "admin":
+                            flash("Check-in failed. This meeting is restricted to administrators only.")
+                        else:
+                            if current_user.activated is False:
+                                # User not activated, log them out and return an error.
+                                logout_user()
+                                flash(("Check-in failed. "
+                                    "Your account is not activated. Please check in again."))
+                                return redirect(url_for("auth.login"))
+                            # Meeting active, add the user as an attendee.
+                            attendance = Attendees(
+                                username = current_user.username,
+                                meeting = meeting_id)
+                            db.session.add(attendance)
+                            db.session.commit()
+                            flash("Check-in succeeded. Attendance updated successfully.")
                     else:
-                        if current_user.activated is False:
-                            # User not activated, log them out and return an error.
-                            logout_user()
-                            flash(("Check-in failed. "
-                                  "Your account is not activated. Please check in again."))
-                            return redirect(url_for("auth.login"))
-                        # Meeting active, add the user as an attendee.
-                        attendance = Attendees(
-                            username = current_user.username,
-                            meeting = meeting_id)
-                        db.session.add(attendance)
-                        db.session.commit()
-                        flash("Check-in succeeded. Attendance updated successfully.")
+                        # Invalid meeting code.
+                        flash("Check-in failed. Meeting code is invalid.")
                 else:
-                    # Invalid meeting code.
-                    flash("Check-in failed. Meeting code is invalid.")
+                    # Already an attendee.
+                    flash("Check-in failed. You are already marked as an attendee.")
             else:
-                # Already an attendee.
-                flash("Check-in failed. You are already marked as an attendee.")
+                # Meeting inactive, return an error message.
+                flash("Check-in failed. Specified meeting is inactive.")
         else:
-            # Meeting inactive, return an error message.
-            flash("Check-in failed. Specified meeting is inactive.")
+            # Form validation failed.
+            flash("Check-in failed. Please ensure all fields are filled out correctly.")
     else:
         # Meeting does not exist.
         flash("Check-in failed. Specified meeting does not exist.")
