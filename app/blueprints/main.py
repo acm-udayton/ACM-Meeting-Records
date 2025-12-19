@@ -35,6 +35,7 @@ main_bp = Blueprint('main', __name__, template_folder='templates')
 @main_bp.route("/")
 def home():
     """ Show the home page. """
+    form = MeetingCheckinForm()
     if not (current_user.is_authenticated and current_user.role == "admin"):
         recent_meetings = Meetings.query.filter(
             Meetings.admin_only != True,
@@ -49,7 +50,8 @@ def home():
         "index.html",
         page_title = "Home",
         recent_meetings = recent_meetings,
-        featured_meeting = featured_meeting
+        featured_meeting = featured_meeting,
+        form = form
     )
 
 @main_bp.route("/events/")
@@ -68,6 +70,7 @@ def events_list():
 @main_bp.route("/event/<int:meeting_id>/")
 def user_event(meeting_id):
     """ Show a page with the details of a single meeting. """
+    form = MeetingCheckinForm()
     meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
     attendees = Attendees.query.filter_by(meeting = meeting_id).all()
     minutes = Minutes.query.filter_by(meeting = meeting_id).all()
@@ -78,7 +81,8 @@ def user_event(meeting_id):
         meeting = meeting,
         all_minutes = minutes,
         all_attendees = attendees,
-        all_attachments = attachments
+        all_attachments = attachments,
+        form = form
     )
 
 @main_bp.route("/event/check-in/<int:meeting_id>/", methods = ["POST"])
