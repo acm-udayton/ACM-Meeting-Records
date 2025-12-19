@@ -54,6 +54,17 @@ class TotpVerifyForm(FlaskForm):
     )
     submit = SubmitField('Verify')
 
+class TotpSetupForm(FlaskForm):
+    """ Form for setting up TOTP. """
+    token = StringField(
+        'Authenticator App Code',
+        validators=[
+            InputRequired(),
+            Length(min=6, max=6, message='The code must be 6 digits long.')
+        ]
+    )
+    submit = SubmitField('Verify Setup')
+
 class LoginForm(FlaskForm):
     """ Form for user login. """
     username = StringField(

@@ -29,7 +29,7 @@ from flask import (
 from flask_login import login_user, login_required, current_user
 
 # Local application imports.
-from app.forms import TotpVerifyForm
+from app.forms import TotpVerifyForm, TotpSetupForm
 from app.extensions import db
 from app.models import Users, RecoveryCodes
 
@@ -140,6 +140,8 @@ def setup_totp():
         flash("MFA with TOTP is already enabled. Disable it first please!", 'info')
         return redirect(url_for('auth.my_account'))
 
+    form = TotpSetupForm()
+
     # 1. Get the provisioning URI
     current_user.generate_totp_secret()
     db.session.commit()
@@ -160,37 +162,44 @@ def setup_totp():
     return render_template('auth/setup-totp.html',
                            page_title='Setup TOTP MFA',
                            qr_data=qr_data,
-                           totp_secret=current_user.totp_secret)
+                           totp_secret=current_user.totp_secret,
+                           form=form)
 
 @mfa_bp.route('/verify-totp-setup/', methods=['POST'])
 @login_required
 def verify_totp_setup():
     """ Verify the TOTP code entered by the user during setup. """
-    token = request.form.get('token')
+    form = TotpSetupForm()
+    if form.validate_on_submit():
+        token = form.token.data
+        # Use the temporary secret stored in the session for verification
+        secret = session.pop('mfa_setup_secret', None)
+        if not secret:
+            flash('TOTP MFA setup session expired. Start over.', 'danger')
+            return redirect(url_for('mfa.setup_totp'))
 
-    # Use the temporary secret stored in the session for verification
-    secret = session.pop('mfa_setup_secret', None)
+        # Create a TOTP object with the secret from the session and verify the code
+        if pyotp.TOTP(secret).verify(token):
+            # Finalize setup: save the secret (already on the model) and enable MFA
+            current_user.mfa_active = True
+            current_user.totp_active = True
+            db.session.commit()
+            flash('TOTP MFA successfully enabled!', 'success')
 
-    if not secret:
-        flash('TOTP MFA setup session expired. Start over.', 'danger')
-        return redirect(url_for('mfa.setup_totp'))
+            # Prompt user to set up recovery codes if not already present.
+            if not RecoveryCodes.query.filter_by(user_id=current_user.id).first():
+                return redirect(url_for('mfa.reset_recovery_codes'))
+            return redirect(url_for('auth.my_account'))
+        else:
+            # If verification fails, we don't save the secret or enable MFA
+            flash('Invalid code. Please try scanning and verifying again.', 'danger')
+            return redirect(url_for('mfa.setup_totp'))
 
-    # Create a TOTP object with the secret from the session and verify the code
-    if pyotp.TOTP(secret).verify(token):
-        # Finalize setup: save the secret (already on the model) and enable MFA
-        current_user.mfa_active = True
-        current_user.totp_active = True
-        db.session.commit()
-        flash('TOTP MFA successfully enabled!', 'success')
-
-        # Prompt user to set up recovery codes if not already present.
-        if not RecoveryCodes.query.filter_by(user_id=current_user.id).first():
-            return redirect(url_for('mfa.reset_recovery_codes'))
-        return redirect(url_for('auth.my_account'))
     else:
-        # If verification fails, we don't save the secret or enable MFA
-        flash('Invalid code. Please try scanning and verifying again.', 'danger')
+        flash('Invalid TOTP MFA setup form data.', 'danger')
         return redirect(url_for('mfa.setup_totp'))
+
+
 
 
 @mfa_bp.route('/disable-totp/')
