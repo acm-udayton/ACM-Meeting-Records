@@ -97,9 +97,9 @@ def sign_up():
         # Log the user out if active.
         if not current_user.is_anonymous:
             logout_user()
-        uname = request.form["username"]
-        pword = request.form["password"]
-        conf_pword = request.form["confirm_password"]
+        uname = form.username.data
+        pword = form.password.data
+        conf_pword = form.confirm_password.data
         # Handle new username and password issues or create the new user.
         if Users.query.filter_by(username = uname).first() is not None:
             flash(
