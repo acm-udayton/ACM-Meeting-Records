@@ -30,6 +30,7 @@ from werkzeug.utils import secure_filename
 
 # Local application imports.
 from app.extensions import db
+from app.forms import CreateMeetingForm
 from app.models import Users, Meetings, Attendees, Minutes, Attachments
 from app.utils import generate_meeting_code, sha_hash
 from app.__init__ import admin_required
@@ -60,19 +61,24 @@ def admin_dashboard(meeting_id):
 @admin_required
 def event_create():
     """ Create a new meeting based from form inputs. """
-    meeting_title = request.form["meeting_title"]
-    meeting_description = request.form["meeting_description"]
-    meeting_admin_only = request.form.get("meeting_admin_only") == "on"
-    meeting = Meetings(state = "not started",
+    form = CreateMeetingForm()
+    if form.validate_on_submit():
+        meeting_title = form.title.data
+        meeting_description = form.description.data
+        meeting_admin_only = form.admin_only.data
+        meeting = Meetings(state = "not started",
                         title = meeting_title,
                         description = meeting_description,
                         host = f"{current_user.username} - ACM at UDayton",
                         code_hash = None,
                         admin_only = meeting_admin_only
                         )
-    db.session.add(meeting)
-    db.session.commit()
-    return redirect(url_for("admin.admin_dashboard", meeting_id = meeting.id))
+        db.session.add(meeting)
+        db.session.commit()
+        return redirect(url_for("admin.admin_dashboard", meeting_id = meeting.id))
+    else:
+        flash("Meeting creation failed. Please check the input fields and try again.")
+        return redirect(url_for("main.events_list"))
 
 @admin_bp.route("/start/<int:meeting_id>/", methods = ["POST"])
 @login_required

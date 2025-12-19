@@ -24,7 +24,7 @@ from flask_login import current_user, login_required, logout_user
 from sqlalchemy import desc
 
 # Local application imports.
-from app.forms import MeetingCheckinForm
+from app.forms import CreateMeetingForm, MeetingCheckinForm
 from app.models import Meetings, Attendees, Minutes, Attachments
 from app.extensions import db
 from app.utils import sha_hash
@@ -59,13 +59,14 @@ def events_list():
     """ Show the event list page. """
     all_meetings = Meetings.query.order_by(desc(Meetings.id)).all()
     visible_meetings = []
+    form = CreateMeetingForm()
     if current_user.is_authenticated and current_user.role == "admin":
-        return render_template("events.html", page_title = "Meetings", meetings = all_meetings)
+        return render_template("events.html", page_title = "Meetings", meetings = all_meetings, form = form)
     else:
         for meeting in all_meetings:
             if meeting.admin_only is not True:
                 visible_meetings.append(meeting)
-        return render_template("events.html", page_title = "Meetings", meetings = visible_meetings)
+        return render_template("events.html", page_title = "Meetings", meetings = visible_meetings, form = form)
 
 @main_bp.route("/event/<int:meeting_id>/")
 def user_event(meeting_id):

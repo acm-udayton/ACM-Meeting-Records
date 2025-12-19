@@ -14,7 +14,7 @@ import re
 # Third-party imports.
 from flask import current_app
 from flask_wtf import FlaskForm, RecaptchaField, Recaptcha
-from wtforms import StringField, PasswordField, SubmitField
+from wtforms import StringField, PasswordField, SubmitField, BooleanField
 from wtforms.validators import (
     Optional,
     Length,
@@ -42,6 +42,27 @@ def email_domain_validator(form, field):
                 raise ValidationError(f'Email must be from the domain {required_domain}')
         else:
             raise ValidationError('Invalid email format.')
+
+class CreateMeetingForm(FlaskForm):
+    """ Form for new meeting creation. """
+    title = StringField(
+        'Meeting Title',
+        validators=[
+            InputRequired(),
+            Length(min=1, max=128)
+        ]
+    )
+    description = StringField(
+        'Meeting Description',
+        validators=[
+            InputRequired(),
+            Length(min=1, max=512)
+        ]
+    )
+    admin_only = BooleanField(
+        'Admin Only'
+    )
+    submit = SubmitField('Create Meeting')
 
 class MeetingCheckinForm(FlaskForm):
     """ Form for check-in to a meeting. """
