@@ -43,6 +43,16 @@ def email_domain_validator(form, field):
         else:
             raise ValidationError('Invalid email format.')
 
+class AdminAttendeeAddForm(FlaskForm):
+    """ Form for admin to add an attendee to a meeting. """
+    username = StringField(
+        'Attendee Username',
+        validators=[
+            InputRequired(),
+        ]
+    )
+    submit = SubmitField('Add Attendee')
+
 class CreateMeetingForm(FlaskForm):
     """ Form for new meeting creation. """
     title = StringField(

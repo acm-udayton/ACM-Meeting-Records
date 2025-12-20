@@ -135,11 +135,15 @@
           <section id="form" class="justify-content-right row">
             <div class="col-lg-4"></div>
             <form action="/admin/attendees/{{ meeting.id }}/" id="meeting-attendees-form" method="POST" class="col-lg-8">
-                <div class="form-floating mb-3 mt-3">
-                <input type="text" class="form-control form-control-lg" placeholder="Attendee Username" name="attendee_username" id="attendee_username" autocomplete="off">
-                <label for="meeting_code">Attendee Username</label>
-                </div>
-            <button type="submit" class="form-control form-control-lg">Add Attendee</button>
+              {{ add_attendee_form.hidden_tag() }}
+              {% for error in add_attendee_form.username.errors %}
+                <span class="text-danger">{{ error }}</span>
+              {% endfor %}
+              <div class="form-floating mb-3 mt-3">
+                {{ add_attendee_form.username(class="form-control form-control-lg", placeholder="Attendee Username", autocomplete="off") }}
+                <label for="{{ add_attendee_form.username.id }}">Attendee Username</label>
+              </div>
+              {{ add_attendee_form.submit(class="form-control form-control-lg") }}
             </form>
         </section>
       </aside>

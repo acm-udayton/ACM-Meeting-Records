@@ -30,7 +30,7 @@ from werkzeug.utils import secure_filename
 
 # Local application imports.
 from app.extensions import db
-from app.forms import CreateMeetingForm
+from app.forms import AdminAttendeeAddForm, CreateMeetingForm
 from app.models import Users, Meetings, Attendees, Minutes, Attachments
 from app.utils import generate_meeting_code, sha_hash
 from app.__init__ import admin_required
@@ -47,13 +47,17 @@ def admin_dashboard(meeting_id):
     attendees = Attendees.query.filter_by(meeting = meeting_id).all()
     minutes = Minutes.query.filter_by(meeting = meeting_id).all()
     attachments = Attachments.query.filter_by(meeting = meeting_id).all()
+
+    add_attendee_form = AdminAttendeeAddForm()
+
     return render_template(
         "admin/dashboard.html",
         page_title = f"Meeting - {meeting.title}",
         meeting = meeting,
         attendees = attendees,
         minutes = minutes,
-        attachments = attachments
+        attachments = attachments,
+        add_attendee_form = add_attendee_form
     )
 
 @admin_bp.route("/create/", methods = ["POST"])
@@ -192,34 +196,43 @@ def event_end(meeting_id):
 def event_attendees(meeting_id):
     """ Add an attendee to a single meeting from the administrator dashboard. """
     if Meetings.query.filter_by(id = meeting_id).first() is not None:
+        form = AdminAttendeeAddForm()
         # Handle minutes submission.
-        attendee_username = request.form["attendee_username"]
-        if Users.query.filter_by(username = attendee_username).first() is not None:
-            if Attendees.query.filter_by(
-                meeting = meeting_id,
-                username = attendee_username
-            ).first() is None:
-                attendee = Attendees(meeting = meeting_id, username = attendee_username)
-                db.session.add(attendee)
-                db.session.commit()
-                return_data = {
-                    "success": True,
-                    "meeting_id": meeting_id,
-                    "message": f"Attendee {attendee_username} checked in successfully."
-                }
-                return jsonify(return_data), 201
+        if form.validate_on_submit():
+            attendee_username = form.username.data
+            if Users.query.filter_by(username = attendee_username).first() is not None:
+                if Attendees.query.filter_by(
+                    meeting = meeting_id,
+                    username = attendee_username
+                ).first() is None:
+                    attendee = Attendees(meeting = meeting_id, username = attendee_username)
+                    db.session.add(attendee)
+                    db.session.commit()
+                    return_data = {
+                        "success": True,
+                        "meeting_id": meeting_id,
+                        "message": f"Attendee {attendee_username} checked in successfully."
+                    }
+                    return jsonify(return_data), 201
+                else:
+                    return_data = {
+                        "success": False,
+                        "meeting_id": meeting_id,
+                        "message": f"Attendee {attendee_username} is already checked in."
+                    }
+                    return jsonify(return_data), 400
             else:
                 return_data = {
                     "success": False,
                     "meeting_id": meeting_id,
-                    "message": f"Attendee {attendee_username} is already checked in."
+                    "message": f"Attendee {attendee_username} does not exist."
                 }
                 return jsonify(return_data), 400
         else:
             return_data = {
                 "success": False,
                 "meeting_id": meeting_id,
-                "message": f"Attendee {attendee_username} does not exist."
+                "message": "Invalid form submission."
             }
             return jsonify(return_data), 400
     else:
