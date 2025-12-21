@@ -34,10 +34,12 @@
                                 {{ user.role|capitalize }}
                                 {% if user.role != 'admin' %}
                                 <form method="post" action="/admin/users/promote/{{ user.id }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                     <button type="submit" class="btn btn-sm green-link-btn"><i class="fa fa-arrow-up"></i></button>
                                 </form>
                                 {% else %}
                                 <form method="post" action="/admin/users/demote/{{ user.id }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                     <button type="submit" class="btn btn-sm red-link-btn"><i class="fa fa-arrow-down"></i></button>
                                 </form>
                                 {% endif %}
@@ -45,6 +47,7 @@
                         </td>
                         <td>
                             <form method="post" action="/admin/users/reset-password/{{ user.id }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                 <input type="password" name="new_password" id="new_password" value=""/>
                                 <button type="submit" class="btn btn-sm green-link-btn"><i class="fa fa-key"></i></button>
                             </form>
@@ -52,6 +55,7 @@
                         <td>
                             {% if user.mfa_active %}
                             <form method="post" action="/admin/users/disable-mfa/{{ user.id }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                 <button type="submit" class="btn btn-sm green-link-btn container d-flex justify-content-center align-items-center"><i class="ud-red-text fa fa-lock"></i></button>
                             </form>
                             {% else %}
@@ -63,10 +67,12 @@
                         <td>
                             {% if user.activated %}
                             <form method="post" action="/admin/users/disable-account/{{ user.id }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                 <button type="submit" class="btn btn-sm red-link-btn container d-flex justify-content-center align-items-center"><i class="fa fa-user-xmark"></i></button>
                             </form>
                             {% else %}
                             <form method="post" action="/admin/users/enable-account/{{ user.id }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                 <button type="submit" class="btn btn-sm green-link-btn container d-flex justify-content-center align-items-center"><i class="fa fa-user-check"></i></button>
                             </form>
                             {% endif %}
