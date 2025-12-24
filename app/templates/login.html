@@ -8,7 +8,7 @@
   <main class="main">
     <section id="form-context" class="d-grid justify-content-center text-center">
       <h2>Account Login</h2>
-      <span>No Account? <a href="/sign-up">Create one!</a></span>
+      <span><strong>No Account?</strong> <a href="/sign-up">Create one!</a></span>
     </section>
     
     <section id="form" class="d-flex justify-content-center">
@@ -17,21 +17,26 @@
         {{ form.hidden_tag() }} 
 
         <div class="form-floating mb-3 mt-3">
-          {{ form.username(class="form-control form-control-lg", placeholder="Username", autocomplete="on") }}
-          <label for="{{ form.username.id }}">Email</label>
-          
           {% for error in form.username.errors %}
             <span class="text-danger">{{ error }}</span>
           {% endfor %}
+
+          {{ form.username(class="form-control form-control-lg", placeholder="Username", autocomplete="on") }}
+          <label for="{{ form.username.id }}">Email</label>
         </div>
 
         <div class="form-floating mb-3 mt-3">
-          {{ form.password(class="form-control form-control-lg", placeholder="Password", autocomplete="off") }}
-          <label for="{{ form.password.id }}">Password</label>
-
           {% for error in form.password.errors %}
             <span class="text-danger">{{ error }}</span>
           {% endfor %}
+
+          {{ form.password(class="form-control form-control-lg", placeholder="Password", autocomplete="off") }}
+          <label for="{{ form.password.id }}">Password</label>
+
+          <span>
+            <strong>Forgot password?</strong>
+            <a href="mailto:{{ contact_email }}" class="ud-blue-text" target="_blank">Ask an admin</a> to reset it!
+          </span>
         </div>
 
         {{ form.submit(class="form-control form-control-lg") }}
