@@ -121,7 +121,14 @@ def sign_up():
             return redirect(url_for("auth.login"))
     # Handle GET requests.
     else:
-        return render_template("sign_up.html", page_title = "Create New Account", form = form)
+        if current_app.context["usernames"]["enforce_usernames"] == "True":
+            required_domain = current_app.context["usernames"]["username_email_domain"]
+        else:
+            required_domain = None
+        return render_template("sign_up.html",
+                               page_title = "Create New Account",
+                               required_domain=required_domain,
+                               form = form)
 
 @auth_bp.route("/logout/")
 @login_required

@@ -19,7 +19,12 @@
 
           <div class="form mb-3 mt-3">
             <label for="{{ form.username.id }}">Email</label>
-            {{ form.username(class="form-control form-control-lg", placeholder="Email", autocomplete="off") }}
+            <p>
+              {% if required_domain %}
+                <span class="form-text ud-blue-text">Email must be from the domain {{ required_domain }}</span>
+              {% endif %}
+              {{ form.username(class="form-control form-control-lg", placeholder="Email", autocomplete="off") }}
+            </p>
           </div>
           {% for error in form.password.errors %}
             <span class="text-danger">{{ error }}</span>
