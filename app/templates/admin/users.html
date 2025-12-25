@@ -33,15 +33,63 @@
                             <div class="d-flex justify-content-left">
                                 {{ user.role|capitalize }}
                                 {% if user.role != 'admin' %}
-                                <form method="post" action="/admin/users/promote/{{ user.id }}">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                    <button type="submit" class="btn btn-sm green-link-btn"><i class="fa fa-arrow-up"></i></button>
-                                </form>
+                                                                <button type="button" 
+                                        class="btn btn-sm red-link-btn container d-flex justify-content-center align-items-center"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#confirmPromoteModal">
+                                    <i class="fa fa-arrow-up"></i>
+                                </button>
+                                <!-- Promote Confirmation Modal -->
+                                <div class="modal fade" id="confirmPromoteModal" tabindex="-1" aria-labelledby="confirmPromoteModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="confirmPromoteModalLabel">Confirm Promotion</h5>
+                                        </div>
+                                        <div class="modal-body">
+                                            Are you sure you want to promote this user?
+                                        </div>
+                                        <div class="modal-footer justify-content-between">
+                                            <button type="button" id="promote-cancel" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            
+                                            <form method="POST" id="confirm-promote-form" action="/admin/users/promote/{{ user.id }}/">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                <button type="submit" class="btn btn-danger">Promote User</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                    </div>
+                                </div>
+                                <hr class="d-sm-none">
                                 {% else %}
-                                <form method="post" action="/admin/users/demote/{{ user.id }}">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                    <button type="submit" class="btn btn-sm red-link-btn"><i class="fa fa-arrow-down"></i></button>
-                                </form>
+                                <button type="button" 
+                                        class="btn btn-sm red-link-btn container d-flex justify-content-center align-items-center"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#confirmDemoteModal">
+                                    <i class="fa fa-arrow-down"></i>
+                                </button>
+                                <!-- Demote Confirmation Modal -->
+                                <div class="modal fade" id="confirmDemoteModal" tabindex="-1" aria-labelledby="confirmDemoteModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="confirmDemoteModalLabel">Confirm Demotion</h5>
+                                        </div>
+                                        <div class="modal-body">
+                                            Are you sure you want to demote this user?
+                                        </div>
+                                        <div class="modal-footer justify-content-between">
+                                            <button type="button" id="demote-cancel" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            
+                                            <form method="POST" id="confirm-demote-form" action="/admin/users/demote/{{ user.id }}/">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                <button type="submit" class="btn btn-danger">Demote User</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                    </div>
+                                </div>
+                                <hr class="d-sm-none">
                                 {% endif %}
                             </div>
                         </td>

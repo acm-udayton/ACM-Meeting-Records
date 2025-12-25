@@ -496,6 +496,9 @@ def promote_user(user_id):
 @admin_required
 def demote_user(user_id):
     """ Demote a user to a user role. """
+    if user_id == current_user.id:
+        flash("You cannot demote your own account.")
+        return redirect(url_for("admin.users_list"))
     user = Users.query.filter_by(id = user_id).first_or_404()
     if user.role != "user":
         user.role = "user"
