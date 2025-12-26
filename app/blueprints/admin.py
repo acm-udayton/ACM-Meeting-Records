@@ -461,7 +461,7 @@ def event_delete(meeting_id):
 @admin_bp.route("/users/")
 def users_list():
     """ Show the users index page."""
-    all_users = Users.query.all()
+    all_users = Users.query.order_by(Users.id).all()
     return render_template("admin/users.html", page_title = "Users", users = all_users)
 
 @admin_bp.route("/users/reset-password/<int:user_id>/", methods = ["POST"])

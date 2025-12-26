@@ -36,11 +36,11 @@
                                                                 <button type="button" 
                                         class="btn btn-sm red-link-btn container d-flex justify-content-center align-items-center"
                                         data-bs-toggle="modal" 
-                                        data-bs-target="#confirmPromoteModal">
+                                        data-bs-target="#confirmPromoteModal-{{ user.id }}">
                                     <i class="fa fa-arrow-up"></i>
                                 </button>
                                 <!-- Promote Confirmation Modal -->
-                                <div class="modal fade" id="confirmPromoteModal" tabindex="-1" aria-labelledby="confirmPromoteModalLabel" aria-hidden="true">
+                                <div class="modal fade" id="confirmPromoteModal-{{ user.id }}" tabindex="-1" aria-labelledby="confirmPromoteModalLabel" aria-hidden="true">
                                     <div class="modal-dialog">
                                     <div class="modal-content">
                                         <div class="modal-header">
@@ -65,11 +65,11 @@
                                 <button type="button" 
                                         class="btn btn-sm red-link-btn container d-flex justify-content-center align-items-center"
                                         data-bs-toggle="modal" 
-                                        data-bs-target="#confirmDemoteModal">
+                                        data-bs-target="#confirmDemoteModal-{{ user.id }}">
                                     <i class="fa fa-arrow-down"></i>
                                 </button>
                                 <!-- Demote Confirmation Modal -->
-                                <div class="modal fade" id="confirmDemoteModal" tabindex="-1" aria-labelledby="confirmDemoteModalLabel" aria-hidden="true">
+                                <div class="modal fade" id="confirmDemoteModal-{{ user.id }}" tabindex="-1" aria-labelledby="confirmDemoteModalLabel" aria-hidden="true">
                                     <div class="modal-dialog">
                                     <div class="modal-content">
                                         <div class="modal-header">
