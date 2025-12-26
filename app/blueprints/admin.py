@@ -37,6 +37,18 @@ from app.__init__ import admin_required
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin', template_folder='templates')
 
+# Utility function(s)
+def get_last_attended_date(user):
+        """ Get date of last attended meeting for the given user. """
+        # Query the Meetings table
+        last_meeting = db.session.query(Meetings.event_start)\
+            .join(Attendees, Meetings.id == Attendees.meeting)\
+            .filter(Attendees.username == user.username)\
+            .filter(Meetings.event_start != None)\
+            .order_by(Meetings.event_start.desc())\
+            .first()
+        return last_meeting[0] if last_meeting else None
+
 # Admin web routes.
 @admin_bp.route("/dashboard/<int:meeting_id>/")
 @login_required
@@ -462,6 +474,15 @@ def event_delete(meeting_id):
 def users_list():
     """ Show the users index page."""
     all_users = Users.query.order_by(Users.id).all()
+    for user in all_users:
+        # Get the number of meetings attended by each user.
+        user.meetings_attended = Attendees.query.filter_by(username = user.username).count()
+        # Get the date of the last meeting attended by each user.
+        last_attended_meeting = get_last_attended_date(user)
+        if last_attended_meeting is not None:
+            user.last_checkin = last_attended_meeting
+        else:
+            user.last_checkin = None
     return render_template("admin/users.html", page_title = "Users", users = all_users)
 
 @admin_bp.route("/users/reset-password/<int:user_id>/", methods = ["POST"])

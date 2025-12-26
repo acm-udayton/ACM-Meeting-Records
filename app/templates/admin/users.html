@@ -15,6 +15,8 @@
                     <th scope="col">Username</th>
                     <th scope="col">Start Semester</th>
                     <th scope="col">End Semester</th>
+                    <th scope="col">Meetings Attended</th>
+                    <th scope="col">Last Check-in Date</th>
                     <th scope="col">Role</th>
                     <th scope="col">Reset Password</th>
                     <th scope="col">MFA Status</th>
@@ -29,6 +31,8 @@
                         <td>{{ user.username }}</td>
                         <td>{{ user.joined|default("N/A", true) }}</td>
                         <td>{{ user.graduated|default("N/A", true) }}</td>
+                        <td>{{ user.meetings_attended }}</td>
+                        <td>{{ user.last_checkin|default("N/A", true) }}</td>
                         <td>
                             <div class="d-flex justify-content-left">
                                 {{ user.role|capitalize }}
