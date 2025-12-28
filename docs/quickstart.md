@@ -40,5 +40,7 @@ Please note, the passwords are stored in a SHA 256 hash, so you cannot manually 
 * Go through the web UI
 * Create a SHA 256 hash of the password first, then use that to update the database.
 
+### Upgrades
+For information on upgrading to a new version of ACM Meeting Records, please refer to the <a href="upgrading.md">upgrading.md</a> file.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
