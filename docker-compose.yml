@@ -5,17 +5,20 @@ services:
     ports: # Expose the web app on port 8000.
       - "8000:8000"
     # Run the flask app within Gunicorn WQGI server with 10 workers.
-    command: gunicorn --bind 0.0.0.0:8000 --workers 10 --access-logfile - --log-level debug 'app:create_app()'
+    command: >
+      sh -c "flask db upgrade && 
+             gunicorn --bind 0.0.0.0:8000 --workers 10 --access-logfile - --log-level debug 'app:create_app()'"
     depends_on: # Ensure the DB is available before starting the web app.
       db:
         condition: service_healthy
     environment: # Specify environment variables for the web app.
-      - DATABASE_URL=postgresql://admin:password@db:5432/acm-meetings-db
+      - SQLALCHEMY_DATABASE_URI=postgresql://admin:password@db:5432/acm-meetings-db
       - FLASK_APP=app
       - TZ=America/New_York
       - UPLOAD_FOLDER=/app/uploads
     volumes: # Mount a volume for persistent uploads storage.
       - ./app/uploads:/app/uploads
+      - ./migrations:/app/migrations
   db:
     image: postgres:13
     container_name: acm-meeting-records-db
