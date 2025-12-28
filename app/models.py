@@ -35,6 +35,9 @@ class Users(UserMixin, db.Model):
     totp_secret = db.Column(db.String(32), nullable = True)
     totp_active = db.Column(db.Boolean, nullable = True, default = False)
 
+    # Store activation status - disable accounts until approved or after valid access period.
+    activated = db.Column(db.Boolean, nullable = False, default = False)
+
     def set_password(self, password):
         """Werkzeug automatically generates a cryptographically secure salt
         and incorporates it into the returned hash string."""
@@ -58,7 +61,6 @@ class Users(UserMixin, db.Model):
     def verify_totp(self, token):
         """ Check against the current token AND tokens immediately before/after (drift) """
         return pyotp.totp.TOTP(self.totp_secret).verify(token, valid_window=1)
-
 
     def to_dict(self):
         """ Get user data values as a dictionary. """
