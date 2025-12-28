@@ -168,10 +168,6 @@ def create_app():
                         )
         return context
 
-    # Initialize the database.
-    with app.app_context():
-        db.create_all()
-
     # Add custom Jinja filters.
     app.jinja_env.filters['datetime_format'] = datetime_format
 
