@@ -109,3 +109,41 @@ class Attachments(db.Model):
                 "filename": self.filename,
                 "filepath": self.filepath,
                 "meeting": self.meeting}
+
+
+#THOMAS CODE
+
+class Poll(db.Model):
+    """Store polls"""
+    __tablename__="polls"
+    id=db.Column(db.Integer, primary_key=True)
+    title=db.Column(db.String(250), nullable=False)
+
+    questions=db.relationship("PollQuestion", backref="poll", cascade="all, delete-orphan")
+
+
+class PollQuestion(db.Model):
+    """Store questions for polls."""
+    __tablename__="poll_questions"
+
+    id=db.Column(db.Integer, primary_key=True)  
+    question_text=db.Column(db.String(500), nullable=False)
+
+    poll_id=db.Column(db.Integer, db.ForeignKey("polls.id", ondelete="CASCADE"), nullable=False)
+
+    options=db.relationship("PollOption", backref="question", cascade="all, delete-orphan")
+
+
+class PollOption(db.Model):
+    """Store options for poll questions."""
+    __tablename__="poll_options"
+
+    id=db.Column(db.Integer, primary_key=True)
+    option_text=db.Column(db.String(250), nullable=False)
+    votes=db.Column(db.Integer, nullable=False, default=0)
+
+    question_id=db.Column(db.Integer, db.ForeignKey("poll_questions.id", ondelete="CASCADE"), nullable=False)
+
+
+
+
