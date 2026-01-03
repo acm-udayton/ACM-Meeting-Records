@@ -31,12 +31,12 @@ class Users(UserMixin, db.Model):
     joined = db.Column(db.String(7), nullable = True) # Store FA|SP YYYY
     graduated = db.Column(db.String(7), nullable = True) # Store FA|SP YYYY
 
-    mfa_active = db.Column(db.Boolean, nullable = True, default = False)
+    mfa_active = db.Column(db.Boolean, nullable = True, default = False, server_default = '0')
     totp_secret = db.Column(db.String(32), nullable = True)
-    totp_active = db.Column(db.Boolean, nullable = True, default = False)
+    totp_active = db.Column(db.Boolean, nullable = True, default = False, server_default = '0')
 
     # Store activation status - disable accounts until approved or after valid access period.
-    activated = db.Column(db.Boolean, nullable = False, default = False)
+    activated = db.Column(db.Boolean, nullable = False, default = False, server_default = '0')
 
     def set_password(self, password):
         """Werkzeug automatically generates a cryptographically secure salt
@@ -105,7 +105,7 @@ class Meetings(db.Model):
     event_start = db.Column(db.DateTime, nullable = True)
     event_end = db.Column(db.DateTime, nullable = True)
     code_hash = db.Column(db.String(250), nullable = True)
-    admin_only = db.Column(db.Boolean, nullable = True, default = False)
+    admin_only = db.Column(db.Boolean, nullable = True, default = False, server_default = '0')
 
     def to_dict(self):
         """ Get meeting data values as a dictionary. """

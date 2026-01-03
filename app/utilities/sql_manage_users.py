@@ -23,8 +23,8 @@ def create():
     if pword != pconf:
         print("Invalid Password, passwords must match")
         sys.exit()
-    output_message = ("INSERT into users (username, password, role) "
-                      f"VALUES ('{uname}', '{gen_hash(pword)}', '{role}');")
+    output_message = ("INSERT into users (username, password, role, activated) "
+                      f"VALUES ('{uname}', '{gen_hash(pword)}', '{role}', true);")
     return output_message
 
 def demote():
