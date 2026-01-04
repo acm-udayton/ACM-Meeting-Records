@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block header_styles %}
+<link href="{{ url_for('static', filename='css/forms.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block page_content %}
+    <div class="flex-grow-1 container mt-5">
+      <div class="row">
+        <main class="col-12">
+            <h2>Poll Managament</h2>
+            <h3>Create a Poll</h3> 
+
+            <section id="form-context" class="d-grid justify-content-center text-center">
+            </section>
+            <section id="form" class="d-flex justify-content-center">
+                <form action="/create-poll/" method="POST" class="col-6">
+                    <div class="form mb-3 mt-3">
+                        <label for="title">Title</label>
+                        <input id="title" type="text" name="title" placeholder="Enter poll title", required>
+                    </div>
+                    <div id="questions-container"> </div>
+                    
+                    <button type="button" class="btn btn-secondary mb-3" onclick="addQuestion()">+ Question</button>
+                    <br><br>
+                    <button type="submit" class="form-control form-control-lg red-button">Create Poll</button> 
+                </form>
+            </section>
+            
+            {% block footer_scripts %}
+            <script src="{{ url_for('static', filename='js/polls.js') }}"></script>
+            {% endblock %}
+
+        </main>
+      </div>
+    </div>
+
+
+
+{% endblock %}
