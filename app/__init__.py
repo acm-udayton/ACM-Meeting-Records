@@ -179,6 +179,6 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(api_bp, url_prefix="/api")
-    app.register_blueprint(polls_bp, url_prefix="/polls")
+    app.register_blueprint(polls_bp, url_prefix="/admin")
 
     return app
