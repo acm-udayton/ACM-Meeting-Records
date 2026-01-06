@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block header_styles %}
+<link href="{{ url_for('static', filename='css/forms.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block page_content %}
+  <main class="main">
+    <section id="form-context" class="d-grid justify-content-center text-center">
+      <h2>Account MFA Setup - TOTP</h2>
+      <span>Set up Time-based One-Time Password (TOTP) as an option for MFA authentication on your account.</span>
+    </section>
+    <section id="totp-setup" class="justify-content-center text-center">
+        <p>Scan this QR code with your authenticator app (e.g., Google Authenticator, Duo Mobile).</p>
+        <img src="data:image/png;base64,{{ qr_data }}" alt="TOTP Setup QR Code" class="w-25">
+        <p>Alternatively, enter the secret key manually: <strong>{{ totp_secret }}</strong></p>
+    </section>
+    <section id="form" class="d-flex justify-content-center">
+      <form action="{{ url_for('mfa.verify_totp_setup') }}" method="POST" class="col-6">
+          {{ form.hidden_tag() }}
+          {% for error in form.token.errors %}
+            <span class="text-danger">{{ error }}</span>
+          {% endfor %}
+
+          <div class="form-floating mb-3 mt-3">
+            {{ form.token(class="form-control form-control-lg", placeholder="6-digit code", autocomplete="off") }}
+            <label for="{{ form.token.id }}">Authenticator App Code</label>
+          </div>
+
+        <button type="submit" class="form-control form-control-lg">Verify Setup</button>
+      </form>
+    </section>
+  </main>
+
+{% endblock %}
