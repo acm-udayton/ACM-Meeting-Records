@@ -9,12 +9,53 @@
       <div class="row">
         <main class="col-12">
             <h2>Poll Managament</h2>
-            <h3>Create a Poll</h3> 
 
-            <section id="form-context" class="d-grid justify-content-center text-center">
+                        <section class="mb-5">
+                <h3>Existing Polls</h3>
+                {% if polls %}
+                    <div class="list-group">
+                        {% for poll in polls %}
+                        <div class="list-group-item mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="mb-0">{{ poll.title }}</h5>
+                                    <form action="{{ url_for('polls.delete_poll', poll_id=poll.id) }}" method="POST" style="display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this poll?')">Delete</button>
+                                    </form>
+                            </div>
+                            
+                            <!-- Display Questions -->
+                            {% if poll.questions %}
+                                <div class="ms-3">
+                                    {% for question in poll.questions %}
+                                        <div class="mb-2">
+                                            <strong>Q{{ loop.index }}:</strong> {{ question.question_text }}
+                                            <!-- Display Options -->
+                                            {% if question.options %}
+                                                <ul class="mb-1">
+                                                    {% for option in question.options %}
+                                                        <li>{{ option.option_text }} <span class="badge bg-secondary">{{ option.votes }} votes</span></li>
+                                                    {% endfor %}
+                                                </ul>
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="text-muted ms-3">No questions added yet.</p>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No polls created yet.</p>
+                {% endif %}
+            </section>
+
+            <h3>Create a Poll</h3> 
+            <section id="form-context" class="d-grid justify-content-left text-left">
             </section>
             <section id="form" class="d-flex justify-content-center">
-                <form action="/create-poll/" method="POST" class="col-6">
+                <form action="{{ url_for('polls.create_poll') }}" method="POST" class="col-6">
                     <div class="form mb-3 mt-3">
                         <label for="title">Title</label>
                         <input id="title" type="text" name="title" placeholder="Enter poll title", required>
