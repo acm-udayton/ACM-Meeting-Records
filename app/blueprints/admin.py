@@ -30,11 +30,24 @@ from werkzeug.utils import secure_filename
 
 # Local application imports.
 from app.extensions import db
+from app.forms import AdminAttendeeAddForm, CreateMeetingForm
 from app.models import Users, Meetings, Attendees, Minutes, Attachments
 from app.utils import generate_meeting_code, sha_hash
 from app.__init__ import admin_required
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin', template_folder='templates')
+
+# Utility function(s)
+def get_last_attended_date(user):
+        """ Get date of last attended meeting for the given user. """
+        # Query the Meetings table
+        last_meeting = db.session.query(Meetings.event_start)\
+            .join(Attendees, Meetings.id == Attendees.meeting)\
+            .filter(Attendees.username == user.username)\
+            .filter(Meetings.event_start != None)\
+            .order_by(Meetings.event_start.desc())\
+            .first()
+        return last_meeting[0] if last_meeting else None
 
 # Admin web routes.
 @admin_bp.route("/dashboard/<int:meeting_id>/")
@@ -46,13 +59,17 @@ def admin_dashboard(meeting_id):
     attendees = Attendees.query.filter_by(meeting = meeting_id).all()
     minutes = Minutes.query.filter_by(meeting = meeting_id).all()
     attachments = Attachments.query.filter_by(meeting = meeting_id).all()
+
+    add_attendee_form = AdminAttendeeAddForm()
+
     return render_template(
         "admin/dashboard.html",
         page_title = f"Meeting - {meeting.title}",
         meeting = meeting,
         attendees = attendees,
         minutes = minutes,
-        attachments = attachments
+        attachments = attachments,
+        add_attendee_form = add_attendee_form
     )
 
 @admin_bp.route("/create/", methods = ["POST"])
@@ -60,19 +77,24 @@ def admin_dashboard(meeting_id):
 @admin_required
 def event_create():
     """ Create a new meeting based from form inputs. """
-    meeting_title = request.form["meeting_title"]
-    meeting_description = request.form["meeting_description"]
-    meeting_admin_only = request.form.get("meeting_admin_only") == "on"
-    meeting = Meetings(state = "not started",
+    form = CreateMeetingForm()
+    if form.validate_on_submit():
+        meeting_title = form.title.data
+        meeting_description = form.description.data
+        meeting_admin_only = form.admin_only.data
+        meeting = Meetings(state = "not started",
                         title = meeting_title,
                         description = meeting_description,
                         host = f"{current_user.username} - ACM at UDayton",
                         code_hash = None,
                         admin_only = meeting_admin_only
                         )
-    db.session.add(meeting)
-    db.session.commit()
-    return redirect(url_for("admin.admin_dashboard", meeting_id = meeting.id))
+        db.session.add(meeting)
+        db.session.commit()
+        return redirect(url_for("admin.admin_dashboard", meeting_id = meeting.id))
+    else:
+        flash("Meeting creation failed. Please check the input fields and try again.")
+        return redirect(url_for("main.events_list"))
 
 @admin_bp.route("/start/<int:meeting_id>/", methods = ["POST"])
 @login_required
@@ -186,34 +208,43 @@ def event_end(meeting_id):
 def event_attendees(meeting_id):
     """ Add an attendee to a single meeting from the administrator dashboard. """
     if Meetings.query.filter_by(id = meeting_id).first() is not None:
+        form = AdminAttendeeAddForm()
         # Handle minutes submission.
-        attendee_username = request.form["attendee_username"]
-        if Users.query.filter_by(username = attendee_username).first() is not None:
-            if Attendees.query.filter_by(
-                meeting = meeting_id,
-                username = attendee_username
-            ).first() is None:
-                attendee = Attendees(meeting = meeting_id, username = attendee_username)
-                db.session.add(attendee)
-                db.session.commit()
-                return_data = {
-                    "success": True,
-                    "meeting_id": meeting_id,
-                    "message": f"Attendee {attendee_username} checked in successfully."
-                }
-                return jsonify(return_data), 201
+        if form.validate_on_submit():
+            attendee_username = form.username.data
+            if Users.query.filter_by(username = attendee_username).first() is not None:
+                if Attendees.query.filter_by(
+                    meeting = meeting_id,
+                    username = attendee_username
+                ).first() is None:
+                    attendee = Attendees(meeting = meeting_id, username = attendee_username)
+                    db.session.add(attendee)
+                    db.session.commit()
+                    return_data = {
+                        "success": True,
+                        "meeting_id": meeting_id,
+                        "message": f"Attendee {attendee_username} checked in successfully."
+                    }
+                    return jsonify(return_data), 201
+                else:
+                    return_data = {
+                        "success": False,
+                        "meeting_id": meeting_id,
+                        "message": f"Attendee {attendee_username} is already checked in."
+                    }
+                    return jsonify(return_data), 400
             else:
                 return_data = {
                     "success": False,
                     "meeting_id": meeting_id,
-                    "message": f"Attendee {attendee_username} is already checked in."
+                    "message": f"Attendee {attendee_username} does not exist."
                 }
                 return jsonify(return_data), 400
         else:
             return_data = {
                 "success": False,
                 "meeting_id": meeting_id,
-                "message": f"Attendee {attendee_username} does not exist."
+                "message": "Invalid form submission."
             }
             return jsonify(return_data), 400
     else:
@@ -442,7 +473,16 @@ def event_delete(meeting_id):
 @admin_bp.route("/users/")
 def users_list():
     """ Show the users index page."""
-    all_users = Users.query.all()
+    all_users = Users.query.order_by(Users.id).all()
+    for user in all_users:
+        # Get the number of meetings attended by each user.
+        user.meetings_attended = Attendees.query.filter_by(username = user.username).count()
+        # Get the date of the last meeting attended by each user.
+        last_attended_meeting = get_last_attended_date(user)
+        if last_attended_meeting is not None:
+            user.last_checkin = last_attended_meeting
+        else:
+            user.last_checkin = None
     return render_template("admin/users.html", page_title = "Users", users = all_users)
 
 @admin_bp.route("/users/reset-password/<int:user_id>/", methods = ["POST"])
@@ -477,6 +517,9 @@ def promote_user(user_id):
 @admin_required
 def demote_user(user_id):
     """ Demote a user to a user role. """
+    if user_id == current_user.id:
+        flash("You cannot demote your own account.")
+        return redirect(url_for("admin.users_list"))
     user = Users.query.filter_by(id = user_id).first_or_404()
     if user.role != "user":
         user.role = "user"
@@ -485,4 +528,51 @@ def demote_user(user_id):
         return redirect(url_for("admin.users_list"))
     else:
         flash(f"User {user.username} is already a user.")
+        return redirect(url_for("admin.users_list"))
+
+@admin_bp.route("/users/disable-mfa/<int:user_id>/", methods = ["POST"])
+@login_required
+@admin_required
+def disable_user_mfa(user_id):
+    """ Disable two-factor authentication for a user. """
+    user = Users.query.filter_by(id = user_id).first_or_404()
+    if user.mfa_active:
+        user.mfa_active = False
+        user.totp_active = False
+        user.totp_secret = None
+        db.session.commit()
+        flash(f"Two-factor authentication for user {user.username} disabled successfully.")
+        return redirect(url_for("admin.users_list"))
+    else:
+        flash(f"User {user.username} does not have two-factor authentication enabled.")
+        return redirect(url_for("admin.users_list"))
+
+@admin_bp.route("/users/disable-account/<int:user_id>/", methods = ["POST"])
+@login_required
+@admin_required
+def disable_user_account(user_id):
+    """ Disable a user's account. """
+    user = Users.query.filter_by(id = user_id).first_or_404()
+    if user.activated:
+        user.activated = False
+        db.session.commit()
+        flash(f"Account for user {user.username} disabled successfully.")
+        return redirect(url_for("admin.users_list"))
+    else:
+        flash(f"User {user.username}'s account is already disabled.")
+        return redirect(url_for("admin.users_list"))
+
+@admin_bp.route("/users/enable-account/<int:user_id>/", methods = ["POST"])
+@login_required
+@admin_required
+def enable_user_account(user_id):
+    """ Enable a user's account. """
+    user = Users.query.filter_by(id = user_id).first_or_404()
+    if not user.activated:
+        user.activated = True
+        db.session.commit()
+        flash(f"Account for user {user.username} enabled successfully.")
+        return redirect(url_for("admin.users_list"))
+    else:
+        flash(f"User {user.username}'s account is already enabled.")
         return redirect(url_for("admin.users_list"))

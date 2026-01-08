@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block header_styles %}
+<link href="{{ url_for('static', filename='css/forms.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block page_content %}
+  <main class="main">
+    <section id="form-context" class="d-grid justify-content-center text-center">
+      <h2>MFA Recovery Codes</h2>
+      <span>One-time use passcodes to sign in.</span>
+    </section>
+    <section id="codes" class="justify-content-center text-center align-items-center d-flex flex-column">
+        <p>Store these codes securely. Each code can be used once.<br></p>
+        <pre>{{codes}}</pre>
+        <a href="/my-account/"><button role="button" class="btn btn-primary blue-link-btn">My Account</button></a>
+    </section>
+    
+  </main>
+
+{% endblock %}

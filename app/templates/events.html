@@ -9,20 +9,30 @@
             <link href="{{ url_for('static', filename='css/forms.css') }}" rel="stylesheet">
           {% endblock %}
             <form action="/admin/create/" id="meeting-create-form" method="POST" class="col-lg-12">
+              {{ form.hidden_tag() }}
+              {% for error in form.title.errors %}
+                <span class="text-danger">{{ error }}</span>
+              {% endfor %}
               <div class="form-floating mb-3 mt-3">
-                <input type="text" class="form-control form-control-lg" placeholder="Meeting Title" name="meeting_title" id="meeting_title" autocomplete="off" required>
-                <label for="meeting_title">Meeting Title</label>
+                {{ form.title(class="form-control form-control-lg", placeholder="Meeting Title", autocomplete="off") }}
+                <label for="{{ form.title.id }}">Meeting Title</label>
               </div>
+              {% for error in form.description.errors %}
+                <span class="text-danger">{{ error }}</span>
+              {% endfor %}
               <div class="form-floating mb-3 mt-3">
-                <input type="text" class="form-control form-control-lg" placeholder="Meeting Description" name="meeting_description" id="meeting_description" autocomplete="off" required>
-                <label for="meeting_description">Meeting Description</label>
+                {{ form.description(class="form-control form-control-lg", placeholder="Meeting Description", autocomplete="off") }}
+                <label for="{{ form.description.id }}">Meeting Description</label>
               </div>
+              {% for error in form.admin_only.errors %}
+                <span class="text-danger">{{ error }}</span>
+              {% endfor %}
               <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" id="meeting_admin_only" name="meeting_admin_only">
-                <label class="form-check-label" for="meeting_admin_only">Admin-only Meeting</label>
+                {{ form.admin_only(class="form-check-input", id="meeting_admin_only") }}
+                <label for="{{ form.admin_only.id }}" class="form-check-label">Admin-only Meeting</label>
               </div>
               <br>
-            <button type="submit" class="form-control form-control-lg"><strong>Create Meeting</strong></button>
+            {{ form.submit(class="form-control form-control-lg") }}
           </form>
 
 

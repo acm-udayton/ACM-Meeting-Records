@@ -11,24 +11,25 @@
     </section>
     <section id="form" class="d-flex justify-content-center">
       <form action="/update-account/" method="POST" class="col-6">
+        {{ account_update_form.hidden_tag() }}
           <div class="form mb-3 mt-3">
             <label for="username">Email</label>
             <input type="text" class="form-control form-control-lg" placeholder="Username" name="username" id="username" autocomplete="on" disabled value="{{current_user.username}}">
           </div>
           <div class="form mb-3 mt-3">
-            <label for="password">Password</label>
-            <input type="password" class="form-control form-control-lg" placeholder="Password" name="password" id="password" autocomplete="off">
+            <label for="{{ account_update_form.password.id }}">Password</label>
+            {{ account_update_form.password(class="form-control form-control-lg", placeholder="Password", autocomplete="off") }}
           </div>
           <div class="form mb-3 mt-3">
-            <label for="start_semester">Start Semester</label>
-            <input type="text" class="form-control form-control-lg" placeholder="FA/SP YYYY" name="start_semester" id="start_semester" value="{{current_user.joined or '' }}">
+            <label for="{{ account_update_form.start_semester.id }}">Start Semester</label>
+            {{ account_update_form.start_semester(class="form-control form-control-lg", placeholder="FA/SP YYYY") }}
           </div>
           <div class="form mb-3 mt-3">
-            <label for="grad_semester">Graduation Semester</label>
-            <input type="text" class="form-control form-control-lg" placeholder="FA/SP YYYY" name="grad_semester" id="grad_semester" value="{{current_user.graduated or '' }}">
+            <label for="{{ account_update_form.grad_semester.id }}">Graduation Semester</label>
+            {{ account_update_form.grad_semester(class="form-control form-control-lg", placeholder="FA/SP YYYY") }}
           </div>
 
-        <button type="submit" class="form-control form-control-lg red-button">Save Account Details</button>
+          {{ account_update_form.submit(class="form-control form-control-lg blue-link-btn") }}
         </form>        
     </section>
     <section id="log-out" class="d-flex justify-content-center">
@@ -36,6 +37,87 @@
             <button type="submit" class="form-control form-control-lg red-button">Log Out</button>
         </form>
     </section>
+    <section id="mfa" class="justify-content-center">
+      <div class="col-12 justify-content-center text-center">
+        <h3>Multi-Factor Authentication (MFA) Settings</h3>
+      </div>
+      <div class="col-12 justify-content-center text-center">
+        {% if current_user.mfa_active %}
+          <!-- MFA Enabled -->
+          <p>
+            MFA is currently <strong>enabled</strong> on your account.
+            {% if num_codes > 0 %}
+              You have <strong>{{ num_codes }}/10</strong> recovery codes remaining.
+            {% endif %}
+          </p>
+
+          <div class="d-flex justify-content-center">
+            <table class="table w-50" style="table-layout: fixed;">
+              <thead>
+                <tr>
+                  <th>Recovery Codes</th>
+                  <th>TOTP</th>
+                </tr>
+              </thead>
+              <tr>
+                <td class="align-middle">
+                  <!-- MFA Recovery Codes -->
+                  {% if num_codes > 0 %}
+                    {% set codes_word_1 = 'Regenerate' %}
+                  {% else %}
+                    {% set codes_word_1 = 'Generate' %}
+                  {% endif %}
+                  <p><a href="{{ url_for('mfa.reset_recovery_codes') }}"><button role="button" class="btn btn-danger blue-link-btn">{{ codes_word_1 }} Recovery Codes</button></a></p>
+                </td>
+                <td class="align-middle">
+                  <!-- TOTP MFA -->
+                  {% if current_user.totp_active %}
+                    {% set totp_word_1 = 'Disable' %}
+                    {% set totp_link = url_for('mfa.disable_totp') %}
+                    {% set totp_color = 'red-link-btn' %}
+                  {% else %}
+                    {% set totp_word_1 = 'Enable' %}
+                    {% set totp_link = url_for('mfa.setup_totp') %}
+                    {% set totp_color = 'blue-link-btn' %}
+                  {% endif %}
+                  <p><a href="{{ totp_link }}"><button role="button" class="btn btn-danger {{ totp_color }}">{{ totp_word_1 }} TOTP MFA (authenticator app)</button></a></p>
+                </td>
+              </tr>
+            </table>
+          </div>
+          <!-- Diable all MFA -->
+          <p>Disabling MFA is not advised
+            {% if current_user.role == 'admin' %}, especially for administrators,{% endif %}
+            as it reduces account security.
+          </p>
+          <p><a href="{{ url_for('mfa.disable_mfa') }}"><button role="button" class="btn btn-danger red-link-btn">Disable All MFA</button></a></p>
+
+        {% else %}
+            <!-- MFA Disabled -->
+            <p>MFA is currently <strong>disabled</strong> on your account. Enable MFA to improve account security!</p>
+            <div class="d-flex justify-content-center">
+              <table class="table w-50" style="table-layout: fixed;">
+                <thead>
+                  <tr>
+                    <th>Recovery Codes</th>
+                    <th>TOTP</th>
+                  </tr>
+                </thead>
+                <tr>
+                  <td class="align-middle">
+                    <!-- MFA Recovery Codes -->
+                    <p><a href="{{ url_for('mfa.reset_recovery_codes') }}"><button role="button" class="btn btn-primary blue-link-btn">Enable MFA with Recovery Codes</button></a></p>
+                  </td>
+                  <td class="align-middle">
+                    <!-- TOTP MFA -->
+                    <p><a href="{{ url_for('mfa.setup_totp') }}"><button role="button" class="btn btn-primary blue-link-btn">Enable MFA with TOTP (authenticator app)</button></a></p>
+                  </td>
+                </tr>
+              </table>
+            </div>
+        {% endif %}
+      </div>
+
     {% if current_user.role == 'admin' and current_user.is_authenticated %}
     <section id="admin" class="justify-content-center">
       <div class="col-12 justify-content-center text-center">

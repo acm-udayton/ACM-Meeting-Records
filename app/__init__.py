@@ -18,9 +18,12 @@ import os
 from dotenv import load_dotenv
 from flask import Flask, render_template, abort, redirect, url_for
 from flask_login import current_user
+from flask_wtf import CSRFProtect
 
 # Local application imports.
 from .extensions import db, login_manager, migrate
+
+csrf = CSRFProtect()
 
 def admin_required(f):
     """ Route decorator to restrict page access to admin users. """
@@ -106,11 +109,17 @@ def create_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("SQLALCHEMY_DATABASE_URI")
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
     app.config["UPLOAD_FOLDER"] = os.getenv("UPLOAD_FOLDER")
+    app.config["TOTP_ISSUER_NAME"] = f"Meeting Records - {os.getenv('ORGANIZATION_NAME')}"
+    app.config["WTF_CSRF_ENABLED"] = True
+    app.config["RECAPTCHA_PUBLIC_KEY"] = os.getenv("RECAPTCHA_SITE_KEY")
+    app.config["RECAPTCHA_PRIVATE_KEY"] = os.getenv("RECAPTCHA_SECRET_KEY")
+    app.config['RECAPTCHA_SKIP_IP_CHECK'] = True
 
     # Initialize the app extensions.
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
+    csrf.init_app(app)
 
     # Configure Flask-Login.
     from .models import Users  # pylint: disable=import-outside-toplevel
@@ -159,10 +168,6 @@ def create_app():
                         )
         return context
 
-    # Initialize the database.
-    with app.app_context():
-        db.create_all()
-
     # Add custom Jinja filters.
     app.jinja_env.filters['datetime_format'] = datetime_format
 
@@ -170,12 +175,14 @@ def create_app():
     register_error_handlers(app)
 
     # Register the blueprints.
-    from .blueprints.admin import admin_bp
-    from .blueprints.auth import auth_bp
-    from .blueprints.main import main_bp
-    from .blueprints.api import api_bp
+    from .blueprints.admin import admin_bp # pylint: disable=import-outside-toplevel
+    from .blueprints.auth import auth_bp # pylint: disable=import-outside-toplevel
+    from .blueprints.main import main_bp # pylint: disable=import-outside-toplevel
+    from .blueprints.api import api_bp # pylint: disable=import-outside-toplevel
+    from .blueprints.mfa import mfa_bp # pylint: disable=import-outside-toplevel
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(auth_bp)
+    app.register_blueprint(mfa_bp, url_prefix="/mfa")
     app.register_blueprint(main_bp)
     app.register_blueprint(api_bp, url_prefix="/api")
 

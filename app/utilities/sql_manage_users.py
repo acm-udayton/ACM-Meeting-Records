@@ -7,7 +7,7 @@ File Purpose: Utility to help create admins in DB.
 """
 
 import sys
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import generate_password_hash
 
 def gen_hash(string_to_hash):
     """ Wrapper function for werkzeug's bcrypt + salt hash. """
@@ -23,8 +23,8 @@ def create():
     if pword != pconf:
         print("Invalid Password, passwords must match")
         sys.exit()
-    output_message = ("INSERT into users (username, password, role) "
-                      f"VALUES ('{uname}', '{gen_hash(pword)}', '{role}');")
+    output_message = ("INSERT into users (username, password, role, activated) "
+                      f"VALUES ('{uname}', '{gen_hash(pword)}', '{role}', true);")
     return output_message
 
 def demote():
