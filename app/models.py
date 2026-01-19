@@ -145,5 +145,18 @@ class PollOption(db.Model):
     question_id=db.Column(db.Integer, db.ForeignKey("poll_questions.id", ondelete="CASCADE"), nullable=False)
 
 
+class PollVoter(db.Model):
+    """Store users who have voted on specific questions."""
+    __tablename__ = "poll_voters"
 
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False)
+    
+    question_id = db.Column(db.Integer, db.ForeignKey("poll_questions.id", ondelete="CASCADE"), nullable=False)
+    poll_id = db.Column(db.Integer, db.ForeignKey("polls.id", ondelete="CASCADE"), nullable=True)
+    question = db.relationship("PollQuestion", backref="voters")
+    # Allows a user to only vote once. 
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'question_id', name='unique_user_question_vote'),
+    )
 
