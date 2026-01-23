@@ -132,6 +132,7 @@ class PollQuestion(db.Model):
     poll_id=db.Column(db.Integer, db.ForeignKey("polls.id", ondelete="CASCADE"), nullable=False)
 
     options=db.relationship("PollOption", backref="question", cascade="all, delete-orphan")
+    voters=db.relationship("PollVoter", backref="question", cascade="all, delete-orphan")
 
 
 class PollOption(db.Model):
@@ -142,7 +143,9 @@ class PollOption(db.Model):
     option_text=db.Column(db.String(250), nullable=False)
     votes=db.Column(db.Integer, nullable=False, default=0)
 
-    question_id=db.Column(db.Integer, db.ForeignKey("poll_questions.id", ondelete="CASCADE"), nullable=False)
+    question_id=db.Column(db.Integer,
+                           db.ForeignKey("poll_questions.id", ondelete="CASCADE"),
+                           nullable=False)
 
 
 class PollVoter(db.Model):
@@ -152,11 +155,12 @@ class PollVoter(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, nullable=False)
     
-    question_id = db.Column(db.Integer, db.ForeignKey("poll_questions.id", ondelete="CASCADE"), nullable=False)
+    question_id = db.Column(db.Integer, db.ForeignKey("poll_questions.id",
+                                                       ondelete="CASCADE"),
+                                                         nullable=False)
+    
     poll_id = db.Column(db.Integer, db.ForeignKey("polls.id", ondelete="CASCADE"), nullable=True)
-    question = db.relationship("PollQuestion", backref="voters")
-    # Allows a user to only vote once. 
+   
     __table_args__ = (
         db.UniqueConstraint('user_id', 'question_id', name='unique_user_question_vote'),
     )
-
