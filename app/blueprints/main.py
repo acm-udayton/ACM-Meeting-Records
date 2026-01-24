@@ -100,7 +100,8 @@ def event_check_in(meeting_id):
                 if sha_hash(code) == meeting.code_hash:
                     # Check for admin-only meeting status.
                     if meeting.admin_only and current_user.role != "admin":
-                        flash("Check-in failed. This meeting is restricted to administrators only.", "danger")
+                        flash("Check-in failed. This meeting is restricted to administrators only.",
+                               "danger")
                     else:
                         # Meeting active, add the user as an attendee.
                         attendance = Attendees(
@@ -134,9 +135,9 @@ def download_file(name):
 def show_polls():
     """Fetch all polls"""
     polls = Poll.query.all()
-    
+
     voted_question_ids = set()
-    
+
     if current_user.is_authenticated:
         user_votes = PollVoter.query.filter_by(user_id=current_user.id).all()  # Use .id
         voted_question_ids = {vote.question_id for vote in user_votes}
@@ -150,21 +151,21 @@ def vote_option(option_id):
     """Handle voting for a poll option."""
     option = PollOption.query.get_or_404(option_id)
     question_id = option.question_id
-    
+
     existing_vote = PollVoter.query.filter_by(
         user_id=current_user.id,  # Use .id not .username
         question_id=question_id
     ).first()
-    
+
     if existing_vote:
         flash("You have already voted on this question!", "warning")
         return redirect(url_for('main.show_polls'))
-    
+
     option.votes += 1
     new_voter = PollVoter(user_id=current_user.id, question_id=question_id)  # Use .id
-    
+
     db.session.add(new_voter)
     db.session.commit()
-    
+
     flash("Vote submitted!", "success")
     return redirect(url_for('main.show_polls'))
