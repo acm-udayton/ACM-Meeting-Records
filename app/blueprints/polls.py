@@ -9,8 +9,6 @@ File Purpose: Polling routes for polling system
 """
 
 # Standard library imports.
-import datetime
-import os
 
 # Third-party imports.
 from flask import (
@@ -25,12 +23,10 @@ from flask import (
     current_app
 )
 from flask_login import login_required, current_user
-from werkzeug.utils import secure_filename
 
 # Local application imports.
 from app.extensions import db
-from app.models import Poll, PollQuestion, PollOption
-from app.utils import generate_meeting_code, sha_hash
+from app.models import Poll, PollQuestion, PollOption, PollVoter
 from app.__init__ import admin_required
 
 polls_bp = Blueprint('polls', __name__, url_prefix='/admin', template_folder='templates')
@@ -42,8 +38,16 @@ polls_bp = Blueprint('polls', __name__, url_prefix='/admin', template_folder='te
 def polls_list():
     """ Show the polls. """
     all_polls = Poll.query.all()
-    return render_template("admin/polls.html", page_title = "Polls", polls = all_polls)
+    # Get all question IDs the current user has voted on
+    voted_questions = set()
+    if current_user.is_authenticated:
+        voter_records = PollVoter.query.filter_by(user_id=current_user.id).all()
+        voted_questions = {voter.question_id for voter in voter_records}
 
+    return render_template("admin/polls.html",
+                          page_title="Polls",
+                          polls=all_polls,
+                          voted_questions=voted_questions)
 
 @polls_bp.route("/create-poll/", methods= ["POST"])
 @login_required
@@ -60,20 +64,25 @@ def create_poll():
     for key, value in request.form.items():
         if key.startswith("questions["):
             parts= key.replace("]","").split("[")
-            
-            q_intex= int(parts[1]) # changes format from q[0]o[0] to ['q', '0', 'o', '0']
 
-            if q_intex not in questions:
-                questions[q_intex]= {"text": None, "options": []}
+            q_index= int(parts[1])
+
+            if q_index not in questions:
+                questions[q_index]= {"text": None, "options": {}}
 
             if parts[2]== "text":
-                questions[q_intex]["text"]= value.strip()
+                questions[q_index]["text"]= value.strip()
 
             elif parts[2]== "options":
-                questions[q_intex]["options"].append(value.strip())
+                # Store options with their index to maintain order
+                option_index = int(parts[3])
+                questions[q_index]["options"][option_index] = value.strip()
+
+    # Convert options dict to sorted list
+    for q_data in questions.values():
+        q_data["options"] = [q_data["options"][i] for i in sorted(q_data["options"].keys())]
 
     for q in questions.values():
-            
         if not q["text"] or len(q["options"]) < 2:
             continue
 
@@ -83,16 +92,14 @@ def create_poll():
 
         for opt_text in q["options"]:
             option = PollOption(
-            question_id=question.id,
-            option_text=opt_text
+                question_id=question.id,
+                option_text=opt_text
             )
             db.session.add(option)
-    
-        db.session.commit()
-        flash("Poll created successfully!", "success")
-        return redirect(url_for("polls.polls_list"))
-    
-    return redirect(url_for("admin.create_poll"))    
+
+    db.session.commit()
+    flash("Poll created successfully!", "success")
+    return redirect(url_for("polls.polls_list"))
 
 @polls_bp.route("/delete-poll/<int:poll_id>/", methods=["POST"])
 @login_required
