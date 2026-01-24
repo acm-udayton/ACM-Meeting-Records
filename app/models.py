@@ -154,13 +154,14 @@ class PollVoter(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, nullable=False)
-    
-    question_id = db.Column(db.Integer, db.ForeignKey("poll_questions.id",
+
+    question_id = db.Column(db.Integer,
+                            db.ForeignKey("poll_questions.id",
                                                        ondelete="CASCADE"),
                                                          nullable=False)
-    
+
     poll_id = db.Column(db.Integer, db.ForeignKey("polls.id", ondelete="CASCADE"), nullable=True)
-   
+
     __table_args__ = (
         db.UniqueConstraint('user_id', 'question_id', name='unique_user_question_vote'),
     )
