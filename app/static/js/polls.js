@@ -5,13 +5,15 @@ function addQuestion() {
 
   const questionDiv = document.createElement("div");
   questionDiv.className = "card p-3 mb-4";
+  
+  const currentQuestionIndex = questionIndex; // Capture current index
 
   questionDiv.innerHTML = `
     <div class="mb-3">
-      <label>Question</label>
+      <label>Question ${questionIndex + 1}</label>
       <input
         type="text"
-        name="questions[${questionIndex}][text]"
+        name="questions[${currentQuestionIndex}][text]"
         class="form-control"
         placeholder="Enter question"
         required
@@ -30,21 +32,23 @@ function addQuestion() {
 
   let optionIndex = 0;
 
-  addOptionBtn.onclick = () => {
+  function addOption() {
     const optionInput = document.createElement("input");
     optionInput.type = "text";
     optionInput.className = "form-control mb-2";
     optionInput.placeholder = `Option ${optionIndex + 1}`;
-    optionInput.name = `questions[${questionIndex}][options][${optionIndex}]`;
+    optionInput.name = `questions[${currentQuestionIndex}][options][${optionIndex}]`;
     optionInput.required = true;
 
     optionsContainer.appendChild(optionInput);
     optionIndex++;
-  };
+  }
+
+  addOptionBtn.onclick = addOption;
 
   // Add two default options
-  addOptionBtn.onclick();
-  addOptionBtn.onclick();
+  addOption();
+  addOption();
 
   questionsContainer.appendChild(questionDiv);
   questionIndex++;
