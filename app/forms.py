@@ -14,7 +14,7 @@ import re
 # Third-party imports.
 from flask import current_app
 from flask_wtf import FlaskForm, RecaptchaField, Recaptcha
-from wtforms import StringField, PasswordField, SubmitField, BooleanField
+from wtforms import StringField, PasswordField, SubmitField, BooleanField, FieldList, FormField
 from wtforms.validators import (
     Optional,
     Length,
@@ -196,3 +196,34 @@ class AccountUpdateForm(FlaskForm):
         ]
     )
     submit = SubmitField('Save Account Details')
+
+class CreatePollOptionForm(FlaskForm):
+    """ Form for options subsection of poll creation form. """
+    option_text = StringField(
+        "Option",
+        validators=[
+            InputRequired(),
+        ]
+    )
+
+class CreatePollQuestionForm(FlaskForm):
+    """ Form for questions subsection of poll creation form. """
+    question_text = StringField(
+        "Question Text",
+        validators=[
+            InputRequired(),
+        ]
+    )
+    options = FieldList(FormField(CreatePollOptionForm), min_entries=2)
+
+class CreatePollForm(FlaskForm):
+    """ Form for creating a new poll. """
+    title = StringField(
+        'Poll Title',
+        validators=[
+            InputRequired(),
+            Length(min=1, max=128)
+        ]
+    )
+    questions = FieldList(FormField(CreatePollQuestionForm), min_entries=1)
+    submit = SubmitField('Create Poll')
