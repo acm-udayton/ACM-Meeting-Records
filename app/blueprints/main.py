@@ -24,7 +24,7 @@ from flask_login import current_user, login_required, logout_user
 from sqlalchemy import desc
 
 # Local application imports.
-from app.forms import CreateMeetingForm, MeetingCheckinForm
+from app.forms import CreateMeetingForm, MeetingCheckinForm, PollVoteForm
 from app.models import Meetings, Attendees, Minutes, Attachments, Poll, PollQuestion, PollOption, PollVoter
 from app.extensions import db
 from app.utils import sha_hash
@@ -36,6 +36,7 @@ main_bp = Blueprint('main', __name__, template_folder='templates')
 def home():
     """ Show the home page. """
     form = MeetingCheckinForm()
+    poll_form = PollVoteForm()
     if not (current_user.is_authenticated and current_user.role == "admin"):
         recent_meetings = Meetings.query.filter(
             Meetings.admin_only != True,
@@ -56,7 +57,8 @@ def home():
         recent_meetings = recent_meetings,
         featured_meeting = featured_meeting,
         polls=all_polls,
-        form = form
+        form = form,
+        poll_form = poll_form
     )
 
 @main_bp.route("/events/")

@@ -95,9 +95,8 @@
                                             <span>{{ option.option_text }}</span>
                                             
                                             <form action="{{ url_for('main.vote_option', option_id=option.id) }}" method="POST" class="m-0">
-                                                <button type="submit" class="btn btn-sm btn-outline-primary">
-                                                    Vote
-                                                </button>
+                                                {{ poll_form.hidden_tag() }}
+                                                <button type="submit" class="btn btn-sm btn-primary">Vote</button>
                                             </form>
                                         {% endif %}
                                         

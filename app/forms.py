@@ -227,3 +227,7 @@ class CreatePollForm(FlaskForm):
     )
     questions = FieldList(FormField(CreatePollQuestionForm), min_entries=1)
     submit = SubmitField('Create Poll')
+
+class PollVoteForm(FlaskForm):
+    """ Form for voting in a poll. """
+    submit = SubmitField('Vote')
