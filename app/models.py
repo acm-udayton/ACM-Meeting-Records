@@ -3,8 +3,8 @@
 
 """
 Project Name: ACM-Meeting-Records
-Project Author(s): Joseph Lefkovitz (github.com/lefkovitz)
-Last Modified: 10/7/2025
+Project Author(s): Joseph Lefkovitz (github.com/lefkovitz), Thomas Crossman (github.com/crossmant1)
+Last Modified: 1/23/2026
 
 File Purpose: Create the database models for the project.
 """
@@ -109,9 +109,6 @@ class Attachments(db.Model):
                 "filename": self.filename,
                 "filepath": self.filepath,
                 "meeting": self.meeting}
-
-
-#THOMAS CODE
 
 class Poll(db.Model):
     """Store polls"""
