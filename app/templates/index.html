@@ -62,5 +62,64 @@
         {% endif %}
       </main>
     </div>
-  </div>
+<aside class="col-sm-4">
+    <section class="mb-5">
+        <h2>Existing Polls</h2>
+        {% if polls %}
+            <div class="list-group">
+                {% for poll in polls %}
+                <div class="list-group-item mb-3 p-3">
+                    <h5 class="mb-3 border-bottom pb-2">{{ poll.title }}</h5>
+
+                    {% if poll.questions %}
+                        <div class="ms-2">
+                            {% for question in poll.questions %}
+                            <div class="mb-4">
+                                <h6 class="fw-bold">Q{{ loop.index }}: {{ question.question_text }}</h6>
+
+                                {% if question.options %}
+                                <ul class="list-group list-group-flush">
+                                    {% for option in question.options %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                        
+                                        {% if question.id in voted_questions %}
+                                            <span>{{ option.option_text }}</span>
+                                            <span class="badge bg-secondary rounded-pill">{{ option.votes }} votes</span>
+                                            
+                                        {% else %}
+                                            <span>{{ option.option_text }}</span>
+                                            
+                                            <form action="{{ url_for('main.vote_option', option_id=option.id) }}" method="POST" class="m-0">
+                                                <button type="submit" class="btn btn-sm btn-outline-primary">
+                                                    Vote
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                        
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                
+                                {% if question.id in voted_questions %}
+                                    <small class="text-success fst-italic">
+                                        &#10003; You have participated in this question.
+                                    </small>
+                                {% endif %}
+                                
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted ms-3">No questions added yet.</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted">No polls created yet.</p>
+        {% endif %}
+    </section>
+</aside>
+</div>
 {% endblock %}

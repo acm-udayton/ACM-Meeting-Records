@@ -3,8 +3,8 @@
 
 """
 Project Name: ACM-Meeting-Records
-Project Author(s): Joseph Lefkovitz (github.com/lefkovitz)
-Last Modified: 10/7/2025
+Project Author(s): Joseph Lefkovitz (github.com/lefkovitz), Thomas Crossman (github.com/crossmant1)
+Last Modified: 1/23/2026
 
 File Purpose: Create the database models for the project.
 """
@@ -109,3 +109,56 @@ class Attachments(db.Model):
                 "filename": self.filename,
                 "filepath": self.filepath,
                 "meeting": self.meeting}
+
+class Poll(db.Model):
+    """Store polls"""
+    __tablename__="polls"
+    id=db.Column(db.Integer, primary_key=True)
+    title=db.Column(db.String(250), nullable=False)
+
+    questions=db.relationship("PollQuestion", backref="poll", cascade="all, delete-orphan")
+
+
+class PollQuestion(db.Model):
+    """Store questions for polls."""
+    __tablename__="poll_questions"
+
+    id=db.Column(db.Integer, primary_key=True)  
+    question_text=db.Column(db.String(500), nullable=False)
+
+    poll_id=db.Column(db.Integer, db.ForeignKey("polls.id", ondelete="CASCADE"), nullable=False)
+
+    options=db.relationship("PollOption", backref="question", cascade="all, delete-orphan")
+    voters=db.relationship("PollVoter", backref="question", cascade="all, delete-orphan")
+
+
+class PollOption(db.Model):
+    """Store options for poll questions."""
+    __tablename__="poll_options"
+
+    id=db.Column(db.Integer, primary_key=True)
+    option_text=db.Column(db.String(250), nullable=False)
+    votes=db.Column(db.Integer, nullable=False, default=0)
+
+    question_id=db.Column(db.Integer,
+                           db.ForeignKey("poll_questions.id", ondelete="CASCADE"),
+                           nullable=False)
+
+
+class PollVoter(db.Model):
+    """Store users who have voted on specific questions."""
+    __tablename__ = "poll_voters"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False)
+
+    question_id = db.Column(db.Integer,
+                            db.ForeignKey("poll_questions.id",
+                                                       ondelete="CASCADE"),
+                                                         nullable=False)
+
+    poll_id = db.Column(db.Integer, db.ForeignKey("polls.id", ondelete="CASCADE"), nullable=True)
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'question_id', name='unique_user_question_vote'),
+    )

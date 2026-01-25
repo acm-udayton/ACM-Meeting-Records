@@ -174,9 +174,11 @@ def create_app():
     from .blueprints.auth import auth_bp
     from .blueprints.main import main_bp
     from .blueprints.api import api_bp
+    from .blueprints.polls import polls_bp
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(api_bp, url_prefix="/api")
+    app.register_blueprint(polls_bp, url_prefix="/admin")
 
     return app

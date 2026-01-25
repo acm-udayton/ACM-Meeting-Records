@@ -3,8 +3,8 @@
 
 """
 Project Name: ACM-Meeting-Records
-Project Author(s): Joseph Lefkovitz (github.com/lefkovitz)
-Last Modified: 10/7/2025
+Project Author(s): Joseph Lefkovitz (github.com/lefkovitz), Thomas Crossman (github.com/crossmant1)
+Last Modified: 1/24/2026
 
 File Purpose: Primary routes for the project.
 """
@@ -24,7 +24,7 @@ from flask_login import current_user, login_required
 from sqlalchemy import desc
 
 # Local application imports.
-from app.models import Meetings, Attendees, Minutes, Attachments
+from app.models import Meetings, Attendees, Minutes, Attachments, Poll, PollQuestion, PollOption, PollVoter
 from app.extensions import db
 from app.utils import sha_hash
 
@@ -44,11 +44,16 @@ def home():
         featured_meeting = recent_meetings.pop(0)
     else:
         featured_meeting = None
+
+    all_polls = Poll.query.all()
+
+    
     return render_template(
         "index.html",
         page_title = "Home",
         recent_meetings = recent_meetings,
-        featured_meeting = featured_meeting
+        featured_meeting = featured_meeting,
+        polls=all_polls
     )
 
 @main_bp.route("/events/")
@@ -95,7 +100,8 @@ def event_check_in(meeting_id):
                 if sha_hash(code) == meeting.code_hash:
                     # Check for admin-only meeting status.
                     if meeting.admin_only and current_user.role != "admin":
-                        flash("Check-in failed. This meeting is restricted to administrators only.", "danger")
+                        flash("Check-in failed. This meeting is restricted to administrators only.",
+                               "danger")
                     else:
                         # Meeting active, add the user as an attendee.
                         attendance = Attendees(
@@ -122,3 +128,44 @@ def event_check_in(meeting_id):
 def download_file(name):
     """ Serve an uploaded file. """
     return send_from_directory(current_app.config["UPLOAD_FOLDER"], name)
+
+
+
+@main_bp.route('/polls')
+def show_polls():
+    """Fetch all polls"""
+    polls = Poll.query.all()
+
+    voted_question_ids = set()
+
+    if current_user.is_authenticated:
+        user_votes = PollVoter.query.filter_by(user_id=current_user.id).all()  # Use .id
+        voted_question_ids = {vote.question_id for vote in user_votes}
+
+    return redirect(url_for('main.home'))
+
+
+@main_bp.route('/vote/<int:option_id>', methods=['POST'])
+@login_required
+def vote_option(option_id):
+    """Handle voting for a poll option."""
+    option = PollOption.query.get_or_404(option_id)
+    question_id = option.question_id
+
+    existing_vote = PollVoter.query.filter_by(
+        user_id=current_user.id,  # Use .id not .username
+        question_id=question_id
+    ).first()
+
+    if existing_vote:
+        flash("You have already voted on this question!", "warning")
+        return redirect(url_for('main.show_polls'))
+
+    option.votes += 1
+    new_voter = PollVoter(user_id=current_user.id, question_id=question_id)  # Use .id
+
+    db.session.add(new_voter)
+    db.session.commit()
+
+    flash("Vote submitted!", "success")
+    return redirect(url_for('main.show_polls'))
