@@ -23,10 +23,15 @@
             {% endblock %}
             <section id="form" class="d-flex">
               <form action="/event/check-in/{{ featured_meeting.id }}/" method="POST" class="col-6">
-                  <div class="form-floating mb-3 mt-3">
-                    <input type="text" class="form-control form-control-lg" placeholder="Meeting Code" name="meeting_code" id="meeting_code" autocomplete="off">
-                    <label for="meeting_code">Meeting Code</label>
-                  </div>
+                {{ form.hidden_tag() }}
+                {% for error in form.code.errors %}
+                  <span class="text-danger">{{ error }}</span>
+                {% endfor %}
+
+                <div class="form-floating mb-3 mt-3">
+                  {{ form.code(class="form-control form-control-lg", placeholder="Meeting Code", autocomplete="off") }}
+                  <label for="{{ form.code.id }}">Meeting Code</label>
+                </div>
                 <button type="submit" class="form-control form-control-lg">Check In</button>
               </form>
             </section>

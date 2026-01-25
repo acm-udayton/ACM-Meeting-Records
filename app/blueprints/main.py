@@ -20,10 +20,11 @@ from flask import (
     current_app,
     send_from_directory
 )
-from flask_login import current_user, login_required
+from flask_login import current_user, login_required, logout_user
 from sqlalchemy import desc
 
 # Local application imports.
+from app.forms import CreateMeetingForm, MeetingCheckinForm
 from app.models import Meetings, Attendees, Minutes, Attachments, Poll, PollQuestion, PollOption, PollVoter
 from app.extensions import db
 from app.utils import sha_hash
@@ -34,6 +35,7 @@ main_bp = Blueprint('main', __name__, template_folder='templates')
 @main_bp.route("/")
 def home():
     """ Show the home page. """
+    form = MeetingCheckinForm()
     if not (current_user.is_authenticated and current_user.role == "admin"):
         recent_meetings = Meetings.query.filter(
             Meetings.admin_only != True,
@@ -53,7 +55,8 @@ def home():
         page_title = "Home",
         recent_meetings = recent_meetings,
         featured_meeting = featured_meeting,
-        polls=all_polls
+        polls=all_polls,
+        form = form
     )
 
 @main_bp.route("/events/")
@@ -61,17 +64,19 @@ def events_list():
     """ Show the event list page. """
     all_meetings = Meetings.query.order_by(desc(Meetings.id)).all()
     visible_meetings = []
+    form = CreateMeetingForm()
     if current_user.is_authenticated and current_user.role == "admin":
-        return render_template("events.html", page_title = "Meetings", meetings = all_meetings)
+        return render_template("events.html", page_title = "Meetings", meetings = all_meetings, form = form)
     else:
         for meeting in all_meetings:
             if meeting.admin_only is not True:
                 visible_meetings.append(meeting)
-        return render_template("events.html", page_title = "Meetings", meetings = visible_meetings)
+        return render_template("events.html", page_title = "Meetings", meetings = visible_meetings, form = form)
 
 @main_bp.route("/event/<int:meeting_id>/")
 def user_event(meeting_id):
     """ Show a page with the details of a single meeting. """
+    form = MeetingCheckinForm()
     meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
     attendees = Attendees.query.filter_by(meeting = meeting_id).all()
     minutes = Minutes.query.filter_by(meeting = meeting_id).all()
@@ -82,7 +87,8 @@ def user_event(meeting_id):
         meeting = meeting,
         all_minutes = minutes,
         all_attendees = attendees,
-        all_attachments = attachments
+        all_attachments = attachments,
+        form = form
     )
 
 @main_bp.route("/event/check-in/<int:meeting_id>/", methods = ["POST"])
@@ -90,35 +96,46 @@ def user_event(meeting_id):
 def event_check_in(meeting_id):
     """ Check into a single meeting from the homepage. """
     if Meetings.query.filter_by(id = meeting_id).first() is not None:
-        code = request.form["meeting_code"]
-        meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
-        if meeting.state == "active":
-            if Attendees.query.filter_by(
-            meeting = meeting_id,
-            username = current_user.username
-            ).first() is None:
-                if sha_hash(code) == meeting.code_hash:
-                    # Check for admin-only meeting status.
-                    if meeting.admin_only and current_user.role != "admin":
-                        flash("Check-in failed. This meeting is restricted to administrators only.",
+        form = MeetingCheckinForm()
+        if form.validate_on_submit():
+            code = form.code.data
+            meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
+            if meeting.state == "active":
+                if Attendees.query.filter_by(
+                meeting = meeting_id,
+                username = current_user.username
+                ).first() is None:
+                    if sha_hash(code) == meeting.code_hash:
+                        # Check for admin-only meeting status.
+                        if meeting.admin_only and current_user.role != "admin":
+                            flash("Check-in failed. This meeting is restricted to administrators only.",
                                "danger")
+                        else:
+                            if current_user.activated is False:
+                                # User not activated, log them out and return an error.
+                                logout_user()
+                                flash(("Check-in failed. "
+                                    "Your account is not activated. Please check in again."))
+                                return redirect(url_for("auth.login"))
+                            # Meeting active, add the user as an attendee.
+                            attendance = Attendees(
+                                username = current_user.username,
+                                meeting = meeting_id)
+                            db.session.add(attendance)
+                            db.session.commit()
+                            flash("Check-in succeeded. Attendance updated successfully.", "success")
                     else:
-                        # Meeting active, add the user as an attendee.
-                        attendance = Attendees(
-                            username = current_user.username,
-                            meeting = meeting_id)
-                        db.session.add(attendance)
-                        db.session.commit()
-                        flash("Check-in succeeded. Attendance updated successfully.", "success")
+                        # Invalid meeting code.
+                        flash("Check-in failed. Meeting code is invalid.", "danger")
                 else:
-                    # Invalid meeting code.
-                    flash("Check-in failed. Meeting code is invalid.", "danger")
+                    # Already an attendee.
+                    flash("Check-in failed. You are already marked as an attendee.", "danger")
             else:
-                # Already an attendee.
-                flash("Check-in failed. You are already marked as an attendee.", "danger")
+                # Meeting inactive, return an error message.
+                flash("Check-in failed. Specified meeting is inactive.", "danger")
         else:
-            # Meeting inactive, return an error message.
-            flash("Check-in failed. Specified meeting is inactive.", "danger")
+            # Form validation failed.
+            flash("Check-in failed. Please ensure all fields are filled out correctly.", "danger")
     else:
         # Meeting does not exist.
         flash("Check-in failed. Specified meeting does not exist.", "danger")

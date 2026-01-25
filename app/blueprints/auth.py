@@ -4,21 +4,28 @@
 """
 Project Name: ACM-Meeting-Records
 Project Author(s): Joseph Lefkovitz (github.com/lefkovitz)
-Last Modified: 10/7/2025
+Last Modified: 1/24/2026
 
 File Purpose: Authentication routes for the project.
 """
 
-# Standard library imports.
-import re
-
 # Third-party imports.
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    flash,
+    current_app,
+    session
+)
 from flask_login import login_user, logout_user, login_required, current_user
 
 # Local application imports.
 from app.extensions import db
-from app.models import Users
+from app.forms import LoginForm, SignUpForm, AccountUpdateForm
+from app.models import Users, RecoveryCodes
 
 auth_bp = Blueprint('auth', __name__, template_folder='templates')
 
@@ -27,45 +34,74 @@ auth_bp = Blueprint('auth', __name__, template_folder='templates')
 @auth_bp.route("/login/", methods = ["GET", "POST"])
 def login():
     """ Show a login page and process submissions. """
-    if request.method =="POST":
-        user = Users.query.filter_by(username = request.form["username"]).first()
-        if user is not None:
-            if user.check_password(request.form["password"]):
-                login_user(user)
-                current_app.logger.info(
-                    "Login attempt as %s from IP %s - success",
-                    request.form["username"],
-                    request.remote_addr
-                )
-            else:
-                current_app.logger.warning(
-                    "Login attempt as %s from IP %s - failed",
-                    request.form["username"],
-                    request.remote_addr
-                )
-                flash(
-                    "Login attempt failed. Please try again or contact "
-                    "the system administrator to reset your credentials."
-                    , "danger"
-                )
-                return redirect(url_for("auth.login"))
-        else:
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = Users.query.filter_by(username = form.username.data).first()
+
+        # Existence check.
+        if user is None:
             flash("Login attempt failed. User does not exist.", "danger")
             return redirect(url_for("auth.login"))
+
+        # Activation check.
+        if user.activated is False:
+            flash(
+                "Login attempt failed. Account is not activated. "
+                "Please contact the system administrator for approval.",
+                "danger"
+            )
+            return redirect(url_for("auth.login"))
+
+        # Password check.
+        if not user.check_password(form.password.data):
+            current_app.logger.warning(
+                "Login attempt as %s from IP %s - failed",
+                form.username.data,
+                request.remote_addr
+            )
+            flash(
+                "Login attempt failed. Please try again or contact "
+                "the system administrator to reset your credentials.",
+                "danger"
+            )
+            return redirect(url_for("auth.login"))
+
+        # MFA check.
+        if user.mfa_active:
+            # Store the user ID in the session temporarily - do not login yet.
+            session['mfa_user_id'] = user.id
+            if user.totp_active:
+                return redirect(url_for('mfa.verify_totp'))
+            else:
+                return redirect(url_for('mfa.verify_recovery_code'))
+
+        # Admin without MFA warning.
+        if user.role == "admin":
+            flash("Please enable multi-factor authentication for this administrator account!")
+
+        login_user(user)
+        current_app.logger.info(
+            "Login attempt as %s from IP %s - success",
+            form.username.data,
+            request.remote_addr
+        )
         return redirect(url_for("main.home"))
-    else:
-        return render_template("login.html", page_title = "User Log In")
+
+    # Process GET requests or failed validation.
+    return render_template("login.html", page_title = "User Log In", form=form)
 
 @auth_bp.route("/sign-up/", methods = ["GET", "POST"])
 def sign_up():
     """ Show a sign-up page and process submissions. """
-    if request.method == "POST":
+    form = SignUpForm()
+
+    if form.validate_on_submit():
         # Log the user out if active.
         if not current_user.is_anonymous:
             logout_user()
-        uname = request.form["username"]
-        pword = request.form["password"]
-        conf_pword = request.form["confirm_password"]
+        uname = form.username.data
+        pword = form.password.data
+        conf_pword = form.confirm_password.data
         # Handle new username and password issues or create the new user.
         if Users.query.filter_by(username = uname).first() is not None:
             flash(
@@ -79,8 +115,8 @@ def sign_up():
                   current_app.context["usernames"]["username_email_domain"])):
             flash(
                 ("User creation failed. Username must end with "
-                f"{current_app.context['usernames']['username_email_domain']}.")
-                , "danger"
+                f"{current_app.context['usernames']['username_email_domain']}."),
+                "danger"
                 )
             return redirect(url_for("auth.sign_up"))
         elif pword != conf_pword:
@@ -101,7 +137,14 @@ def sign_up():
             return redirect(url_for("auth.login"))
     # Handle GET requests.
     else:
-        return render_template("sign_up.html", page_title = "Create New Account")
+        if current_app.context["usernames"]["enforce_usernames"] == "True":
+            required_domain = current_app.context["usernames"]["username_email_domain"]
+        else:
+            required_domain = None
+        return render_template("sign_up.html",
+                               page_title = "Create New Account",
+                               required_domain=required_domain,
+                               form = form)
 
 @auth_bp.route("/logout/")
 @login_required
@@ -116,56 +159,59 @@ def logout():
 @login_required
 def my_account():
     """ Show account details page with update form. """
-    return render_template("account.html", page_title = "My Account")
+    account_updated_form = AccountUpdateForm()
+    num_codes = RecoveryCodes.query.filter_by(user_id=current_user.id).count()
+    return render_template("account.html",
+                           page_title = "My Account",
+                           num_codes=num_codes,
+                           account_update_form=account_updated_form)
 
 @auth_bp.route("/update-account/", methods = ["POST"])
 def update_account():
     """ Update account details via the form /my-account/ page. """
+    form = AccountUpdateForm()
 
-    form_password = request.form.get("password", "").strip()
-    form_start = request.form.get("start_semester", "").strip().upper()
-    form_grad = request.form.get("grad_semester", "").strip().upper()
+    if form.validate_on_submit():
 
-    current_app.logger.info(
-        ("Account update attempt: %s from IP %s - "
-        "start semester %s, end semester %s"),
-        current_user.username,
-        request.remote_addr,
-        form_start,
-        form_grad
-    )
-    update_user = db.session.get(Users, current_user.get_id())
-    if form_password != "":
-        check_result = update_user.check_password(form_password)
-        if not check_result:
-            update_user.set_password(form_password)
-            flash("Password updated successfully.", "success")
-        else:
-            flash("Password unchanged, current password entered.", "danger")
-    semester_regex = re.compile(r"^(FA|SP) \d{4}$|^$")
-    # Validate start semester.
-    if not semester_regex.fullmatch(form_start):
-        flash(
-            'Invalid format for Start Semester. Use "FA YYYY" or '
-            '"SP YYYY" or leave it empty.', 'danger'
+        current_app.logger.info(
+            ("Account update attempt - success: %s from IP %s - "
+            "start semester %s, end semester %s"),
+            current_user.username,
+            request.remote_addr,
+            form.start_semester.data,
+            form.grad_semester.data
         )
-    else:
-        if form_start != update_user.joined:
-            flash("Start Semester updated successfully.", "success")
+        update_user = db.session.get(Users, current_user.get_id())
+        if form.password.data != "":
+            update_user.set_password(form.password.data)
 
-        update_user.joined = form_start
+        # Update semesters (join and grad).
+        update_user.joined = form.start_semester.data
+        update_user.graduated = form.grad_semester.data
 
-    # Validate graduation semester.
-    if not semester_regex.fullmatch(form_grad):
-        flash(
-            'Invalid format for Graduation Semester. Use "FA YYYY" or '
-            '"SP YYYY" or leave it empty.', 'danger'
-        )
+        # Update database and redirect.
+        db.session.commit()
+        flash("Account updated successfully.", "success")
     else:
-        if form_grad != update_user.graduated:
-            flash("Graduation Semester updated successfully.", "success")
-        
-        update_user.graduated = form_grad
-    # Update database and redirect.
-    db.session.commit()
+        for field, errors in form.errors.items():
+            for error in errors:
+                if field == 'csrf_token':
+                    flash("Security Error: Invalid or missing form data." \
+                    " Please refresh and try again.", 'danger')
+                else:
+                    flash((f"Error in the {getattr(form, field).label.text} "
+                        f" field - {error}", "danger"))
+                current_app.logger.info(
+                    ("Account update attempt - failure: %s from IP %s - "
+                    "Field: %s, Error: %s"),
+                    current_user.username,
+                    request.remote_addr,
+                    field,
+                    error
+                )
+                # Only show the first error message to the user.
+                break
+            break
+
+    # Return to account page for success or failure.
     return redirect(url_for("auth.my_account"))

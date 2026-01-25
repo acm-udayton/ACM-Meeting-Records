@@ -14,7 +14,7 @@ form input.form-check-input:checked {
     background-color: var(--ud-blue) !important;
     border-color: var(--ud-red) !important;
 }
-form button[type=submit] {
+form button[type=submit], form input[type=submit] {
     background-color: var(--ud-red) !important;
     color: white;
 }
