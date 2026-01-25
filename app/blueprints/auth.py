@@ -161,6 +161,8 @@ def my_account():
     """ Show account details page with update form. """
     account_updated_form = AccountUpdateForm()
     num_codes = RecoveryCodes.query.filter_by(user_id=current_user.id).count()
+    account_updated_form.start_semester.data = current_user.joined
+    account_updated_form.grad_semester.data = current_user.graduated
     return render_template("account.html",
                            page_title = "My Account",
                            num_codes=num_codes,
@@ -200,7 +202,7 @@ def update_account():
                     " Please refresh and try again.", 'danger')
                 else:
                     flash((f"Error in the {getattr(form, field).label.text} "
-                        f" field - {error}", "danger"))
+                        f" field - {error}"), "danger")
                 current_app.logger.info(
                     ("Account update attempt - failure: %s from IP %s - "
                     "Field: %s, Error: %s"),
