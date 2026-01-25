@@ -231,3 +231,7 @@ class CreatePollForm(FlaskForm):
 class PollVoteForm(FlaskForm):
     """ Form for voting in a poll. """
     submit = SubmitField('Vote')
+
+class DeletePollForm(FlaskForm):
+    """ Form for deleting a poll. """
+    submit = SubmitField('Delete Poll')

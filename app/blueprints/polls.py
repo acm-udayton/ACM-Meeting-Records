@@ -29,7 +29,7 @@ from flask_login import login_required, current_user
 # Local application imports.
 from app.extensions import db
 from app.models import Poll, PollQuestion, PollOption, PollVoter
-from app.forms import CreatePollForm, CreatePollQuestionForm, CreatePollOptionForm
+from app.forms import CreatePollForm, CreatePollQuestionForm, CreatePollOptionForm, DeletePollForm
 from app.__init__ import admin_required
 
 polls_bp = Blueprint('polls', __name__, url_prefix='/admin', template_folder='templates')
@@ -42,6 +42,7 @@ def polls_list():
     """ Show the polls. """
     all_polls = Poll.query.all()
     form = CreatePollForm()
+    delete_poll_form = DeletePollForm()
     # Get all question IDs the current user has voted on
     voted_questions = set()
     if current_user.is_authenticated:
@@ -52,7 +53,8 @@ def polls_list():
                           page_title="Polls",
                           polls=all_polls,
                           voted_questions=voted_questions,
-                          form=form)
+                          form=form,
+                          delete_poll_form=delete_poll_form)
 
 @polls_bp.route("/create-poll/", methods= ["POST"])
 @login_required
