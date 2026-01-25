@@ -13,7 +13,7 @@ function addQuestion() {
       <label>Question ${questionIndex + 1}</label>
       <input
         type="text"
-        name="questions[${currentQuestionIndex}][text]"
+        name="questions-${currentQuestionIndex}-question_text"
         class="form-control"
         placeholder="Enter question"
         required
@@ -37,7 +37,7 @@ function addQuestion() {
     optionInput.type = "text";
     optionInput.className = "form-control mb-2";
     optionInput.placeholder = `Option ${optionIndex + 1}`;
-    optionInput.name = `questions[${currentQuestionIndex}][options][${optionIndex}]`;
+    optionInput.name = `questions-${currentQuestionIndex}-options-${optionIndex}-option_text`;
     optionInput.required = true;
 
     optionsContainer.appendChild(optionInput);
