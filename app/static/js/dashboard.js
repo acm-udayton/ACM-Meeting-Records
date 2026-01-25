@@ -1,3 +1,8 @@
+// Helper function to get the CSRF token from meta tag.
+function getCsrfToken() {
+    return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+}
+
 // Helper function to display messages.
 function showMessage(message, category = 'danger') {
     const element = document.getElementById('error-row');
@@ -122,6 +127,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
                 },
             })
                 .then(response => {
@@ -169,6 +175,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()
                     },
                 })
                     .then(response => {
@@ -209,6 +216,9 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             const response = await fetch(meetingMinutesForm.action, {
                 method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCsrfToken()
+                },
                 body: formData
             });
             const result = await response.json();
@@ -238,6 +248,9 @@ document.addEventListener('DOMContentLoaded', function () {
             try {
                 const response = await fetch(meetingStatusForm.action, {
                     method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCsrfToken()
+                    },
                     body: formData
                 });
                 const result = await response.json();
@@ -276,6 +289,9 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             const response = await fetch(meetingAttendeesForm.action, {
                 method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCsrfToken()
+                },
                 body: formData
             });
             const result = await response.json();
@@ -309,6 +325,9 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             const response = await fetch(attachmentUploadForm.action, {
                 method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCsrfToken()
+                },
                 // Note: Do NOT set Content-Type; the browser handles it for FormData.
                 body: formData
             });

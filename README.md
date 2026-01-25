@@ -75,7 +75,7 @@ Check out the <a href="https://github.com/acm-udayton/ACM-Meeting-Records/blob/m
 Visit localhost:8000 on the device that is running the server. Alternatively, visit your server's IP via port 8000 from another device on the network. 
 
 #### Web Application
-* Accounts & Autgentication (sign up, log in, sign out, update)
+* Accounts & Autgentication (sign up, log in, sign out, update, MFA)
 * Meeting Management (create, start, end, admin-only)
 * Meeting Attendance (check-in, live attendee tracking)
 * Meeting Minutes (create, update, view)
