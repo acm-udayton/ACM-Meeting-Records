@@ -25,7 +25,7 @@ from sqlalchemy import desc
 
 # Local application imports.
 from app.forms import CreateMeetingForm, MeetingCheckinForm, PollVoteForm
-from app.models import Meetings, Attendees, Minutes, Attachments, Poll, PollQuestion, PollOption, PollVoter
+from app.models import Meetings, Attendees, Minutes, Attachments, Poll, PollOption, PollVoter
 from app.extensions import db
 from app.utils import sha_hash
 
@@ -50,17 +50,25 @@ def home():
 
     all_polls = Poll.query.all()
 
-    
+
+    voted_questions = set()
+    voted_options = set()
+    if current_user.is_authenticated:
+        voter_records = PollVoter.query.filter_by(user_id=current_user.id).all()
+        voted_questions = {voter.question_id for voter in voter_records}
+        voted_options = {voter.option_id for voter in voter_records}
+
     return render_template(
         "index.html",
         page_title = "Home",
         recent_meetings = recent_meetings,
         featured_meeting = featured_meeting,
         polls=all_polls,
+        voted_questions=voted_questions,
+        voted_options=voted_options,
         form = form,
         poll_form = poll_form
     )
-
 @main_bp.route("/events/")
 def events_list():
     """ Show the event list page. """
@@ -172,19 +180,34 @@ def vote_option(option_id):
     question_id = option.question_id
 
     existing_vote = PollVoter.query.filter_by(
-        user_id=current_user.id,  # Use .id not .username
+        user_id=current_user.id,
         question_id=question_id
     ).first()
 
     if existing_vote:
-        flash("You have already voted on this question!", "warning")
-        return redirect(url_for('main.show_polls'))
+        old_option = PollOption.query.get(existing_vote.option_id)
 
+        if old_option.votes > 0:
+            old_option.votes -= 1
+
+        option.votes += 1
+
+        existing_vote.option_id = option_id
+
+        db.session.commit()
+        flash("Vote changed successfully!", "success")
+        return redirect(url_for('main.home'))
+
+    # New vote
     option.votes += 1
-    new_voter = PollVoter(user_id=current_user.id, question_id=question_id)  # Use .id
+    new_voter = PollVoter(
+        user_id=current_user.id, 
+        question_id=question_id,
+        option_id=option_id
+    )
 
     db.session.add(new_voter)
     db.session.commit()
 
     flash("Vote submitted!", "success")
-    return redirect(url_for('main.show_polls'))
+    return redirect(url_for('main.home'))
