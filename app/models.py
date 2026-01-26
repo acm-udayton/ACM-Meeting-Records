@@ -206,6 +206,10 @@ class PollVoter(db.Model):
                                                        ondelete="CASCADE"),
                                                          nullable=False)
 
+    option_id = db.Column(db.Integer,  
+                         db.ForeignKey("poll_options.id", ondelete="CASCADE"),
+                         nullable=False)
+
     poll_id = db.Column(db.Integer, db.ForeignKey("polls.id", ondelete="CASCADE"), nullable=True)
 
     __table_args__ = (
