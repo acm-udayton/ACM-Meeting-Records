@@ -34,8 +34,32 @@ For every new major version, here is the process.
 4. Once you are done contributing, open a PR into the version branch created in **1** and request review.
 5. When the version is finished (usually multiple iterations of **2** through **4**), open a PR into ```dev```.
 6. After testing is completed in ```dev```, you open a PR into ```main``` and request review.
-7. After that PR is merged into ```main```, create a new [GitHub release](https://github.com/acm-udayton/ACM-Meeting-Records/releases).
+7. After that PR is merged into ```main```, create a new [GitHub release](https://github.com/acm-udayton/ACM-Meeting-Records/releases). A newly-built docker image will be pushed to Docker Hub automatically by one of our GitHub actions.
 
 <hr>
 
+### Code Standards
+
+To ensure maintainability and uniformity of style in our codebase, we follow a few formats for commenting within code. When no further information is provided, default to [PEP 8](https://peps.python.org/pep-0008/).
+1. All python files should begin with a block comment that follows this format, which should be updated whenever applicable:
+```
+#!/usr/bin/env python
+# path/to/file.py
+
+"""
+Project Name: ACM-Meeting-Records
+Project Author(s): First Last (github.com/username), ...
+Last Modified: DD/MM/YYYY
+
+File Purpose: One sentence to describe the overarching function of the file.
+"""
+```
+2. Functions, classes, and routes should begin with a docstring explaining their function or purpose.
+3. Database models (see ```app/models.py```) should always have a ```default``` and ```server_default``` value if ```nullable = false``` is specified.
+
+#### Linting
+
+To enforce code quality we have a GitHub actions runner that automatically kicks of a pylint instance on every push and pull request. For code quality levels of less than 9.5, the GitHub action will fail and any PRs with a failing pylint status will not be approved for merge. To be proactive about pylint, it is recommended that you install the official Pylint extension (by Microsoft) for Visual Studio Code, which will show all linting problems in the open files under a "Problems" tab in the bottom panel.
+
+<hr>
 <p align="right">(<a href="#contributing-top">back to top</a>)</p>
