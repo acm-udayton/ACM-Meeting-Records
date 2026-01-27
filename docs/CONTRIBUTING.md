@@ -62,4 +62,29 @@ File Purpose: One sentence to describe the overarching function of the file.
 To enforce code quality we have a GitHub actions runner that automatically kicks of a pylint instance on every push and pull request. For code quality levels of less than 9.5, the GitHub action will fail and any PRs with a failing pylint status will not be approved for merge. To be proactive about pylint, it is recommended that you install the official Pylint extension (by Microsoft) for Visual Studio Code, which will show all linting problems in the open files under a "Problems" tab in the bottom panel.
 
 <hr>
+
+### FAQ
+
+Running into a problem or not sure how to proceed? Before reaching out to someone else on the development team, check out these common questions and solutions!
+
+<details>
+<summary><strong>Database errors on web container startup - duplicates, invalid entries, etc. </strong></summary>
+<br />
+The database is likely crashing due to updated web app source code expecting a different schema (or even a new schema) in the database but not finding it. This can manifest in many types of errors output to the web container console, but they are often large and messy. These are especially common when making changes to the models.py or switching between branches.
+
+We use flask-migrate for database management, so if you don't explicitly tell flask-migrate that your database needs updated, you can end up with an outdated or broken schema. First, check your database for an alembic_version table and look at the version_number column entry. Now search that ID in the source code in the project's ```migrations/versions directory```. If you find a file with the following line
+```
+Revises: your_version_number
+```
+a newer migration exists already, but hasn't been applied automatically. If however, you don't see any such file, you likely need to create a new migration file. To do this, run the following terminal commands while your db container is running. Be sure to replace the "<your upgrade message here>" message with a string that provides a clearer description of what the database model changes are.
+```
+docker compose build web
+docker compose run --rm web flask db migrate -m "<your upgrade message here>"
+docker compose run --rm web flask db upgrade
+```
+If the above information didn't solve your problem, reach out to the development team for further assistance.
+</details>
+
+<hr>
+
 <p align="right">(<a href="#contributing-top">back to top</a>)</p>
