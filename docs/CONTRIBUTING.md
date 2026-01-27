@@ -23,5 +23,19 @@ As you begin contributing to the ACM Meeting Records project, we recommend the f
 
 <hr>
 
+### Branching Practices
+
+We have a standardized procedure for adding features and making bugfixes in iterative versions. Along with this comes a standardized branching procedure. 
+For every new major version, here is the process.
+
+1. Create a new branch with the format ```vX.Y``` where X and Y are the major and minor version numbers. Use the ```main``` branch as the base branch.
+2. Create a new branch (```feature/...```, ```docs/...```, ```bugfix/...```, ```task/...```, etc.) based on the new ```vX.Y``` branch.
+3. Contribute your feature, documentation, bugfix, or task in the branch created in **2**.
+4. Once you are done contributing, open a PR into the version branch created in **1** and request review.
+5. When the version is finished (usually multiple iterations of **2** through **4**), open a PR into ```dev```.
+6. After testing is completed in ```dev```, you open a PR into ```main``` and request review.
+7. After that PR is merged into ```main```, create a new [GitHub release](https://github.com/acm-udayton/ACM-Meeting-Records/releases).
+
+<hr>
 
 <p align="right">(<a href="#contributing-top">back to top</a>)</p>
