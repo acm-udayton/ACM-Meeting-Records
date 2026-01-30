@@ -65,4 +65,6 @@ To enforce code quality we have a GitHub actions runner that automatically kicks
 
 <hr>
 
+Didn't find what you were looking for? Check out our <a href="development.md">contributor-oriented technical documentation</a>!
+
 <p align="right">(<a href="#contributing-top">back to top</a>)</p>
