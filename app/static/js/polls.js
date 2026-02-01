@@ -6,7 +6,7 @@ function addQuestion() {
   const questionDiv = document.createElement("div");
   questionDiv.className = "card p-3 mb-4";
   
-  const currentQuestionIndex = questionIndex; // Capture current index
+  const currentQuestionIndex = questionIndex;
 
   questionDiv.innerHTML = `
     <div class="mb-3">
@@ -20,33 +20,80 @@ function addQuestion() {
       >
     </div>
 
-    <div class="options-container"></div>
+    <div class="form-check mb-3">
+      <input 
+        type="checkbox" 
+        class="form-check-input frq-checkbox" 
+        id="frq-checkbox-${currentQuestionIndex}"
+        name="questions-${currentQuestionIndex}-is_free_response"
+      >
+      <label class="form-check-label" for="frq-checkbox-${currentQuestionIndex}">
+        Make this a free response question
+      </label>
+    </div>
 
-    <button type="button" class="btn btn-sm btn-outline-primary mb-2">
-      + Add Option
-    </button>
+    <div class="options-section">
+      <div class="options-container"></div>
+      <button type="button" class="btn btn-sm btn-outline-primary mb-2 add-option-btn">
+        + Add Option
+      </button>
+    </div>
   `;
 
   const optionsContainer = questionDiv.querySelector(".options-container");
-  const addOptionBtn = questionDiv.querySelector("button");
+  const addOptionBtn = questionDiv.querySelector(".add-option-btn");
+  const frqCheckbox = questionDiv.querySelector(".frq-checkbox");
+  const optionsSection = questionDiv.querySelector(".options-section");
 
   let optionIndex = 0;
 
   function addOption() {
-    const optionInput = document.createElement("input");
-    optionInput.type = "text";
-    optionInput.className = "form-control mb-2";
-    optionInput.placeholder = `Option ${optionIndex + 1}`;
-    optionInput.name = `questions-${currentQuestionIndex}-options-${optionIndex}-option_text`;
-    optionInput.required = true;
+    const optionDiv = document.createElement("div");
+    optionDiv.className = "input-group mb-2 option-input";
+    optionDiv.innerHTML = `
+      <input
+        type="text"
+        class="form-control"
+        placeholder="Option ${optionIndex + 1}"
+        name="questions-${currentQuestionIndex}-options-${optionIndex}-option_text"
+        required
+      >
+      <button type="button" class="btn btn-outline-danger btn-sm remove-option-btn">×</button>
+    `;
 
-    optionsContainer.appendChild(optionInput);
+    const removeBtn = optionDiv.querySelector(".remove-option-btn");
+    removeBtn.onclick = () => {
+      optionDiv.remove();
+    };
+
+    optionsContainer.appendChild(optionDiv);
     optionIndex++;
   }
 
+  // Toggle options visibility and requirements based on FRQ checkbox
+  frqCheckbox.onchange = () => {
+    if (frqCheckbox.checked) {
+      // Hide options section
+      optionsSection.style.display = "none";
+      
+      // Remove all option inputs when switching to FRQ
+      optionsContainer.innerHTML = "";
+      optionIndex = 0;
+    } else {
+      // Show options section
+      optionsSection.style.display = "block";
+      
+      // Add two default options if none exist
+      if (optionsContainer.children.length === 0) {
+        addOption();
+        addOption();
+      }
+    }
+  };
+
   addOptionBtn.onclick = addOption;
 
-  // Add two default options
+  // Add two default options initially
   addOption();
   addOption();
 
