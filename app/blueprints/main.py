@@ -25,7 +25,16 @@ from sqlalchemy import desc
 
 # Local application imports.
 from app.forms import CreateMeetingForm, MeetingCheckinForm, PollVoteForm
-from app.models import Meetings, Attendees, Minutes, Attachments, Poll, PollOption, PollVoter
+from app.models import (Meetings,
+    Attendees, 
+    Minutes,
+    Attachments,
+    Poll,
+    PollOption,
+    PollVoter,
+    PollQuestion,
+    PollFreeResponse
+)
 from app.extensions import db
 from app.utils import sha_hash
 
@@ -50,13 +59,18 @@ def home():
 
     all_polls = Poll.query.all()
 
-
     voted_questions = set()
     voted_options = set()
+    user_frq_responses = {}
+
     if current_user.is_authenticated:
         voter_records = PollVoter.query.filter_by(user_id=current_user.id).all()
         voted_questions = {voter.question_id for voter in voter_records}
         voted_options = {voter.option_id for voter in voter_records}
+
+        frq_records = PollFreeResponse.query.filter_by(user_id=current_user.id).all()
+        user_frq_responses = {frq.question_id: frq.response_text for frq in frq_records}
+        voted_questions.update(user_frq_responses.keys())
 
     return render_template(
         "index.html",
@@ -66,9 +80,11 @@ def home():
         polls=all_polls,
         voted_questions=voted_questions,
         voted_options=voted_options,
+        user_frq_responses=user_frq_responses,
         form = form,
         poll_form = poll_form
     )
+
 @main_bp.route("/events/")
 def events_list():
     """ Show the event list page. """
@@ -210,4 +226,45 @@ def vote_option(option_id):
     db.session.commit()
 
     flash("Vote submitted!", "success")
+    return redirect(url_for('main.home'))
+
+@main_bp.route('/submit-frq/<int:question_id>', methods=['POST'])
+@login_required
+def submit_frq(question_id):
+    """Handle free response question submission."""
+    question = PollQuestion.query.get_or_404(question_id)
+
+    # Verify it's actually an FRQ
+    if not question.is_free_response:
+        flash("Invalid request.", "danger")
+        return redirect(url_for('main.home'))
+
+    response_text = request.form.get('response_text', '').strip()
+
+    if not response_text:
+        flash("Please enter a response.", "danger")
+        return redirect(url_for('main.home'))
+
+    # Check if user already submitted a response
+    existing_response = PollFreeResponse.query.filter_by(
+        user_id=current_user.id,
+        question_id=question_id
+    ).first()
+
+    if existing_response:
+        # Update existing response
+        existing_response.response_text = response_text
+        db.session.commit()
+        flash("Response updated successfully!", "success")
+    else:
+        # Create new response
+        new_response = PollFreeResponse(
+            user_id=current_user.id,
+            question_id=question_id,
+            response_text=response_text
+        )
+        db.session.add(new_response)
+        db.session.commit()
+        flash("Response submitted!", "success")
+
     return redirect(url_for('main.home'))
