@@ -214,7 +214,11 @@ class CreatePollQuestionForm(FlaskForm):
             InputRequired(),
         ]
     )
-    options = FieldList(FormField(CreatePollOptionForm), min_entries=2)
+    is_free_response = BooleanField(
+        "Free Response Question",
+        default=False
+    )
+    options = FieldList(FormField(CreatePollOptionForm), min_entries=0)  # Changed to 0 since FRQ won't have options
 
 class CreatePollForm(FlaskForm):
     """ Form for creating a new poll. """
