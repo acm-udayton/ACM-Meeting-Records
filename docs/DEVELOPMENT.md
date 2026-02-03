@@ -9,25 +9,156 @@
   </p>
 </div>
 
-<!-- GETTING STARTED -->
-### Developer Tooling
+<!-- TABLE OF CONTENTS -->
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li>
+      <a href="#developer-setup">Developer Setup</a>
+      <ul>
+        <li><a href="#tooling">Tooling</a></li>
+        <li><a href="#database-access">Database Access</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#project-structure">Project Structure</a>
+      <ul>
+        <li><a href="#directory-map">Directory Map</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#design-patterns">Design Patterns</a>
+      <ul>
+        <li><a href="#flask-application-factory">Flask Application Factory</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#flask-extensions">Flask Extensions</a>
+      <ul>
+        <li><a href="#flask-login">Flask-Login</a></li>
+        <li><a href="#flask-migrate">Flask-Migrate</a></li>
+        <li><a href="#flask-sqlalchemy">Flask-SQLAlchemy</a></li>
+        <li><a href="#flask-wtf">Flask-WTF</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#jinja-templating">Jinja Templating</a>
+      <ul>
+        <li><a href="#template-route-map">Template-Route Map</a></li>
+        <li><a href="#extension--inheritance-summary">Extension & Inheritance Summary</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#cicd-workflows">CI/CD Workflows</a>
+    </li>
+    <li><a href="#faq--troubleshooting">FAQ & Troubleshooting</a></li>
+  </ol>
+</details>
+<hr>
 
+
+<!-- Developer Setup -->
+## Developer Setup
+
+### Tooling
 As you begin contributing to the ACM Meeting Records project, we recommend the following tools. Other tools may be used, but these are the project standards and we cannot guarantee that we will provide support for developers using other non-recommended developer tools.
 1. [Docker Desktop](https://www.docker.com/products/docker-desktop/). Please note, technically you only need to ensure that Docker is installed on your system and the ```docker compose``` command is available, but for maximum debugging ease Docker desktop is the only recommended developer tooling in this category.
 2. [Visual Studio Code](https://code.visualstudio.com/)
 3. [DBeaver](https://dbeaver.io/)
 
-<hr>
-
-### Installation & Database Access Setup
-
+### Database Access
 Follow the standard installation procedure outlined in <a href="quickstart.md">quickstart.md</a> to begin the setup process. 
 
 Next, you will need to add your DBeaver database connection. Be sure to select postgresql as your database, and fill out the details with the username, password, and port specified in the docker-compose.yml file, with localhost as the host. You can then find the database tables at ```Databases -> acm-meetings-db -> Schemas -> public -> Tables``` within DBeaver's Database Navigator pane.
-
 <hr>
 
-### FAQ
+
+<!-- Project Structure -->
+## Project Structure
+
+### Directory Map
+<pre>
+ACM-Meeting-Records
+├── <a href="#cicd-workflows">.github/workflows</a>
+│   ├── .pylintrc
+│   ├── docker-image.yml
+│   └── pylint.yml
+├── app
+│   ├── blueprints
+│   ├── static
+│   ├── templates
+│   ├── uploads
+│   ├── utilities
+│   ├── <a href="#flask-application-factory">__init__.py</a>
+│   ├── .env
+│   ├── .env.example
+│   ├── extensions.py
+│   ├── forms.py
+│   ├── models.py
+│   └── utils.py
+├── docs
+│   ├── application-demo.png
+│   ├── CONTRIBUTING.md
+│   ├── DEVELOPMENT.md
+│   ├── quickstart.md
+│   └── upgrading.md
+├── migrations
+│   └── Directory contents generated and managed by flask-migrate...
+├── .dockerignore
+├── .gitignore
+├── Dockerfile
+├── LICENSE
+├── README.md
+├── docker-compose.yml
+└── requirements.txt
+</pre>
+<hr>
+
+
+<!-- Design Patterns -->
+## Design Patterns
+Comments and specifications relating to the design patterns and ideologies used in the project's architecture.
+
+### Flask Application factory
+The application factory is a design pattern for building scalable codebases for flask backends. We rely on the application factory to build one complete app from a variety of files.
+
+Strictly speaking, the application factory itself can be found in `app/__init__.py`. The contents of this file compiles the logic, extensions, and utilities that are specified in the rest of the python files in the codebase.
+<hr>
+
+
+<!-- Flask Extensions -->
+## Flask Extensions
+
+### Flask-Login
+### Flask-Migrate
+### Flask-SQLAlchemy
+### Flask-WTF
+<hr>
+
+
+<!-- Templating -->
+## Jinja Templating
+Documentation about to Jinja, render_template calls, and other related topics.
+
+### Template-route Map
+For all of the endpoint templates, list the routes that point to them, what Jinja2 parameters are passed to them (and data format if needed), or mark as a template for a page component (not a complete or served page).
+
+### Extension & Inheritance Summary
+<hr>
+
+
+<!-- CI/CD Workflows -->
+## CI/CD Workflows
+We use a few GitHub Actions runners for our project's CI/CD processes.
+
+### Pylint CI
+
+### Docker Image CI
+<hr>
+
+
+<!-- FAQ & Troubleshooting -->
+## FAQ
 
 Running into a problem or not sure how to proceed? Before reaching out to someone else on the development team, check out these common questions and solutions!
 
