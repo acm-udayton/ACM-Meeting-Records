@@ -45,7 +45,7 @@
       <a href="#jinja-templating">Jinja Templating</a>
       <ul>
         <li><a href="#template-route-map">Template-Route Map</a></li>
-        <li><a href="#extension--inheritance-summary">Extension & Inheritance Summary</a></li>
+        <li><a href="#extension--inclusion-summary">Extension & Inheritance Summary</a></li>
       </ul>
     </li>
     <li>
@@ -128,10 +128,26 @@ Strictly speaking, the application factory itself can be found in `app/__init__.
 <!-- Flask Extensions -->
 ## Flask Extensions
 
-### Flask-Login
-### Flask-Migrate
-### Flask-SQLAlchemy
-### Flask-WTF
+<details>
+<summary id="flask-login"><strong>Flask-Login</strong></summary>
+<br>
+</details>
+
+<details>
+<summary id="flask-migrate"><strong>Flask-Migrate</strong></summary>
+<br>
+</details>
+
+<details>
+<summary id="flask-sqlalchemy"><strong>Flask-SQLAlchemy</strong></summary>
+<br>
+</details>
+
+<details>
+<summary id="flask-wtf"><strong>Flask-WTF</strong></summary>
+<br>
+</details>
+
 <hr>
 
 
@@ -142,7 +158,50 @@ Documentation about to Jinja, render_template calls, and other related topics.
 ### Template-route Map
 For all of the endpoint templates, list the routes that point to them, what Jinja2 parameters are passed to them (and data format if needed), or mark as a template for a page component (not a complete or served page).
 
-### Extension & Inheritance Summary
+<details>
+<summary id="routes-api"><strong>API Routes</strong></summary>
+<br>
+</details>
+
+<details>
+<summary id="routes-auth"><strong>Authentication Routes</strong></summary>
+<br>
+</details>
+
+<details>
+<summary id="routes-mfa"><strong>MFA Routes</strong></summary>
+<br>
+</details>
+
+<details>
+<summary id="routes-main"><strong>Main Routes</strong></summary>
+<br>
+</details>
+
+<details>
+<summary id="routes-admin"><strong>Admin Routes</strong></summary>
+<br>
+</details>
+
+### Extension & Inclusion Summary
+
+In addition to the HTML templates passed to flask's `render_template` function, we have a few HTML files that contain the code for a single component, which are then extended or included in other templates. 
+<details>
+<summary id="jinja-footer"><strong>footer.html</strong></summary>
+<br>
+</details>
+<details>
+<summary id="jinja-header"><strong>header.html</strong></summary>
+<br>
+</details>
+<details>
+<summary id="jinja-nav"><strong>navbar.html</strong></summary>
+<br>
+</details>
+<details>
+<summary id="jinja-base"><strong>base.html</strong></summary>
+<br>
+</details>
 <hr>
 
 
@@ -150,9 +209,15 @@ For all of the endpoint templates, list the routes that point to them, what Jinj
 ## CI/CD Workflows
 We use a few GitHub Actions runners for our project's CI/CD processes.
 
-### Pylint CI
+<details>
+<summary id="pylint-ci"><strong>Pylint CI</strong></summary>
+<br>
+</details>
 
-### Docker Image CI
+<details>
+<summary id="docker-image-ci"><strong>Docker Image CI</strong></summary>
+<br>
+</details>
 <hr>
 
 
