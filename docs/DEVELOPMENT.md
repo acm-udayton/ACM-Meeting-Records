@@ -81,29 +81,28 @@ Next, you will need to add your DBeaver database connection. Be sure to select p
 ACM-Meeting-Records
 ├── <a href="#cicd-workflows">.github/workflows</a>
 │   ├── .pylintrc
-│   ├── docker-image.yml
-│   └── pylint.yml
-├── app
-│   ├── blueprints
-│   ├── static
-│   ├── templates
-│   ├── uploads
-│   ├── utilities
+│   ├── <a href="#docker-image-ci">docker-image.yml</a>
+│   └── <a href="#pylint-ci">pylint.yml</a>
+├── /app
+│   ├── /blueprints
+│   ├── /static
+│   ├── <a href="#template-route-map">/templates</a>
+│   ├── /uploads
+│   ├── /utilities
 │   ├── <a href="#flask-application-factory">__init__.py</a>
 │   ├── .env
 │   ├── .env.example
-│   ├── extensions.py
-│   ├── forms.py
-│   ├── models.py
+│   ├── <a href="#flask-extensions">extensions.py</a>
+│   ├── <a href="#flask-wtf">forms.py</a>
+│   ├── <a href="#flask-sqlalchemy">models.py</a>
 │   └── utils.py
-├── docs
+├── /docs
 │   ├── application-demo.png
-│   ├── CONTRIBUTING.md
+│   ├── <a href="contributing.md">CONTRIBUTING.md</a>
 │   ├── DEVELOPMENT.md
-│   ├── quickstart.md
-│   └── upgrading.md
-├── migrations
-│   └── Directory contents generated and managed by flask-migrate...
+│   ├── <a href="quickstart.md">quickstart.md</a>
+│   └── <a href="upgrading.md">upgrading.md</a>
+├── <a href="#flask-migrate">/migrations</a>
 ├── .dockerignore
 ├── .gitignore
 ├── Dockerfile
