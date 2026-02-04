@@ -180,6 +180,7 @@ class PollQuestion(db.Model):
 
     options = db.relationship("PollOption", backref="question", cascade="all, delete-orphan")
     voters = db.relationship("PollVoter", backref="question", cascade="all, delete-orphan")
+    free_responses = db.relationship("PollFreeResponse", backref="question", cascade="all, delete-orphan")
 
 
 class PollFreeResponse(db.Model):
