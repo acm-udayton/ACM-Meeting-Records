@@ -332,6 +332,6 @@ If the above information didn't solve your problem, reach out to the development
 
 <hr>
 
-Didn't find what you were looking for? Check out our <a href="contributing.md">contributor-oriented introduction to the project</a>!
+Didn't find what you were looking for? Check out our <a href="/docs/CONTRIBUTING.md">contributor-oriented introduction to the project</a>!
 
 <p align="right">(<a href="#development-top">back to top</a>)</p>
