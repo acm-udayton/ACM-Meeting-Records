@@ -155,12 +155,14 @@ Strictly speaking, the application factory itself can be found in `app/__init__.
 ## Jinja Templating
 Documentation about to Jinja, render_template calls, and other related topics.
 
-### Template-route Map
-For all of the endpoint templates, list the routes that point to them, what Jinja2 parameters are passed to them (and data format if needed), or mark as a template for a page component (not a complete or served page).
+## Route Map
+Document each endpoint. Include the route, overarching function, and return. If the return is a redirect, link to that sub-item. For all of the endpoint templates, list the routes that point to them, what Jinja2 parameters are passed to them (and data format if needed), or mark as a template for a page component (not a complete or served page). 
+
+For POST requests, specify the type of data that should be expected, if any. This is usually specified by the Flask-WTF form used on the page. Also make note of what templates send data to the endpoint.
 
 <details>
-<summary id="routes-api"><strong>API Routes</strong></summary>
-<br>
+  <summary id="routes-api"><strong>API Routes</strong></summary>
+  <br>
 </details>
 
 <details>
@@ -171,6 +173,90 @@ For all of the endpoint templates, list the routes that point to them, what Jinj
 <details>
 <summary id="routes-mfa"><strong>MFA Routes</strong></summary>
 <br>
+<p>The following routes handle Multi-Factor Authentication (MFA) functionalities, including TOTP setup and verification, as well as recovery code management. All routes here are contained within the mfa Blueprint (.../mfa/...) and should be restricted to logged-in users. </p>
+    <ul>
+      <li id="route-mfa-reset-recovery-codes">
+        <strong>/reset-recovery-codes/ (GET)</strong>
+        <br>
+        <i>reset_recovery_codes</i>
+        <p>
+          Remove all of a user's unused recovery codes and generate 10 new recovery codes. 
+        </p>
+        <h4>Template file: auth/reset-codes.html</h4>
+        <table>
+          <tr><th>Jinja2 Parameters</th><th>Data Format</th></tr>
+          <tr><td>page_title</td><td>MFA Recovery Codes</td></tr>
+          <tr><td>codes</td><td>String with newlines or tab characters separating the ten recovery codes</td></tr>
+        </table>
+      </li>
+      <li id="route-mfa-verify-recovery-code">
+        <strong>/verify-recovery-code/ (GET, POST)</strong>
+        <br>
+        <i>verify_recovery_code</i>
+        <p>
+          Verify a user's MFA recovery code during the login process. If the endpoint is accessed with a GET request, the user is shown the recovery code verification form. If the endpoint is accessed with a POST request, the submitted recovery code is verified and the user is either logged in or shown an error message. On successful login, the used recovery code is invalidated and the user is redirected to <a href="#route-main-home">main.home</a>.
+        </p>
+        <h4>Template file: auth/verify-code.html</h4>
+        <table>
+          <tr><th>Jinja2 Parameters</th><th>Data Format</th></tr>
+          <tr><td>page_title</td><td>Verify MFA Recovery Code</td></tr>
+          <tr><td>form</td><td>Flask-WTF form object - RecoveryCodeVerifyForm</td></tr>
+        </table>
+      </li>
+      <li id="route-mfa-verify-totp">
+        <strong>/verify-totp/ (GET, POST)</strong>
+        <br>
+        <i>verify_totp</i>
+        <p>
+          Verify a user's MFA TOTP code during the login process. If the endpoint is accessed with a GET request, the user is shown the TOTP verification form. If the endpoint is accessed with a POST request, the submitted TOTP code is verified and the user is either logged in or shown an error message. On successful login, the user is redirected to <a href="#route-main-home">main.home</a>.
+        </p>
+        <h4>Template file: auth/verify-totp.html</h4>
+        <table>
+          <tr><th>Jinja2 Parameters</th><th>Data Format</th></tr>
+          <tr><td>page_title</td><td>Verify MFA TOTP Code</td></tr>
+          <tr><td>form</td><td>Flask-WTF form object - TotpVerifyForm</td></tr>
+        </table>
+      </li>
+      <li id="route-mfa-setup-totp">
+        <strong>/setup-totp/ (GET)</strong>
+        <br>
+        <i>setup_totp</i>
+        <p>
+          Setup Multi-Factor Authentication (MFA) for a user account. The user is shown the MFA setup page with a QR code and secret key for TOTP configuration as well as a form to verify the TOTP setup. Upon submission of the form, the form data is sent as a POST request to <a href="#route-mfa-verify-totp-setup">mfa.verify_totp_setup</a>.
+        </p>
+        <h4>Template file: auth/setup-totp.html</h4>
+        <table>
+          <tr><th>Jinja2 Parameters</th><th>Data Format</th></tr>
+          <tr><td>page_title</td><td>Setup TOTP MFA</td></tr>
+          <tr><td>qr_code_data</td><td>Base64-encoded PNG image data for the TOTP QR code</td></tr>
+          <tr><td>totp_secret</td><td>String representing the TOTP secret key</td></tr>
+          <tr><td>form</td><td>Flask-WTF form object - TotpSetupForm</td></tr>
+        </table>
+      </li>
+      <li id="route-mfa-verify-totp-setup">
+        <strong>/verify-totp-setup/ (POST)</strong>
+        <br>
+        <i>verify_totp_setup</i>
+        <p>
+          Verify the TOTP setup during MFA configuration. The submitted TOTP code from the setup form is verified using cookie data, and if valid, MFA is enabled for the user account. If the user doesn't yet have recovery codes set up, they are redirected to <a href="#route-mfa-reset-recovery-codes">mfa.reset_recovery_codes</a>. Otherwise, redirect to <a href="#route-auth-my-account">auth.my_account</a>. If the code is invalid, an error message is shown on the setup page.
+        </p>
+      </li>
+      <li id="route-mfa-disable-totp">
+        <strong>/disable-totp/ (GET)</strong>
+        <br>
+        <i>disable_totp</i>
+        <p>
+          Disable TOTP-based MFA for the user account. Upon successful disabling, the user is redirected to <a href="#route-auth-my-account">auth.my_account</a>.
+        </p>
+      </li>
+      <li id="route-mfa-disable-mfa">
+        <strong>/disable-mfa/ (GET)</strong>
+        <br>
+        <i>disable_mfa</i>
+        <p>
+          Disable all MFA methods for the user account, including TOTP and recovery codes. Upon successful disabling, the user is redirected to <a href="#route-auth-my-account">auth.my_account</a>.
+        </p>
+    </ul>
 </details>
 
 <details>
