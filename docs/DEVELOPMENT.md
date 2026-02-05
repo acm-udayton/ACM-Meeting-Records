@@ -84,9 +84,15 @@ ACM-Meeting-Records
 │   ├── <a href="#docker-image-ci">docker-image.yml</a>
 │   └── <a href="#pylint-ci">pylint.yml</a>
 ├── /app
-│   ├── /blueprints
+│   ├── <a href="#route-map">/blueprints</a>
+│   │   ├── <a href="#routes-admin">admin.py</a>
+│   │   ├── <a href="#routes-api">api.py</a>
+│   │   ├── <a href="#routes-auth">auth.py</a>
+│   │   ├── <a href="#routes-main">main.py</a>
+│   │   ├── <a href="#routes-mfa">mfa.py</a>
+│   │   └── <a href="#routes-polls">polls.py</a>
 │   ├── /static
-│   ├── <a href="#template-route-map">/templates</a>
+│   ├── <a href="#route-map">/templates</a>
 │   ├── /uploads
 │   ├── /utilities
 │   ├── <a href="#flask-application-factory">__init__.py</a>
@@ -98,10 +104,10 @@ ACM-Meeting-Records
 │   └── utils.py
 ├── /docs
 │   ├── application-demo.png
-│   ├── <a href="contributing.md">CONTRIBUTING.md</a>
+│   ├── <a href="/docs/CONTRIBUTING.md">CONTRIBUTING.md</a>
 │   ├── DEVELOPMENT.md
-│   ├── <a href="quickstart.md">quickstart.md</a>
-│   └── <a href="upgrading.md">upgrading.md</a>
+│   ├── <a href="/docs/quickstart.md">quickstart.md</a>
+│   └── <a href="/docs/upgrading.md">upgrading.md</a>
 ├── <a href="#flask-migrate">/migrations</a>
 ├── .dockerignore
 ├── .gitignore
@@ -161,12 +167,22 @@ Document each endpoint. Include the route, overarching function, and return. If 
 For POST requests, specify the type of data that should be expected, if any. This is usually specified by the Flask-WTF form used on the page. Also make note of what templates send data to the endpoint.
 
 <details>
+<summary id="routes-admin"><strong>Admin Routes</strong></summary>
+<br>
+</details>
+
+<details>
   <summary id="routes-api"><strong>API Routes</strong></summary>
   <br>
 </details>
 
 <details>
 <summary id="routes-auth"><strong>Authentication Routes</strong></summary>
+<br>
+</details>
+
+<details>
+<summary id="routes-main"><strong>Main Routes</strong></summary>
 <br>
 </details>
 
@@ -260,12 +276,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
 </details>
 
 <details>
-<summary id="routes-main"><strong>Main Routes</strong></summary>
-<br>
-</details>
-
-<details>
-<summary id="routes-admin"><strong>Admin Routes</strong></summary>
+<summary id="routes-polls"><strong>Polls Routes</strong></summary>
 <br>
 </details>
 
