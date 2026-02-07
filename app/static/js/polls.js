@@ -20,7 +20,7 @@ function addQuestion() {
       >
     </div>
 
-    <div class="form-check mb-3">
+    <div class="form-check mb-2">
       <input 
         type="checkbox" 
         class="form-check-input frq-checkbox" 
@@ -29,6 +29,18 @@ function addQuestion() {
       >
       <label class="form-check-label" for="frq-checkbox-${currentQuestionIndex}">
         Make this a free response question
+      </label>
+    </div>
+
+    <div class="form-check mb-3 multi-response-section">
+      <input 
+        type="checkbox" 
+        class="form-check-input multi-response-checkbox" 
+        id="multi-response-checkbox-${currentQuestionIndex}"
+        name="questions-${currentQuestionIndex}-allow_multiple_responses"
+      >
+      <label class="form-check-label" for="multi-response-checkbox-${currentQuestionIndex}">
+        Allow multiple responses (users can select multiple options)
       </label>
     </div>
 
@@ -43,7 +55,9 @@ function addQuestion() {
   const optionsContainer = questionDiv.querySelector(".options-container");
   const addOptionBtn = questionDiv.querySelector(".add-option-btn");
   const frqCheckbox = questionDiv.querySelector(".frq-checkbox");
+  const multiResponseCheckbox = questionDiv.querySelector(".multi-response-checkbox");
   const optionsSection = questionDiv.querySelector(".options-section");
+  const multiResponseSection = questionDiv.querySelector(".multi-response-section");
 
   let optionIndex = 0;
 
@@ -73,15 +87,18 @@ function addQuestion() {
   // Toggle options visibility and requirements based on FRQ checkbox
   frqCheckbox.onchange = () => {
     if (frqCheckbox.checked) {
-      // Hide options section
+      // Hide options section and multi-response option
       optionsSection.style.display = "none";
+      multiResponseSection.style.display = "none";
+      multiResponseCheckbox.checked = false;
       
       // Remove all option inputs when switching to FRQ
       optionsContainer.innerHTML = "";
       optionIndex = 0;
     } else {
-      // Show options section
+      // Show options section and multi-response option
       optionsSection.style.display = "block";
+      multiResponseSection.style.display = "block";
       
       // Add two default options if none exist
       if (optionsContainer.children.length === 0) {
