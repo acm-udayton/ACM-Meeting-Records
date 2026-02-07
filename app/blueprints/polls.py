@@ -7,7 +7,7 @@ Project Author(s): Thomas Crossman (github.com/crossmant1)
 
 File Purpose: Polling routes for polling system
 
-Last Modfied: January 24, 2024. 
+Last Modfied: February 6, 2024. 
 """
 
 # Standard library imports.
@@ -70,18 +70,21 @@ def create_poll():
     else:
         poll = Poll(title=form.title.data)
         db.session.add(poll)
-        db.session.flush()  # Flush to get poll ID
-
+        db.session.flush()
+        
         for question_form in form.questions.entries:
             is_frq = question_form.form.is_free_response.data
+            allow_multiple = question_form.form.allow_multiple_responses.data
+            
             question = PollQuestion(
                 poll_id=poll.id,
                 question_text=question_form.form.question_text.data,
-                is_free_response=is_frq
+                is_free_response=is_frq,
+                allow_multiple_responses=allow_multiple if not is_frq else False  # Only for MCQs
             )
             db.session.add(question)
-            db.session.flush()  # Flush to get question ID
-
+            db.session.flush()
+            
             # Only add options if it's NOT a free response question
             if not is_frq:
                 for option_form in question_form.form.options.entries:
@@ -90,7 +93,7 @@ def create_poll():
                         option_text=option_form.form.option_text.data
                     )
                     db.session.add(option)
-
+        
         db.session.commit()
         flash("Poll created successfully!", "success")
         return redirect(url_for("polls.polls_list"))
