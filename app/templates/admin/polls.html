@@ -34,6 +34,9 @@
                                             {% if question.is_free_response %}
                                                 <span class="badge bg-info ms-2">Free Response</span>
                                             {% endif %}
+                                            {% if question.allow_multiple_responses and not question.is_free_response %}
+                                                <span class="badge bg-warning text-dark ms-2">Multiple Responses</span>
+                                            {% endif %}
                                             
                                             {% if question.is_free_response %}
                                                 <!-- Display Free Response Answers -->

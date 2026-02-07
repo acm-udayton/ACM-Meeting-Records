@@ -135,25 +135,41 @@
                           {% else %}
                             <!-- Multiple Choice Question -->
                             {% if question.options %}
+                              <div class="mb-2">
+                                {% if question.allow_multiple_responses %}
+                                  <span class="badge bg-warning text-dark">Multiple Responses Allowed</span>
+                                {% endif %}
+                              </div>
                               <ul class="list-group list-group-flush">
                                 {% for option in question.options %}
                                   <li class="list-group-item d-flex justify-content-between align-items-center px-0">
                                     <span>{{ option.option_text }}</span>
-          
+
                                     {% if option.id in voted_options %}
                                       <!-- This specific option was voted for -->
-                                      <button class="btn btn-sm btn-success" disabled>Voted ✓</button>
-                                    {% elif question.id in voted_questions %}
-                                      <!-- User voted on this question, but for a different option - allow them to change -->
+                                      <div>
+                                        <form action="{{ url_for('main.vote_option', option_id=option.id) }}" method="POST" class="m-0 d-inline">
+                                          {{ poll_form.hidden_tag() }}
+                                          {% if question.allow_multiple_responses %}
+                                            <button type="submit" class="btn btn-sm btn-success">Voted ✓ (Click to remove)</button>
+                                          {% else %}
+                                            <button class="btn btn-sm btn-success" disabled>Voted ✓</button>
+                                          {% endif %}
+                                        </form>
+                                      </div>
+                                    {% elif question.id in voted_questions and not question.allow_multiple_responses %}
+                                      <!-- User voted on this question, but for a different option - allow them to change (single response only) -->
                                       <form action="{{ url_for('main.vote_option', option_id=option.id) }}" method="POST" class="m-0">
                                         {{ poll_form.hidden_tag() }}
                                         <button type="submit" class="btn btn-sm btn-danger">Change Vote</button>
                                       </form>
                                     {% else %}
-                                      <!-- User hasn't voted on this question yet -->
+                                      <!-- User hasn't voted on this option yet -->
                                       <form action="{{ url_for('main.vote_option', option_id=option.id) }}" method="POST" class="m-0">
                                         {{ poll_form.hidden_tag() }}
-                                        <button type="submit" class="btn btn-sm btn-primary">Vote</button>
+                                        <button type="submit" class="btn btn-sm btn-primary">
+                                          {% if question.allow_multiple_responses %}Add Vote{% else %}Vote{% endif %}
+                                        </button>
                                       </form>
                                     {% endif %}
                                     <span class="badge bg-secondary rounded-pill">{{ option.votes }} votes</span>
