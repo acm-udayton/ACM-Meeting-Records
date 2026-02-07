@@ -4,7 +4,7 @@
 """
 Project Name: ACM-Meeting-Records
 Project Author(s): Joseph Lefkovitz (github.com/lefkovitz), Thomas Crossman (github.com/crossmant1)
-Last Modified: 1/24/2026
+Last Modified: February, 6 2026
 
 File Purpose: Primary routes for the project.
 """
@@ -194,38 +194,61 @@ def vote_option(option_id):
     """Handle voting for a poll option."""
     option = PollOption.query.get_or_404(option_id)
     question_id = option.question_id
+    question = PollQuestion.query.get_or_404(question_id)
 
-    existing_vote = PollVoter.query.filter_by(
-        user_id=current_user.id,
-        question_id=question_id
-    ).first()
+    # Check if question allows multiple responses
+    if question.allow_multiple_responses:
+        # Multi-response: Check if user already voted for this specific option
+        existing_vote = PollVoter.query.filter_by(
+            user_id=current_user.id,
+            question_id=question_id,
+            option_id=option_id
+        ).first()
 
-    if existing_vote:
-        old_option = PollOption.query.get(existing_vote.option_id)
+        if existing_vote:
+            # User is un-voting this option
+            option.votes -= 1
+            db.session.delete(existing_vote)
+            db.session.commit()
+            flash("Vote removed!", "success")
+        else:
+            # User is adding a vote for this option
+            option.votes += 1
+            new_voter = PollVoter(
+                user_id=current_user.id,
+                question_id=question_id,
+                option_id=option_id
+            )
+            db.session.add(new_voter)
+            db.session.commit()
+            flash("Vote added!", "success")
+    else:
+        # Single-response: Original logic
+        existing_vote = PollVoter.query.filter_by(
+            user_id=current_user.id,
+            question_id=question_id
+        ).first()
 
-        if old_option.votes > 0:
-            old_option.votes -= 1
+        if existing_vote:
+            old_option = PollOption.query.get(existing_vote.option_id)
+            if old_option.votes > 0:
+                old_option.votes -= 1
+            option.votes += 1
+            existing_vote.option_id = option_id
+            db.session.commit()
+            flash("Vote changed successfully!", "success")
+        else:
+            # New vote
+            option.votes += 1
+            new_voter = PollVoter(
+                user_id=current_user.id,
+                question_id=question_id,
+                option_id=option_id
+            )
+            db.session.add(new_voter)
+            db.session.commit()
+            flash("Vote submitted!", "success")
 
-        option.votes += 1
-
-        existing_vote.option_id = option_id
-
-        db.session.commit()
-        flash("Vote changed successfully!", "success")
-        return redirect(url_for('main.home'))
-
-    # New vote
-    option.votes += 1
-    new_voter = PollVoter(
-        user_id=current_user.id, 
-        question_id=question_id,
-        option_id=option_id
-    )
-
-    db.session.add(new_voter)
-    db.session.commit()
-
-    flash("Vote submitted!", "success")
     return redirect(url_for('main.home'))
 
 @main_bp.route('/submit-frq/<int:question_id>', methods=['POST'])
