@@ -2,8 +2,8 @@
 
 """
 Project Name: ACM-Meeting-Records
-Project Author(s): Joseph Lefkovitz (github.com/lefkovitz)
-Last Modified: 12/16/2025
+Project Author(s): Joseph Lefkovitz (github.com/lefkovitz), Thomas Crossman (github.com/crossmant1)
+Last Modified: February 6, 2025
 
 File Purpose: Flask-WTF forms for the project.
 """
@@ -218,7 +218,11 @@ class CreatePollQuestionForm(FlaskForm):
         "Free Response Question",
         default=False
     )
-    options = FieldList(FormField(CreatePollOptionForm), min_entries=0)  # Changed to 0 since FRQ won't have options
+    allow_multiple_responses = BooleanField(
+        "Allow Multiple Responses",
+        default=False
+    )
+    options = FieldList(FormField(CreatePollOptionForm), min_entries=0)
 
 class CreatePollForm(FlaskForm):
     """ Form for creating a new poll. """
