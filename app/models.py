@@ -4,7 +4,7 @@
 """
 Project Name: ACM-Meeting-Records
 Project Author(s): Joseph Lefkovitz (github.com/lefkovitz), Thomas Crossman (github.com/crossmant1)
-Last Modified: 1/23/2026
+Last Modified: February 6, 2026
 
 File Purpose: Create the database models for the project.
 """
@@ -83,8 +83,8 @@ class RecoveryCodes(db.Model):
         """ Initialize a recovery code for a user. """
         code = secrets.token_urlsafe(8)
         self.code_hash = generate_password_hash(code, method='scrypt', salt_length=16)
-        return code 
-    
+        return code
+
     def check_code(self, code):
         """ Verify a recovery code for a user. """
         return check_password_hash(self.code_hash, code)
@@ -175,6 +175,7 @@ class PollQuestion(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     question_text = db.Column(db.String(500), nullable=False)
     is_free_response = db.Column(db.Boolean, nullable=False, default=False)
+    allow_multiple_responses = db.Column(db.Boolean, nullable=False, default=False)
 
     poll_id = db.Column(db.Integer, db.ForeignKey("polls.id", ondelete="CASCADE"), nullable=False)
 
@@ -231,7 +232,3 @@ class PollVoter(db.Model):
                          nullable=False)
 
     poll_id = db.Column(db.Integer, db.ForeignKey("polls.id", ondelete="CASCADE"), nullable=True)
-
-    __table_args__ = (
-        db.UniqueConstraint('user_id', 'question_id', name='unique_user_question_vote'),
-    )
