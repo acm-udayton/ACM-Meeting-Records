@@ -32,7 +32,6 @@ from app.models import (Meetings,
     Poll,
     PollOption,
     PollVoter,
-    PollQuestion,
     PollFreeResponse
 )
 from app.extensions import db
@@ -173,121 +172,109 @@ def download_file(name):
     return send_from_directory(current_app.config["UPLOAD_FOLDER"], name)
 
 
-
-@main_bp.route('/polls')
-def show_polls():
-    """Fetch all polls"""
-    polls = Poll.query.all()
-
-    voted_question_ids = set()
-
-    if current_user.is_authenticated:
-        user_votes = PollVoter.query.filter_by(user_id=current_user.id).all()  # Use .id
-        voted_question_ids = {vote.question_id for vote in user_votes}
-
-    return redirect(url_for('main.home'))
-
-
-@main_bp.route('/vote/<int:option_id>', methods=['POST'])
+@main_bp.route('/submit-poll/<int:poll_id>', methods=['POST'])
 @login_required
-def vote_option(option_id):
-    """Handle voting for a poll option."""
-    option = PollOption.query.get_or_404(option_id)
-    question_id = option.question_id
-    question = PollQuestion.query.get_or_404(question_id)
+def submit_poll(poll_id):
+    """Handle bulk submission of all questions in a poll."""
+    poll = Poll.query.get_or_404(poll_id)
 
-    # Check if question allows multiple responses
-    if question.allow_multiple_responses:
-        # Multi-response: Check if user already voted for this specific option
-        existing_vote = PollVoter.query.filter_by(
-            user_id=current_user.id,
-            question_id=question_id,
-            option_id=option_id
-        ).first()
+    try:
+        for question in poll.questions:
+            if question.is_free_response:
+                # Handle FRQ
+                response_text = request.form.get(f'question_{question.id}_frq', '').strip()
 
-        if existing_vote:
-            # User is un-voting this option
-            option.votes -= 1
-            db.session.delete(existing_vote)
-            db.session.commit()
-            flash("Vote removed!", "success")
-        else:
-            # User is adding a vote for this option
-            option.votes += 1
-            new_voter = PollVoter(
-                user_id=current_user.id,
-                question_id=question_id,
-                option_id=option_id
-            )
-            db.session.add(new_voter)
-            db.session.commit()
-            flash("Vote added!", "success")
-    else:
-        # Single-response: Original logic
-        existing_vote = PollVoter.query.filter_by(
-            user_id=current_user.id,
-            question_id=question_id
-        ).first()
+                if response_text:  # Only save if they entered something
+                    existing_response = PollFreeResponse.query.filter_by(
+                        user_id=current_user.id,
+                        question_id=question.id
+                    ).first()
 
-        if existing_vote:
-            old_option = PollOption.query.get(existing_vote.option_id)
-            if old_option.votes > 0:
-                old_option.votes -= 1
-            option.votes += 1
-            existing_vote.option_id = option_id
-            db.session.commit()
-            flash("Vote changed successfully!", "success")
-        else:
-            # New vote
-            option.votes += 1
-            new_voter = PollVoter(
-                user_id=current_user.id,
-                question_id=question_id,
-                option_id=option_id
-            )
-            db.session.add(new_voter)
-            db.session.commit()
-            flash("Vote submitted!", "success")
+                    if existing_response:
+                        existing_response.response_text = response_text
+                        existing_response.created_at = db.func.now()
+                    else:
+                        new_response = PollFreeResponse(
+                            user_id=current_user.id,
+                            question_id=question.id,
+                            response_text=response_text
+                        )
+                        db.session.add(new_response)
 
-    return redirect(url_for('main.home'))
+            else:
+                # Handle MCQ (both single and multiple response)
+                selected_options = request.form.getlist(f'question_{question.id}_mcq')
 
-@main_bp.route('/submit-frq/<int:question_id>', methods=['POST'])
-@login_required
-def submit_frq(question_id):
-    """Handle free response question submission."""
-    question = PollQuestion.query.get_or_404(question_id)
+                if selected_options:  # Only process if they selected something
+                    selected_option_ids = [int(opt_id) for opt_id in selected_options]
 
-    # Verify it's actually an FRQ
-    if not question.is_free_response:
-        flash("Invalid request.", "danger")
-        return redirect(url_for('main.home'))
+                    if question.allow_multiple_responses:
+                        # Multi-response: Remove all existing votes, then add new ones
+                        existing_votes = PollVoter.query.filter_by(
+                            user_id=current_user.id,
+                            question_id=question.id
+                        ).all()
 
-    response_text = request.form.get('response_text', '').strip()
+                        # Decrement vote counts for removed options
+                        for vote in existing_votes:
+                            if vote.option_id not in selected_option_ids:
+                                option = PollOption.query.get(vote.option_id)
+                                if option and option.votes > 0:
+                                    option.votes -= 1
+                                db.session.delete(vote)
 
-    if not response_text:
-        flash("Please enter a response.", "danger")
-        return redirect(url_for('main.home'))
+                        # Add votes for newly selected options
+                        existing_option_ids = {vote.option_id for vote in existing_votes}
+                        for option_id in selected_option_ids:
+                            if option_id not in existing_option_ids:
+                                option = PollOption.query.get(option_id)
+                                if option:
+                                    option.votes += 1
+                                    new_vote = PollVoter(
+                                        user_id=current_user.id,
+                                        question_id=question.id,
+                                        option_id=option_id
+                                    )
+                                    db.session.add(new_vote)
 
-    # Check if user already submitted a response
-    existing_response = PollFreeResponse.query.filter_by(
-        user_id=current_user.id,
-        question_id=question_id
-    ).first()
+                    else:
+                        # Single-response: Remove old vote if different, add new one
+                        option_id = selected_option_ids[0]  # Only one selection for radio
 
-    if existing_response:
-        # Update existing response
-        existing_response.response_text = response_text
+                        existing_vote = PollVoter.query.filter_by(
+                            user_id=current_user.id,
+                            question_id=question.id
+                        ).first()
+
+                        if existing_vote:
+                            if existing_vote.option_id != option_id:
+                                # Changed vote
+                                old_option = PollOption.query.get(existing_vote.option_id)
+                                if old_option and old_option.votes > 0:
+                                    old_option.votes -= 1
+
+                                new_option = PollOption.query.get(option_id)
+                                if new_option:
+                                    new_option.votes += 1
+                                    existing_vote.option_id = option_id
+                        else:
+                            # New vote
+                            option = PollOption.query.get(option_id)
+                            if option:
+                                option.votes += 1
+                                new_vote = PollVoter(
+                                    user_id=current_user.id,
+                                    question_id=question.id,
+                                    option_id=option_id
+                                )
+                                db.session.add(new_vote)
+
         db.session.commit()
-        flash("Response updated successfully!", "success")
-    else:
-        # Create new response
-        new_response = PollFreeResponse(
-            user_id=current_user.id,
-            question_id=question_id,
-            response_text=response_text
-        )
-        db.session.add(new_response)
-        db.session.commit()
-        flash("Response submitted!", "success")
+        flash("All responses submitted successfully!", "success")
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error submitting poll: {str(e)}")
+        flash("An error occurred while saving your responses. Please try again.", "danger")
 
     return redirect(url_for('main.home'))
