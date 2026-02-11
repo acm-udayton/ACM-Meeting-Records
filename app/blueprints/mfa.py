@@ -74,7 +74,7 @@ def verify_recovery_code():
     if not user:
         flash('User not found.', 'danger')
         return redirect(url_for('auth.login'))
-    
+
     form = RecoveryCodeVerifyForm()
     if form.validate_on_submit():
         code = form.token.data

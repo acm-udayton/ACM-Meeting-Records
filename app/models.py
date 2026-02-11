@@ -192,8 +192,8 @@ class PollFreeResponse(db.Model):
     response_text = db.Column(db.Text, nullable=False)
     user_id = db.Column(db.Integer, nullable=False)
 
-    question_id = db.Column(db.Integer, 
-                           db.ForeignKey("poll_questions.id", ondelete="CASCADE"), 
+    question_id = db.Column(db.Integer,
+                           db.ForeignKey("poll_questions.id", ondelete="CASCADE"),
                            nullable=False)
 
     created_at = db.Column(db.DateTime, default=db.func.now())
@@ -227,7 +227,7 @@ class PollVoter(db.Model):
                                                        ondelete="CASCADE"),
                                                          nullable=False)
 
-    option_id = db.Column(db.Integer,  
+    option_id = db.Column(db.Integer,
                          db.ForeignKey("poll_options.id", ondelete="CASCADE"),
                          nullable=False)
 
