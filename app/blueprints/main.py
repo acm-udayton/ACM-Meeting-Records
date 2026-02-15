@@ -61,66 +61,26 @@ def handle_frq(question):
             )
             db.session.add(new_response)
 
-def handle_mcq(question):
-    """  Handle both single and multiple response MCQs based on the question configuration. """
-    selected_options = request.form.getlist(f'question_{question.id}_mcq')
-    # Only process if they selected something
-    if not selected_options:
-        return 
+def handle_multiple_response_mcq(selected_option_ids, question):
+    """ Handle multiple response MCQ submissions. """
+    # Remove all existing votes, then add new ones.
+    existing_votes = PollVoter.query.filter_by(
+        user_id=current_user.id,
+        question_id=question.id
+    ).all()
 
-    selected_option_ids = [int(opt_id) for opt_id in selected_options]
+    # Decrement vote counts for removed options
+    for vote in existing_votes:
+        if vote.option_id not in selected_option_ids:
+            option = PollOption.query.get(vote.option_id)
+            if option and option.votes > 0:
+                option.votes -= 1
+            db.session.delete(vote)
 
-    if question.allow_multiple_responses:
-        # Multi-response: Remove all existing votes, then add new ones
-        existing_votes = PollVoter.query.filter_by(
-            user_id=current_user.id,
-            question_id=question.id
-        ).all()
-
-        # Decrement vote counts for removed options
-        for vote in existing_votes:
-            if vote.option_id not in selected_option_ids:
-                option = PollOption.query.get(vote.option_id)
-                if option and option.votes > 0:
-                    option.votes -= 1
-                db.session.delete(vote)
-
-        # Add votes for newly selected options
-        existing_option_ids = {vote.option_id for vote in existing_votes}
-        for option_id in selected_option_ids:
-            if option_id not in existing_option_ids:
-                option = PollOption.query.get(option_id)
-                if option:
-                    option.votes += 1
-                    new_vote = PollVoter(
-                        user_id=current_user.id,
-                        question_id=question.id,
-                        option_id=option_id
-                    )
-                    db.session.add(new_vote)
-
-    else:
-        # Single-response: Remove old vote if different, add new one
-        option_id = selected_option_ids[0]  # Only one selection for radio
-
-        existing_vote = PollVoter.query.filter_by(
-            user_id=current_user.id,
-            question_id=question.id
-        ).first()
-
-        if existing_vote:
-            if existing_vote.option_id != option_id:
-                # Changed vote
-                old_option = PollOption.query.get(existing_vote.option_id)
-                if old_option and old_option.votes > 0:
-                    old_option.votes -= 1
-
-                new_option = PollOption.query.get(option_id)
-                if new_option:
-                    new_option.votes += 1
-                    existing_vote.option_id = option_id
-        else:
-            # New vote
+    # Add votes for newly selected options
+    existing_option_ids = {vote.option_id for vote in existing_votes}
+    for option_id in selected_option_ids:
+        if option_id not in existing_option_ids:
             option = PollOption.query.get(option_id)
             if option:
                 option.votes += 1
@@ -130,6 +90,53 @@ def handle_mcq(question):
                     option_id=option_id
                 )
                 db.session.add(new_vote)
+
+def handle_single_mcq(selected_option_ids, question):
+    """ Handle single response MCQ submissions. """
+    # Remove old vote if different, add new one.
+    option_id = selected_option_ids[0]  # Only one selection for radio
+
+    existing_vote = PollVoter.query.filter_by(
+        user_id=current_user.id,
+        question_id=question.id
+    ).first()
+
+    if existing_vote:
+        if existing_vote.option_id != option_id:
+            # Changed vote
+            old_option = PollOption.query.get(existing_vote.option_id)
+            if old_option and old_option.votes > 0:
+                old_option.votes -= 1
+
+            new_option = PollOption.query.get(option_id)
+            if new_option:
+                new_option.votes += 1
+                existing_vote.option_id = option_id
+    else:
+        # New vote
+        option = PollOption.query.get(option_id)
+        if option:
+            option.votes += 1
+            new_vote = PollVoter(
+                user_id=current_user.id,
+                question_id=question.id,
+                option_id=option_id
+            )
+            db.session.add(new_vote)
+
+def handle_mcq(question):
+    """  Handle both single and multiple response MCQs based on the question configuration. """
+    selected_options = request.form.getlist(f'question_{question.id}_mcq')
+    # Only process if they selected something
+    if selected_options:
+        selected_option_ids = [int(opt_id) for opt_id in selected_options]
+
+        if question.allow_multiple_responses:
+            # Multi-response.
+            handle_multiple_response_mcq(selected_option_ids, question)
+        else:
+            # Single-response.
+            handle_single_mcq(selected_option_ids, question)
 
 
 # Public web routes.

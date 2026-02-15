@@ -38,12 +38,12 @@ def login():
     if form.validate_on_submit():
         user = Users.query.filter_by(username = form.username.data).first()
 
-        needsRelogin = False
+        needs_relogin = False
 
         # Existence check.
         if user is None:
             flash("Login attempt failed. User does not exist.", "danger")
-            needsRelogin = True
+            needs_relogin = True
 
         # Activation check.
         if user.activated is False:
@@ -52,7 +52,7 @@ def login():
                 "Please contact the system administrator for approval.",
                 "danger"
             )
-            needsRelogin = True
+            needs_relogin = True
 
         # Password check.
         if not user.check_password(form.password.data):
@@ -66,10 +66,12 @@ def login():
                 "the system administrator to reset your credentials.",
                 "danger"
             )
-            needsRelogin = True
-        if needsRelogin:
+            needs_relogin = True
+
+        # Redirect on login failure.
+        if needs_relogin:
             return redirect(url_for("auth.login"))
-        
+
         # MFA check.
         if user.mfa_active:
             # Store the user ID in the session temporarily - do not login yet.
@@ -79,7 +81,6 @@ def login():
             else:
                 redirect_to = 'mfa.verify_recovery_code'
             return redirect(url_for(redirect_to))
-            
 
         # Admin without MFA warning.
         if user.role == "admin":
