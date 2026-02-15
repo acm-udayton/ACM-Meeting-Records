@@ -4,7 +4,7 @@
 """
 Project Name: ACM-Meeting-Records
 Project Author(s): Joseph Lefkovitz (github.com/lefkovitz), Thomas Crossman (github.com/crossmant1)
-Last Modified: February 6, 2026
+Last Modified: 2/14/2026
 
 File Purpose: Create the database models for the project.
 """
@@ -181,7 +181,9 @@ class PollQuestion(db.Model):
 
     options = db.relationship("PollOption", backref="question", cascade="all, delete-orphan")
     voters = db.relationship("PollVoter", backref="question", cascade="all, delete-orphan")
-    free_responses = db.relationship("PollFreeResponse", backref="question", cascade="all, delete-orphan")
+    free_responses = db.relationship("PollFreeResponse",
+                                     backref="question",
+                                     cascade="all, delete-orphan")
 
 
 class PollFreeResponse(db.Model):

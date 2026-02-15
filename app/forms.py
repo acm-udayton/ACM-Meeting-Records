@@ -3,7 +3,7 @@
 """
 Project Name: ACM-Meeting-Records
 Project Author(s): Joseph Lefkovitz (github.com/lefkovitz), Thomas Crossman (github.com/crossmant1)
-Last Modified: February 6, 2025
+Last Modified: 2/14/2025
 
 File Purpose: Flask-WTF forms for the project.
 """
@@ -29,7 +29,7 @@ from wtforms.validators import (
 # Define the custom regex validator for the semester format
 SEMESTER_REGEX = r"^(FA|SP) \d{4}$|^$" # FA YYYY or SP YYYY or empty
 
-def email_domain_validator(form, field):
+def email_domain_validator(_form, field):
     """ WTForms Validator to check for the required email domain (if applicable). """
     if field.data and current_app.context["usernames"]["enforce_usernames"] == "True":
         # Use regex to check the required email_domain.

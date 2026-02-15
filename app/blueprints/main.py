@@ -4,7 +4,7 @@
 """
 Project Name: ACM-Meeting-Records
 Project Author(s): Joseph Lefkovitz (github.com/lefkovitz), Thomas Crossman (github.com/crossmant1)
-Last Modified: February, 6 2026
+Last Modified: 2/14/2026
 
 File Purpose: Primary routes for the project.
 """
@@ -26,7 +26,7 @@ from sqlalchemy import desc
 # Local application imports.
 from app.forms import CreateMeetingForm, MeetingCheckinForm, PollVoteForm
 from app.models import (Meetings,
-    Attendees, 
+    Attendees,
     Minutes,
     Attachments,
     Poll,
@@ -38,6 +38,99 @@ from app.extensions import db
 from app.utils import sha_hash
 
 main_bp = Blueprint('main', __name__, template_folder='templates')
+
+# Poll submission helper functions.
+def handle_frq(question):
+    """ Handle free response question submissions. """
+    response_text = request.form.get(f'question_{question.id}_frq', '').strip()
+
+    if response_text:  # Only save if they entered something
+        existing_response = PollFreeResponse.query.filter_by(
+            user_id=current_user.id,
+            question_id=question.id
+        ).first()
+
+        if existing_response:
+            existing_response.response_text = response_text
+            existing_response.created_at = db.func.now()
+        else:
+            new_response = PollFreeResponse(
+                user_id=current_user.id,
+                question_id=question.id,
+                response_text=response_text
+            )
+            db.session.add(new_response)
+
+def handle_mcq(question):
+    """  Handle both single and multiple response MCQs based on the question configuration. """
+    selected_options = request.form.getlist(f'question_{question.id}_mcq')
+    # Only process if they selected something
+    if not selected_options:
+        return 
+
+    selected_option_ids = [int(opt_id) for opt_id in selected_options]
+
+    if question.allow_multiple_responses:
+        # Multi-response: Remove all existing votes, then add new ones
+        existing_votes = PollVoter.query.filter_by(
+            user_id=current_user.id,
+            question_id=question.id
+        ).all()
+
+        # Decrement vote counts for removed options
+        for vote in existing_votes:
+            if vote.option_id not in selected_option_ids:
+                option = PollOption.query.get(vote.option_id)
+                if option and option.votes > 0:
+                    option.votes -= 1
+                db.session.delete(vote)
+
+        # Add votes for newly selected options
+        existing_option_ids = {vote.option_id for vote in existing_votes}
+        for option_id in selected_option_ids:
+            if option_id not in existing_option_ids:
+                option = PollOption.query.get(option_id)
+                if option:
+                    option.votes += 1
+                    new_vote = PollVoter(
+                        user_id=current_user.id,
+                        question_id=question.id,
+                        option_id=option_id
+                    )
+                    db.session.add(new_vote)
+
+    else:
+        # Single-response: Remove old vote if different, add new one
+        option_id = selected_option_ids[0]  # Only one selection for radio
+
+        existing_vote = PollVoter.query.filter_by(
+            user_id=current_user.id,
+            question_id=question.id
+        ).first()
+
+        if existing_vote:
+            if existing_vote.option_id != option_id:
+                # Changed vote
+                old_option = PollOption.query.get(existing_vote.option_id)
+                if old_option and old_option.votes > 0:
+                    old_option.votes -= 1
+
+                new_option = PollOption.query.get(option_id)
+                if new_option:
+                    new_option.votes += 1
+                    existing_vote.option_id = option_id
+        else:
+            # New vote
+            option = PollOption.query.get(option_id)
+            if option:
+                option.votes += 1
+                new_vote = PollVoter(
+                    user_id=current_user.id,
+                    question_id=question.id,
+                    option_id=option_id
+                )
+                db.session.add(new_vote)
+
 
 # Public web routes.
 @main_bp.route("/")
@@ -91,12 +184,18 @@ def events_list():
     visible_meetings = []
     form = CreateMeetingForm()
     if current_user.is_authenticated and current_user.role == "admin":
-        return render_template("events.html", page_title = "Meetings", meetings = all_meetings, form = form)
+        return render_template("events.html",
+                               page_title = "Meetings",
+                               meetings = all_meetings,
+                               form = form)
     else:
         for meeting in all_meetings:
             if meeting.admin_only is not True:
                 visible_meetings.append(meeting)
-        return render_template("events.html", page_title = "Meetings", meetings = visible_meetings, form = form)
+        return render_template("events.html",
+                               page_title = "Meetings",
+                               meetings = visible_meetings,
+                               form = form)
 
 @main_bp.route("/event/<int:meeting_id>/")
 def user_event(meeting_id):
@@ -133,8 +232,9 @@ def event_check_in(meeting_id):
                     if sha_hash(code) == meeting.code_hash:
                         # Check for admin-only meeting status.
                         if meeting.admin_only and current_user.role != "admin":
-                            flash("Check-in failed. This meeting is restricted to administrators only.",
-                               "danger")
+                            flash("Check-in failed. "
+                                  "This meeting is restricted to administrators only.",
+                                "danger")
                         else:
                             if current_user.activated is False:
                                 # User not activated, log them out and return an error.
@@ -171,7 +271,6 @@ def download_file(name):
     """ Serve an uploaded file. """
     return send_from_directory(current_app.config["UPLOAD_FOLDER"], name)
 
-
 @main_bp.route('/submit-poll/<int:poll_id>', methods=['POST'])
 @login_required
 def submit_poll(poll_id):
@@ -182,92 +281,10 @@ def submit_poll(poll_id):
         for question in poll.questions:
             if question.is_free_response:
                 # Handle FRQ
-                response_text = request.form.get(f'question_{question.id}_frq', '').strip()
-
-                if response_text:  # Only save if they entered something
-                    existing_response = PollFreeResponse.query.filter_by(
-                        user_id=current_user.id,
-                        question_id=question.id
-                    ).first()
-
-                    if existing_response:
-                        existing_response.response_text = response_text
-                        existing_response.created_at = db.func.now()
-                    else:
-                        new_response = PollFreeResponse(
-                            user_id=current_user.id,
-                            question_id=question.id,
-                            response_text=response_text
-                        )
-                        db.session.add(new_response)
-
+                handle_frq(question)
             else:
                 # Handle MCQ (both single and multiple response)
-                selected_options = request.form.getlist(f'question_{question.id}_mcq')
-
-                if selected_options:  # Only process if they selected something
-                    selected_option_ids = [int(opt_id) for opt_id in selected_options]
-
-                    if question.allow_multiple_responses:
-                        # Multi-response: Remove all existing votes, then add new ones
-                        existing_votes = PollVoter.query.filter_by(
-                            user_id=current_user.id,
-                            question_id=question.id
-                        ).all()
-
-                        # Decrement vote counts for removed options
-                        for vote in existing_votes:
-                            if vote.option_id not in selected_option_ids:
-                                option = PollOption.query.get(vote.option_id)
-                                if option and option.votes > 0:
-                                    option.votes -= 1
-                                db.session.delete(vote)
-
-                        # Add votes for newly selected options
-                        existing_option_ids = {vote.option_id for vote in existing_votes}
-                        for option_id in selected_option_ids:
-                            if option_id not in existing_option_ids:
-                                option = PollOption.query.get(option_id)
-                                if option:
-                                    option.votes += 1
-                                    new_vote = PollVoter(
-                                        user_id=current_user.id,
-                                        question_id=question.id,
-                                        option_id=option_id
-                                    )
-                                    db.session.add(new_vote)
-
-                    else:
-                        # Single-response: Remove old vote if different, add new one
-                        option_id = selected_option_ids[0]  # Only one selection for radio
-
-                        existing_vote = PollVoter.query.filter_by(
-                            user_id=current_user.id,
-                            question_id=question.id
-                        ).first()
-
-                        if existing_vote:
-                            if existing_vote.option_id != option_id:
-                                # Changed vote
-                                old_option = PollOption.query.get(existing_vote.option_id)
-                                if old_option and old_option.votes > 0:
-                                    old_option.votes -= 1
-
-                                new_option = PollOption.query.get(option_id)
-                                if new_option:
-                                    new_option.votes += 1
-                                    existing_vote.option_id = option_id
-                        else:
-                            # New vote
-                            option = PollOption.query.get(option_id)
-                            if option:
-                                option.votes += 1
-                                new_vote = PollVoter(
-                                    user_id=current_user.id,
-                                    question_id=question.id,
-                                    option_id=option_id
-                                )
-                                db.session.add(new_vote)
+                handle_mcq(question)
 
         db.session.commit()
         flash("All responses submitted successfully!", "success")
