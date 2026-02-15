@@ -32,10 +32,10 @@
                                         <div class="mb-3 card p-3">
                                             <strong>Q{{ loop.index }}:</strong> {{ question.question_text }}
                                             {% if question.is_free_response %}
-                                                <span class="badge bg-info ms-2">Free Response</span>
+                                                <span class="badge poll-badge-red ms-2">Free Response</span>
                                             {% endif %}
                                             {% if question.allow_multiple_responses and not question.is_free_response %}
-                                                <span class="badge bg-warning text-dark ms-2">Multiple Responses</span>
+                                                <span class="badge poll-badge-blue ms-2">Multiple Responses</span>
                                             {% endif %}
                                             
                                             {% if question.is_free_response %}
@@ -66,16 +66,16 @@
                                                     <ul class="list-group mt-2">
                                                         {% for option in question.options %}
                                                             {% set is_winner = (option.votes == max_votes and max_votes > 0) %}
-                                                            <li class="list-group-item d-flex justify-content-between align-items-center {% if is_winner %}list-group-item-success{% endif %}">
+                                                            <li class="list-group-item d-flex justify-content-between align-items-center {% if is_winner %}poll-winner{% endif %}">
                                                                 <span>{{ option.option_text }}</span>
                                                                 <div>
-                                                                    <span class="badge bg-secondary me-2">{{ option.votes }} votes</span>
+                                                                    <span class="badge poll-badge-red me-2">{{ option.votes }} votes</span>
                                                                     {% if total_votes > 0 %}
                                                                         <span class="text-muted me-2">{{ option.votes }}/{{ total_votes }}</span>
-                                                                        <span class="badge bg-primary">{{ "%.1f"|format((option.votes / total_votes * 100)) }}%</span>
+                                                                        <span class="badge poll-badge-blue">{{ "%.1f"|format((option.votes / total_votes * 100)) }}%</span>
                                                                     {% else %}
                                                                         <span class="text-muted me-2">0/0</span>
-                                                                        <span class="badge bg-primary">0.0%</span>
+                                                                        <span class="badge poll-badge-blue">0.0%</span>
                                                                     {% endif %}
                                                                 </div>
                                                             </li>
