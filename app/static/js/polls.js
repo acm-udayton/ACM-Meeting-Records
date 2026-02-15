@@ -11,6 +11,7 @@ function addQuestion() {
   questionDiv.innerHTML = `
     <div class="mb-3">
       <label>Question ${questionIndex + 1}</label>
+      <i class="fa fa-trash delete-question-btn" title="Delete Question" style="cursor: pointer; float: right; color: red;"></i>
       <input
         type="text"
         name="questions-${currentQuestionIndex}-question_text"
@@ -117,6 +118,15 @@ function addQuestion() {
   questionsContainer.appendChild(questionDiv);
   questionIndex++;
 }
+
+function deleteQuestion(event) {
+  if (event.target.classList.contains("delete-question-btn")) {
+    const questionCard = event.target.closest(".card");
+    questionCard.remove();
+  }
+}
+
+document.getElementById("questions-container").addEventListener("click", deleteQuestion);  
 
 // Add one question by default on page load
 addQuestion();
