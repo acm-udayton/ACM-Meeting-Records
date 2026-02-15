@@ -20,10 +20,10 @@ function addQuestion() {
       >
     </div>
 
-    <div class="form-check mb-2">
+    <div class="form-check mb-2 form-check form-switch">
       <input 
         type="checkbox" 
-        class="form-check-input frq-checkbox" 
+        class="form-check-input frq-checkbox " 
         id="frq-checkbox-${currentQuestionIndex}"
         name="questions-${currentQuestionIndex}-is_free_response"
       >
@@ -32,7 +32,7 @@ function addQuestion() {
       </label>
     </div>
 
-    <div class="form-check mb-3 multi-response-section">
+    <div class="form-check mb-3 multi-response-section form-check form-switch">
       <input 
         type="checkbox" 
         class="form-check-input multi-response-checkbox" 
@@ -46,7 +46,7 @@ function addQuestion() {
 
     <div class="options-section">
       <div class="options-container"></div>
-      <button type="button" class="btn btn-sm btn-outline-primary mb-2 add-option-btn">
+      <button type="button" class="btn btn-sm add-option-btn mb-2 add-option-btn">
         + Add Option
       </button>
     </div>
@@ -72,7 +72,7 @@ function addQuestion() {
         name="questions-${currentQuestionIndex}-options-${optionIndex}-option_text"
         required
       >
-      <button type="button" class="btn btn-outline-danger btn-sm remove-option-btn">×</button>
+      <button type="button" class="btn btn-sm remove-option-btn">×</button>
     `;
 
     const removeBtn = optionDiv.querySelector(".remove-option-btn");

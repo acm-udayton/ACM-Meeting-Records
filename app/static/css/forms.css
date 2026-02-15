@@ -65,3 +65,11 @@ textarea {
 .poll-winner {
     background-color: #dbdbdb;
 }
+.remove-option-btn {
+    background-color: var(--ud-red) !important;
+    color: white !important;
+}
+.add-option-btn {
+    background-color: var(--ud-blue) !important;
+    color: white !important;
+}

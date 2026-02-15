@@ -105,11 +105,11 @@
                     {{ form.hidden_tag() }}
                     <div class="form mb-3 mt-3">
                         <label for="title">Title</label>
-                        <input id="title" type="text" name="{{form.title.name}}" placeholder="Enter poll title" required>
+                        <input id="title" class="form-control" type="text" name="{{form.title.name}}" placeholder="Enter poll title" required>
                     </div>
                     <div id="questions-container"> </div>
                     
-                    <button type="button" class="btn btn-secondary mb-3" onclick="addQuestion()">+ Question</button>
+                    <button type="button" class="btn add-option-btn mb-3" onclick="addQuestion()">+ Question</button>
                     <br><br>
                     <button type="submit" class="form-control form-control-lg red-button">Create Poll</button> 
                 </form>
