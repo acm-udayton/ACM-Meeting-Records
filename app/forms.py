@@ -2,8 +2,8 @@
 
 """
 Project Name: ACM-Meeting-Records
-Project Author(s): Joseph Lefkovitz (github.com/lefkovitz)
-Last Modified: 12/16/2025
+Project Author(s): Joseph Lefkovitz (github.com/lefkovitz), Thomas Crossman (github.com/crossmant1)
+Last Modified: 2/14/2025
 
 File Purpose: Flask-WTF forms for the project.
 """
@@ -29,7 +29,7 @@ from wtforms.validators import (
 # Define the custom regex validator for the semester format
 SEMESTER_REGEX = r"^(FA|SP) \d{4}$|^$" # FA YYYY or SP YYYY or empty
 
-def email_domain_validator(form, field):
+def email_domain_validator(_form, field):
     """ WTForms Validator to check for the required email domain (if applicable). """
     if field.data and current_app.context["usernames"]["enforce_usernames"] == "True":
         # Use regex to check the required email_domain.
@@ -214,7 +214,15 @@ class CreatePollQuestionForm(FlaskForm):
             InputRequired(),
         ]
     )
-    options = FieldList(FormField(CreatePollOptionForm), min_entries=2)
+    is_free_response = BooleanField(
+        "Free Response Question",
+        default=False
+    )
+    allow_multiple_responses = BooleanField(
+        "Allow Multiple Responses",
+        default=False
+    )
+    options = FieldList(FormField(CreatePollOptionForm), min_entries=0)
 
 class CreatePollForm(FlaskForm):
     """ Form for creating a new poll. """

@@ -67,63 +67,116 @@
         {% endif %}
       </main>
     </div>
-<aside class="col-sm-4">
-    <section class="mb-5">
-        <h2>Existing Polls</h2>
-        {% if polls %}
+    <div class="row">
+      <aside class="col-sm-4">
+        <section class="mb-5">
+          <h2>Existing Polls</h2>
+          {% if polls %}
             <div class="list-group">
-                {% for poll in polls %}
-                <div class="list-group-item mb-3 p-3">
-                    <h5 class="mb-3 border-bottom pb-2">{{ poll.title }}</h5>
+              {% for poll in polls %}
+                <div class="poll-form-card mb-3 p-3">
+                  <h5 class="mb-3 border-bottom pb-2">{{ poll.title }}</h5>
 
-                    {% if poll.questions %}
-                        <div class="ms-2">
-                            {% for question in poll.questions %}
-                            <div class="mb-4">
-                                <h6 class="fw-bold">Q{{ loop.index }}: {{ question.question_text }}</h6>
+                  {% if poll.questions %}
+                    <form action="{{ url_for('main.submit_poll', poll_id=poll.id) }}" method="POST">
+                      {{ poll_form.hidden_tag() }}
+                      
+                      <div class="ms-2">
+                        {% for question in poll.questions %}
+                          <div class="mb-4">
+                            <h6 class="fw-bold">
+                              Q{{ loop.index }}: {{ question.question_text }}
+                              {% if question.is_free_response %}
+                                <span class="badge poll-badge-red ms-2">Free Response</span>
+                              {% elif question.allow_multiple_responses %}
+                                <span class="badge poll-badge-blue ms-2">Multiple Responses Allowed</span>
+                              {% endif %}
+                            </h6>
 
-                                {% if question.options %}
-                                <ul class="list-group list-group-flush">
-                                    {% for option in question.options %}
-                                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                        
-                                        {% if question.id in voted_questions %}
-                                            <span>{{ option.option_text }}</span>
-                                            <span class="badge bg-secondary rounded-pill">{{ option.votes }} votes</span>
-                                            
-                                        {% else %}
-                                            <span>{{ option.option_text }}</span>
-                                            
-                                            <form action="{{ url_for('main.vote_option', option_id=option.id) }}" method="POST" class="m-0">
-                                                {{ poll_form.hidden_tag() }}
-                                                <button type="submit" class="btn btn-sm btn-primary">Vote</button>
-                                            </form>
-                                        {% endif %}
-                                        
-                                    </li>
-                                    {% endfor %}
-                                </ul>
-                                
-                                {% if question.id in voted_questions %}
-                                    <small class="text-success fst-italic">
-                                        &#10003; You have participated in this question.
-                                    </small>
+                            {% if question.is_free_response %}
+                              <!-- Free Response Question -->
+                              <div class="mt-3">
+                                {% if question.id in user_frq_responses %}
+                                  <textarea 
+                                    name="question_{{ question.id }}_frq" 
+                                    class="form-control" 
+                                    rows="3" 
+                                    placeholder="Enter your response...">{{ user_frq_responses[question.id] }}</textarea>
+                                  <small class="text-muted">You previously responded to this question. Submitting will update your response.</small>
+                                {% else %}
+                                  <textarea 
+                                    name="question_{{ question.id }}_frq" 
+                                    class="form-control" 
+                                    rows="3" 
+                                    placeholder="Enter your response..."></textarea>
                                 {% endif %}
-                                
-                                {% endif %}
-                            </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <p class="text-muted ms-3">No questions added yet.</p>
-                    {% endif %}
+                              </div>
+
+                            {% else %}
+                              <!-- Multiple Choice Question -->
+                              {% if question.options %}
+                                <div class="mt-2">
+                                  {% for option in question.options %}
+                                    <div class="form-check">
+                                      {% if question.allow_multiple_responses %}
+                                        <!-- Checkbox for multi-response -->
+                                        <input 
+                                          class="form-radio-input" 
+                                          type="checkbox" 
+                                          name="question_{{ question.id }}_mcq" 
+                                          value="{{ option.id }}"
+                                          id="option_{{ option.id }}"
+                                          {% if option.id in voted_options %}checked{% endif %}
+                                        >
+                                      {% else %}
+                                        <!-- Radio for single-response -->
+                                        <input 
+                                          class="form-radio-input" 
+                                          type="radio" 
+                                          name="question_{{ question.id }}_mcq" 
+                                          value="{{ option.id }}"
+                                          id="option_{{ option.id }}"
+                                          {% if option.id in voted_options %}checked{% endif %}
+                                        >
+                                      {% endif %}
+                                      <label class="form-check-label" for="option_{{ option.id }}">
+                                        {{ option.option_text }}
+                                        <span class="badge bg-secondary ms-2">{{ option.votes }} votes</span>
+                                      </label>
+                                    </div>
+                                  {% endfor %}
+                                </div>
+                              {% endif %}
+                            {% endif %}
+                          </div>
+                        {% endfor %}
+                      </div>
+
+                      <div class="mt-3">
+                        <button type="submit" class="form-control form-control-lg">Submit All Responses</button>
+                        {% set has_voted = namespace(value=False) %}
+                        {% for question in poll.questions %}
+                          {% if question.id in voted_questions %}
+                            {% set has_voted.value = True %}
+                          {% endif %}
+                        {% endfor %}
+                        {% if has_voted.value %}
+                          <br>
+                          <small class="text-muted ms-2">You have already responded to some questions. Submitting will update your responses.</small>
+                        {% endif %}
+                      </div>
+                    </form>
+                  {% else %}
+                    <p class="text-muted ms-3">No questions added yet.</p>
+                  {% endif %}
                 </div>
-                {% endfor %}
+              {% endfor %}
             </div>
-        {% else %}
+          {% else %}
             <p class="text-muted">No polls created yet.</p>
-        {% endif %}
-    </section>
-</aside>
-</div>
+          {% endif %}
+        </section>
+      </aside>
+    </div>
+  </div>
 {% endblock %}

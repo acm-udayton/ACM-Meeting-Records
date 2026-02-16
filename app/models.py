@@ -4,7 +4,7 @@
 """
 Project Name: ACM-Meeting-Records
 Project Author(s): Joseph Lefkovitz (github.com/lefkovitz), Thomas Crossman (github.com/crossmant1)
-Last Modified: 1/23/2026
+Last Modified: 2/14/2026
 
 File Purpose: Create the database models for the project.
 """
@@ -83,8 +83,8 @@ class RecoveryCodes(db.Model):
         """ Initialize a recovery code for a user. """
         code = secrets.token_urlsafe(8)
         self.code_hash = generate_password_hash(code, method='scrypt', salt_length=16)
-        return code 
-    
+        return code
+
     def check_code(self, code):
         """ Verify a recovery code for a user. """
         return check_password_hash(self.code_hash, code)
@@ -170,16 +170,39 @@ class Poll(db.Model):
 
 class PollQuestion(db.Model):
     """Store questions for polls."""
-    __tablename__="poll_questions"
+    __tablename__ = "poll_questions"
 
-    id=db.Column(db.Integer, primary_key=True)  
-    question_text=db.Column(db.String(500), nullable=False)
+    id = db.Column(db.Integer, primary_key=True)
+    question_text = db.Column(db.String(500), nullable=False)
+    is_free_response = db.Column(db.Boolean, nullable=False, default=False)
+    allow_multiple_responses = db.Column(db.Boolean, nullable=False, default=False)
 
-    poll_id=db.Column(db.Integer, db.ForeignKey("polls.id", ondelete="CASCADE"), nullable=False)
+    poll_id = db.Column(db.Integer, db.ForeignKey("polls.id", ondelete="CASCADE"), nullable=False)
 
-    options=db.relationship("PollOption", backref="question", cascade="all, delete-orphan")
-    voters=db.relationship("PollVoter", backref="question", cascade="all, delete-orphan")
+    options = db.relationship("PollOption", backref="question", cascade="all, delete-orphan")
+    voters = db.relationship("PollVoter", backref="question", cascade="all, delete-orphan")
+    free_responses = db.relationship("PollFreeResponse",
+                                     backref="question",
+                                     cascade="all, delete-orphan")
 
+
+class PollFreeResponse(db.Model):
+    """Store free response answers."""
+    __tablename__ = "poll_free_responses"
+
+    id = db.Column(db.Integer, primary_key=True)
+    response_text = db.Column(db.Text, nullable=False)
+    user_id = db.Column(db.Integer, nullable=False)
+
+    question_id = db.Column(db.Integer,
+                           db.ForeignKey("poll_questions.id", ondelete="CASCADE"),
+                           nullable=False)
+
+    created_at = db.Column(db.DateTime, default=db.func.now())
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'question_id', name='unique_user_question_response'),
+    )
 
 class PollOption(db.Model):
     """Store options for poll questions."""
@@ -206,8 +229,8 @@ class PollVoter(db.Model):
                                                        ondelete="CASCADE"),
                                                          nullable=False)
 
-    poll_id = db.Column(db.Integer, db.ForeignKey("polls.id", ondelete="CASCADE"), nullable=True)
+    option_id = db.Column(db.Integer,
+                         db.ForeignKey("poll_options.id", ondelete="CASCADE"),
+                         nullable=False)
 
-    __table_args__ = (
-        db.UniqueConstraint('user_id', 'question_id', name='unique_user_question_vote'),
-    )
+    poll_id = db.Column(db.Integer, db.ForeignKey("polls.id", ondelete="CASCADE"), nullable=True)

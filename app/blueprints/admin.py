@@ -39,15 +39,15 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/admin', template_folder='te
 
 # Utility function(s)
 def get_last_attended_date(user):
-        """ Get date of last attended meeting for the given user. """
-        # Query the Meetings table
-        last_meeting = db.session.query(Meetings.event_start)\
-            .join(Attendees, Meetings.id == Attendees.meeting)\
-            .filter(Attendees.username == user.username)\
-            .filter(Meetings.event_start != None)\
-            .order_by(Meetings.event_start.desc())\
-            .first()
-        return last_meeting[0] if last_meeting else None
+    """ Get date of last attended meeting for the given user. """
+    # Query the Meetings table
+    last_meeting = db.session.query(Meetings.event_start)\
+        .join(Attendees, Meetings.id == Attendees.meeting)\
+        .filter(Attendees.username == user.username)\
+        .filter(Meetings.event_start != None)\
+        .order_by(Meetings.event_start.desc())\
+        .first()
+    return last_meeting[0] if last_meeting else None
 
 # Admin web routes.
 @admin_bp.route("/dashboard/<int:meeting_id>/")

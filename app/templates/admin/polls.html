@@ -9,7 +9,7 @@
     <div class="flex-grow-1 container mt-5">
       <div class="row">
         <main class="col-12">
-            <h2>Poll Managament</h2>
+            <h2>Poll Management</h2>
 
             <section class="mb-5">
                 <h3>Existing Polls</h3>
@@ -29,15 +29,59 @@
                             {% if poll.questions %}
                                 <div class="ms-3">
                                     {% for question in poll.questions %}
-                                        <div class="mb-2">
+                                        <div class="mb-3 card p-3">
                                             <strong>Q{{ loop.index }}:</strong> {{ question.question_text }}
-                                            <!-- Display Options -->
-                                            {% if question.options %}
-                                                <ul class="mb-1">
-                                                    {% for option in question.options %}
-                                                        <li>{{ option.option_text }} <span class="badge bg-secondary">{{ option.votes }} votes</span></li>
-                                                    {% endfor %}
-                                                </ul>
+                                            {% if question.is_free_response %}
+                                                <span class="badge poll-badge-red ms-2">Free Response</span>
+                                            {% endif %}
+                                            {% if question.allow_multiple_responses and not question.is_free_response %}
+                                                <span class="badge poll-badge-blue ms-2">Multiple Responses</span>
+                                            {% endif %}
+                                            
+                                            {% if question.is_free_response %}
+                                                <!-- Display Free Response Answers -->
+                                                {% if question.free_responses %}
+                                                    <div class="mt-3">
+                                                        <p class="mb-2"><strong>Responses ({{ question.free_responses|length }}):</strong></p>
+                                                        <ol class="list-group list-group-numbered">
+                                                            {% for response in question.free_responses %}
+                                                                <li class="list-group-item">
+                                                                    {{ response.response_text }}
+                                                                    <small class="text-muted d-block mt-1">
+                                                                        {{ response.created_at.strftime('%Y-%m-%d %H:%M') if response.created_at else 'No date' }}
+                                                                    </small>
+                                                                </li>
+                                                            {% endfor %}
+                                                        </ol>
+                                                    </div>
+                                                {% else %}
+                                                    <p class="text-muted ms-3 mt-2">No responses yet.</p>
+                                                {% endif %}
+                                            {% else %}
+                                                <!-- Display Multiple Choice Options with Statistics -->
+                                                {% if question.options %}
+                                                    {% set total_votes = question.options|sum(attribute='votes') %}
+                                                    {% set max_votes = question.options|map(attribute='votes')|max %}
+                                                    
+                                                    <ul class="list-group mt-2">
+                                                        {% for option in question.options %}
+                                                            {% set is_winner = (option.votes == max_votes and max_votes > 0) %}
+                                                            <li class="list-group-item d-flex justify-content-between align-items-center {% if is_winner %}poll-winner{% endif %}">
+                                                                <span>{{ option.option_text }}</span>
+                                                                <div>
+                                                                    <span class="badge poll-badge-red me-2">{{ option.votes }} votes</span>
+                                                                    {% if total_votes > 0 %}
+                                                                        <span class="text-muted me-2">{{ option.votes }}/{{ total_votes }}</span>
+                                                                        <span class="badge poll-badge-blue">{{ "%.1f"|format((option.votes / total_votes * 100)) }}%</span>
+                                                                    {% else %}
+                                                                        <span class="text-muted me-2">0/0</span>
+                                                                        <span class="badge poll-badge-blue">0.0%</span>
+                                                                    {% endif %}
+                                                                </div>
+                                                            </li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                {% endif %}
                                             {% endif %}
                                         </div>
                                     {% endfor %}
@@ -52,7 +96,7 @@
                     <p class="text-muted">No polls created yet.</p>
                 {% endif %}
             </section>
-
+            <!-- Create a Poll -->
             <h3>Create a Poll</h3> 
             <section id="form-context" class="d-grid justify-content-left text-left">
             </section>
@@ -61,11 +105,11 @@
                     {{ form.hidden_tag() }}
                     <div class="form mb-3 mt-3">
                         <label for="title">Title</label>
-                        <input id="title" type="text" name="{{form.title.name}}" placeholder="Enter poll title", required>
+                        <input id="title" class="form-control" type="text" name="{{form.title.name}}" placeholder="Enter poll title" required>
                     </div>
                     <div id="questions-container"> </div>
                     
-                    <button type="button" class="btn btn-secondary mb-3" onclick="addQuestion()">+ Question</button>
+                    <button type="button" class="btn add-option-btn mb-3" onclick="addQuestion()">+ Question</button>
                     <br><br>
                     <button type="submit" class="form-control form-control-lg red-button">Create Poll</button> 
                 </form>
@@ -78,7 +122,5 @@
         </main>
       </div>
     </div>
-
-
 
 {% endblock %}

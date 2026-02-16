@@ -4,7 +4,7 @@
 """
 Project Name: ACM-Meeting-Records
 Project Author(s): Joseph Lefkovitz (github.com/lefkovitz)
-Last Modified: 1/24/2026
+Last Modified: 2/14/2026
 
 File Purpose: Authentication routes for the project.
 """
@@ -38,10 +38,12 @@ def login():
     if form.validate_on_submit():
         user = Users.query.filter_by(username = form.username.data).first()
 
+        needs_relogin = False
+
         # Existence check.
         if user is None:
             flash("Login attempt failed. User does not exist.", "danger")
-            return redirect(url_for("auth.login"))
+            needs_relogin = True
 
         # Activation check.
         if user.activated is False:
@@ -50,7 +52,7 @@ def login():
                 "Please contact the system administrator for approval.",
                 "danger"
             )
-            return redirect(url_for("auth.login"))
+            needs_relogin = True
 
         # Password check.
         if not user.check_password(form.password.data):
@@ -64,6 +66,10 @@ def login():
                 "the system administrator to reset your credentials.",
                 "danger"
             )
+            needs_relogin = True
+
+        # Redirect on login failure.
+        if needs_relogin:
             return redirect(url_for("auth.login"))
 
         # MFA check.
@@ -71,9 +77,10 @@ def login():
             # Store the user ID in the session temporarily - do not login yet.
             session['mfa_user_id'] = user.id
             if user.totp_active:
-                return redirect(url_for('mfa.verify_totp'))
+                redirect_to = 'mfa.verify_totp'
             else:
-                return redirect(url_for('mfa.verify_recovery_code'))
+                redirect_to = 'mfa.verify_recovery_code'
+            return redirect(url_for(redirect_to))
 
         # Admin without MFA warning.
         if user.role == "admin":
