@@ -128,6 +128,21 @@ Comments and specifications relating to the design patterns and ideologies used 
 The application factory is a design pattern for building scalable codebases for flask backends. We rely on the application factory to build one complete app from a variety of files.
 
 Strictly speaking, the application factory itself can be found in `app/__init__.py`. The contents of this file compiles the logic, extensions, and utilities that are specified in the rest of the python files in the codebase.
+
+The application factory within the `create_app` function in `app/__init__.py` is responsible for the following:
+1. Loading environment variables from the ```app/.env``` file.
+2. Configuring the logger.
+3. Initializing the Flask app.
+4. Adding configuration settings to the Flask app.
+5. Initializing <a href="#flask-extensions">Flask extensions</a> with the app.
+6. Specifying the user loader for <a href="#flask-login">Flask-Login</a>.
+7. Setting the app variables such as ```.context```, ```.logs```, ```.base_url```, and ```.storage```.
+8. Defining the app's context processor for variables passed to all templatess.
+9. Adding custom Jinja filters to the app.
+10. Registering the app's error handlers for HTTP status code exceptions.
+11. Registering all <a href="#route-map">app blueprints</a>.
+
+The application factory is launched by Docker within the web container. This results in a clean build of the flask app, combining the entire codebase and all of its extensions into one app that can be run and debugged within the web container. This also allows us to avoid many issues that arise with monolithic flask apps, such as circular imports and messy code structure. By following the application factory design pattern, we also ensure that our codebase is modular, scalable, and maintainable as we continue to build out the project.
 <hr>
 
 
