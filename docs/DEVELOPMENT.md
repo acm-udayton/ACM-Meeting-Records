@@ -324,11 +324,17 @@ We use a few GitHub Actions runners for our project's CI/CD processes.
 <details>
 <summary id="pylint-ci"><strong>Pylint CI</strong></summary>
 <br>
+This workflow runs on every push to the repository as well as on every pull request. It automatically runs pylint on the codebase and outputs a report of any linting errors or warnings. This helps us maintain code quality and consistency across the project. The "passing" standard for the workflow is currently set high at 9.5, as specified in the ```.github/workflows/.pylintrc``` file, but this may be adjusted in the future as the codebase continues to evolve and we determine what an appropriate standard is for our project.
+
+For precise configuration details, please consult the file at ```.github/workflows/pylint.yml```.
 </details>
 
 <details>
 <summary id="docker-image-ci"><strong>Docker Image CI</strong></summary>
 <br>
+This workflow is only triggered on succesful pushes to the repository's main branch. It will automatically use the Dockerfile to build a new image for the web container. It will also use GitHub secrets (must be configured by an ACM officer with Organization manager access on GitHub) to publish this image to DockerHub. This ultimately serves the purpose of ensuring that the public build of the web app is a stable release, never a release candidate or development version.
+
+For precise configuration details, please consult the file at ```.github/workflows/docker-image.yml```.
 </details>
 <hr>
 
