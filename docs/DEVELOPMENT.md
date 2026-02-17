@@ -164,11 +164,11 @@ Whenever you make changes to the database models, you should create a new migrat
 docker compose stop
 docker compose up -d db
 docker compose build web
-docker compose run --rm web flask db migrate -m "<your upgrade message here>"
+docker compose run --rm web flask db migrate -m "your upgrade message here"
 docker compose run --rm web flask db upgrade
 ```
 
-Be sure to replace the "<your upgrade message here>" message with a string that provides a clearer description of what the database model changes are. This will help other developers understand the purpose of the migration when they see it in the codebase. Whenever possible, only generate one migration per pull request by including all model changes in one migration script. This will help keep the migration history clean and organized. If you need to make additional model changes after generating a migration, you can either modify the existing migration script (if it hasn't been applied yet) or create a new migration script for the additional changes. For any questions on the migration script recreation process, please reach out to the development team lead for assistance.
+Be sure to replace the "your upgrade message here" message with a string that provides a clearer description of what the database model changes are. This will help other developers understand the purpose of the migration when they see it in the codebase. Whenever possible, only generate one migration per pull request by including all model changes in one migration script. This will help keep the migration history clean and organized. If you need to make additional model changes after generating a migration, you can either modify the existing migration script (if it hasn't been applied yet) or create a new migration script for the additional changes. For any questions on the migration script recreation process, please reach out to the development team lead for assistance.
 
 For more information on how to use Flask-Migrate, please refer to the official documentation: https://flask-migrate.readthedocs.io/en/latest/
 </details>
@@ -367,7 +367,7 @@ We use flask-migrate for database management, so if you don't explicitly tell fl
 ```
 Revises: your_version_number
 ```
-a newer migration exists already, but hasn't been applied automatically. If however, you don't see any such file, you likely need to create a new migration file. To do this, run the following terminal commands while your db container is running. Be sure to replace the "<your upgrade message here>" message with a string that provides a clearer description of what the database model changes are.
+a newer migration exists already, but hasn't been applied automatically. If however, you don't see any such file, you likely need to create a new migration file. To do this, run the following terminal commands while your db container is running. Be sure to replace the "< your upgrade message here >" message with a string that provides a clearer description of what the database model changes are.
 ```
 docker compose build web
 docker compose run --rm web flask db migrate -m "<your upgrade message here>"
