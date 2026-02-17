@@ -157,6 +157,20 @@ The application factory is launched by Docker within the web container. This res
 <details>
 <summary id="flask-migrate"><strong>Flask-Migrate</strong></summary>
 <br>
+Flask-Migrate is a Flask extension that handles SQLAlchemy database migrations for Flask applications using Alembic. It provides a set of command-line tools to manage database schema changes, allowing us to easily create, apply, and track database migrations as the application evolves. With Flask-Migrate, you can generate migration scripts based on changes to your SQLAlchemy models, apply those migrations to the database, and keep track of the migration history. These scripts are shared as part of the codebase, allowing all developers and users to automatically apply your changes without conflict. 
+
+Whenever you make changes to the database models, you should create a new migration script and apply it to the database. This can be done using the following command sequence:
+```sh
+docker compose stop
+docker compose up -d db
+docker compose build web
+docker compose run --rm web flask db migrate -m "<your upgrade message here>"
+docker compose run --rm web flask db upgrade
+```
+
+Be sure to replace the "<your upgrade message here>" message with a string that provides a clearer description of what the database model changes are. This will help other developers understand the purpose of the migration when they see it in the codebase. Whenever possible, only generate one migration per pull request by including all model changes in one migration script. This will help keep the migration history clean and organized. If you need to make additional model changes after generating a migration, you can either modify the existing migration script (if it hasn't been applied yet) or create a new migration script for the additional changes. For any questions on the migration script recreation process, please reach out to the development team lead for assistance.
+
+For more information on how to use Flask-Migrate, please refer to the official documentation: https://flask-migrate.readthedocs.io/en/latest/
 </details>
 
 <details>
@@ -361,6 +375,21 @@ docker compose run --rm web flask db upgrade
 ```
 If the above information didn't solve your problem, reach out to the development team for further assistance.
 </details>
+
+<details>
+<summary><strong>I'm not sure what database schema version I am currently using</strong></summary>
+<br />
+This issue is particularly prevalent when switching between branches, as different branches may have different migration histories and therefore different database schema versions. To check your current database schema version, you can follow these steps:
+
+1. Ensure that your database container is running. 
+2. Connect to your database using DBeaver or any other database client.
+3. Look for a table named `alembic_version` in the `public` schema of your database. This table is created and managed by Flask-Migrate to keep track of the current migration version applied to the database.
+4. Query the `alembic_version` table to find the current version number. It should be the only entry in the table and it will be an alphanumeric string that corresponds to the latest migration that has been applied to your database.
+5. Once you have the version number, you can search for it in the `migrations/versions` directory of the codebase to find out which migration file corresponds to that version. 
+
+This will give you insight into what schema changes have been applied to your database and help you determine if you need to apply any new migrations or if you are on the correct version for the branch you are working on. If you are on the wrong version, you can either apply the necessary migrations to update your database schema or reset your database and apply all migrations from the beginning to ensure you are on the correct version for your branch.
+</details>
+
 
 <hr>
 
