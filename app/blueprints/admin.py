@@ -474,6 +474,8 @@ def event_delete(meeting_id):
 def users_list():
     """ Show the users index page."""
     all_users = Users.query.order_by(Users.id).all()
+    active_users_count = Users.query.filter_by(activated=True).count()
+
     for user in all_users:
         # Get the number of meetings attended by each user.
         user.meetings_attended = Attendees.query.filter_by(username = user.username).count()
@@ -483,7 +485,7 @@ def users_list():
             user.last_checkin = last_attended_meeting
         else:
             user.last_checkin = None
-    return render_template("admin/users.html", page_title = "Users", users = all_users)
+    return render_template("admin/users.html", page_title = "Users", users = all_users, active_users_count = active_users_count )
 
 @admin_bp.route("/users/reset-password/<int:user_id>/", methods = ["POST"])
 @login_required
