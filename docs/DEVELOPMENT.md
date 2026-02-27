@@ -203,6 +203,69 @@ For POST requests, specify the type of data that should be expected, if any. Thi
 <details>
   <summary id="routes-api"><strong>API Routes</strong></summary>
   <br>
+  <p>
+    Gets and returns various app data. 
+  </p>
+
+  <!-- API Routes List-->
+  <ul>
+  <li id="route-api-event-attendees">
+    <strong>/event/attendees/&lt;int:meeting_id&lg;/ (GET)</strong>
+    <br>
+    <i>"api_event_attendees"</i>
+    <p>
+      Get attendee list for a single meeting and returns in a json object. 
+    </p>
+    <h4>Parameters</h4>
+    <table>
+      <tr><th>Parameters</th><th>Type</th></tr>
+      <tr><td>meeting_id</td><td>Integer</td></tr>
+    </table>
+  </li>
+
+  <li id="route-api-event-notes">
+    <strong>/event/notes/&lt;int:meeting_id&gt;/ (GET)</strong>
+    <br>
+    <i>api_event_minutes</i>
+    <p>
+      Get the meting notes for a specified meeting and returns in a json object. 
+    </p>
+    <h4>Parameters</h4>
+    <table>
+      <tr><th>Parameters</th><th>Data</th></tr>
+      <tr><td>meeting_id</td><td>Integer</td></tr>
+    </table>
+  </li>
+
+  <li id="route-api-event-state">
+    <strong>//event/state/&lt;int:meeting_id&gt;/ (GET)</strong>
+    <br>
+    <i>api_event_state</i>
+    <p>
+      Get the state for a specified meeting and returns in a json object. If the meeting isn't fount it will return 404.
+    </p>
+    <h4>Parameters</h4>
+    <table>
+      <tr><th>Parameters</th><th>Data</th></tr>
+      <tr><td>meeting_id</td><td>Integer</td></tr>
+    </table>
+  </li>
+
+  <li id="route-api-event-attachments">
+    <strong>/event/attachments/&lt;int:meeting_id&gt;/ (GET)</strong>
+    <br>
+    <i>api_event_attachments</i>
+    <p>
+      Gets the attachments for a specified meeting and returns in a json object. 
+    </p>
+    <h4>Parameters</h4>
+    <table>
+      <tr><th>Parameters</th><th>Data</th></tr>
+      <tr><td>meeting_id</td><td>Integer</td></tr>
+    </table>
+  </li>
+  
+</ul>
 </details>
 
 <details>
