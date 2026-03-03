@@ -230,10 +230,62 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         <table>
           <tr><th>Jinja2 Parameters</th><th>Data Format</th></tr>
           <tr><td>page_title</td><td>User Log In</td></tr>
-          <tr><td>form</td><td>Flask-WTF form object - LoginForm
-</td></tr>
+          <tr><td>form</td><td>Flask-WTF form object - LoginForm</td></tr>
         </table>
       </li>
+      <li id="route-auth-sign-up">
+        <strong>/sign-up/ (GET, POST)</strong>
+        <br>
+        <i>sign_up</i>
+        <p>
+          Display the registration page and create new accounts.
+          <br>
+          <br>
+          If the endpoint is accessed with a GET request, the user is shown the registration form. If the endpoint is accessed with a POST request, the submitted registration data (email and password) is validated.
+          <br>
+          <br>
+          On successful registration, the user is redirected to <a href="#route-auth-login">/login/</a> to authenticate with their newly created credentials.
+        </p>
+        <h4>Template file: sign_up.html</h4>
+        <table>
+          <tr><th>Jinja2 Parameters</th><th>Data Format</th></tr>
+          <tr><td>page_title</td><td>Create New Account</td></tr>
+          <tr><td>required_domain</td><td>String or None - Email domain that usernames must end with</td></tr>
+          <tr><td>form</td><td>Flask-WTF form object - SignUpForm</td></tr>
+        </table>
+      </li>
+      <li id="route-auth-logout">
+        <strong>/logout/</strong>
+        <br>
+        <i>logout</i>
+        <p>
+          Restricted to logged in users. Log out the currently authenticated user. After logout, the user is redirected to <a href="#route-main-home">main.home</a>.
+        </p>
+      </li>
+      <li id="route-auth-my-account">
+        <strong>/my-account/</strong>
+        <br>
+        <i>my_account</i>
+        <p>
+          Restricted to logged in users. Shows a user's number of MFA codes, start semester and graduation semester. There is also an update account form shown for the user to update their account.
+        </p>
+        <h4>Template file: account.html</h4>
+        <table>
+          <tr><th>Jinja2 Parameters</th><th>Data Format</th></tr>
+          <tr><td>page_title</td><td>My Account</td></tr>
+          <tr><td>num_codes</td><td>Integer - number of MFA codes</td></tr>
+          <tr><td>account_update_form</td><td>Flask-WTF form object - AccountUpdateForm</td></tr>
+        </table>
+      </li>
+      <li id="route-auth-update-account">
+        <strong>/update-account/ (POST)</strong>
+        <br>
+        <i>update_account</i>
+        <p>
+          When the endpoint is accessed with a POST request, it processes submissions of the account update form (password, start semester, and graduation semester) and updates the data into the database. After processing, the user is redirected back to <a href="#route-auth-my-account">/my-account/</a>.
+        </p>
+      </li>
+    </ul>
 </details>
 
 <details>
