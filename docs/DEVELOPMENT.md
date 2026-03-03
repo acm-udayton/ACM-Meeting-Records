@@ -343,8 +343,6 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         </p>
       </li>
     </ul>
-
-
 </details>
 
 ### Extension & Inclusion Summary
