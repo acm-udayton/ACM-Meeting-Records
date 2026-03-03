@@ -210,9 +210,34 @@ For POST requests, specify the type of data that should be expected, if any. Thi
 <br>
 </details>
 
+  <!-- Main Routes -->
 <details>
 <summary id="routes-main"><strong>Main Routes</strong></summary>
 <br>
+  <!-- Route Discription -->
+<p> About this route</p>
+
+  <!-- Route Details List -->
+  <ul>
+    <li id="route-main-home">
+        <strong>/ (GET)</strong>
+        <br>
+        <i>home</i>
+        <p>
+          Displays the homepage. if the current user is authenticated and has admin rights, admin only meetings will also be displayed. The meeting checking and any polls are also attached here. 
+        </p>
+        <h4>Template file: index.html</h4>
+        <table>
+          <tr><th>Jinja2 Parameters</th><th>Data Format</th></tr>
+          <tr><td>page_title</td><td>Home</td></tr>
+          <tr><td>recent_meetings</td><td> a list of meetings</td></tr>
+          <tr><td>featured_meeting</td><td>The first meeting found in recent_meetings or None</td></tr>
+          <tr><td>polls</td><td>A list of all polls</td></tr>
+          <tr><td>form</td><td>The form for checking into the meeting.</td></tr>
+          <tr><td>poll_form</td><td>The form for voring in a poll.</td></tr>
+        </table>
+      </li>
+  </u>
 </details>
 
 <details>
