@@ -210,7 +210,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
   <!-- API Routes List-->
   <ul>
   <li id="route-api-event-attendees">
-    <strong>/event/attendees/&lt;int:meeting_id&lg;/ (GET)</strong>
+    <strong>/event/attendees/&lt;int:meeting_id&gt;/ (GET)</strong>
     <br>
     <i>"api_event_attendees"</i>
     <p>
@@ -232,13 +232,13 @@ For POST requests, specify the type of data that should be expected, if any. Thi
     </p>
     <h4>Parameters</h4>
     <table>
-      <tr><th>Parameters</th><th>Data</th></tr>
+      <tr><th>Parameters</th><th>Type</th></tr>
       <tr><td>meeting_id</td><td>Integer</td></tr>
     </table>
   </li>
 
   <li id="route-api-event-state">
-    <strong>//event/state/&lt;int:meeting_id&gt;/ (GET)</strong>
+    <strong>/event/state/&lt;int:meeting_id&gt;/ (GET)</strong>
     <br>
     <i>api_event_state</i>
     <p>
@@ -246,7 +246,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
     </p>
     <h4>Parameters</h4>
     <table>
-      <tr><th>Parameters</th><th>Data</th></tr>
+      <tr><th>Parameters</th><th>Type</th></tr>
       <tr><td>meeting_id</td><td>Integer</td></tr>
     </table>
   </li>
@@ -260,7 +260,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
     </p>
     <h4>Parameters</h4>
     <table>
-      <tr><th>Parameters</th><th>Data</th></tr>
+      <tr><th>Parameters</th><th>Type</th></tr>
       <tr><td>meeting_id</td><td>Integer</td></tr>
     </table>
   </li>
