@@ -208,6 +208,32 @@ For POST requests, specify the type of data that should be expected, if any. Thi
 <details>
 <summary id="routes-auth"><strong>Authentication Routes</strong></summary>
 <br>
+<p>The following routes handle user authentication and account management. These routes are contained in the auth blueprint (.../) and account management routes are restricted to logged in users.</p>
+  <ul>
+      <li id="route-auth-login">
+        <strong>/login/ (GET, POST)</strong>
+        <br>
+        <i>login</i>
+        <p>
+          Display the login page and process login submissions.
+          <br>
+          <br>
+          If the endpoint is accessed with a GET request, the user is shown the login form. If the endpoint is accessed with a POST request, the given user credentials are validated. This includes verifying that the account exists, the account is activated, and password verification.
+          <br>
+          <br>
+          If Multi-Factor Authentication (MFA) is enabled for the account, the user is redirected to the appropriate MFA verification endpoint (<a href="#route-mfa-verify-totp">/mfa/verify-totp/</a> or <a href="#route-mfa-verify-recovery-code">/mfa/verify-recovery-code/</a>) to complete the authentication process.
+          <br>
+          <br>
+          On a successful login, the user is redirected to <a href="#route-main-home">main.home</a>.
+        </p>
+        <h4>Template file: login.html</h4>
+        <table>
+          <tr><th>Jinja2 Parameters</th><th>Data Format</th></tr>
+          <tr><td>page_title</td><td>User Log In</td></tr>
+          <tr><td>form</td><td>Flask-WTF form object - LoginForm
+</td></tr>
+        </table>
+      </li>
 </details>
 
 <details>
