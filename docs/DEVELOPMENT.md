@@ -335,7 +335,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         </p>
       </li>
       <li id="route-polls-delete">
-        <strong>/delete-poll/ (POST)</strong>
+        <strong>/delete-poll/&lt;int:poll_id&gt;/ (POST)</strong>
         <br>
         <i>delete_poll</i>
         <p>
