@@ -385,6 +385,42 @@ For POST requests, specify the type of data that should be expected, if any. Thi
 <details>
 <summary id="routes-polls"><strong>Polls Routes</strong></summary>
 <br>
+<p>The following routes handle the creation, submission, and deletion of polls. These routes are contained in the polls blueprint (.../polls/...). Poll submission is limited to logged in users, while creation and deletion is limited to admin users.</p>
+    <ul>
+      <li id="route-polls-polls">
+        <strong>/polls/ (GET)</strong>
+        <br>
+        <i>polls_list</i>
+        <p>
+          Display the admin polls management dashboard showing all existing polls with their questions, options, vote counts, and free response answers. Admins can view poll statistics and access forms to create new polls or delete existing ones.
+        </p>
+        <h4>Template file: admin/polls.html</h4>
+        <table>
+          <tr><th>Jinja2 Parameters</th><th>Data Format</th></tr>
+          <tr><td>page_title</td><td>Polls</td></tr>
+          <tr><td>polls</td><td>List of Poll objects with related questions, options, and responses</td></tr>
+          <tr><td>form</td><td>Flask-WTF form object - CreatePollForm</td></tr>
+          <tr><td>delete_poll_form</td><td>Flask-WTF form object - DeletePollForm</td></tr>
+        </table>
+      </li>
+      <li id="route-polls-create">
+        <strong>/create-poll/ (POST)</strong>
+        <br>
+        <i>create_poll</i>
+        <p>
+          Creates a new poll in the admin dashboard. Admins can create a varity of questions including multiple choice, 
+          free response, and multiple response. On successful creation or not, the admin is redirected to <a href="#route-polls-list">polls.polls_list</a>. 
+        </p>
+      </li>
+      <li id="route-polls-delete">
+        <strong>/delete-poll/&lt;int:poll_id&gt;/ (POST)</strong>
+        <br>
+        <i>delete_poll</i>
+        <p>
+          Deletes the selected poll. Exists as a button associated with each existing poll, only accessable to admins. Redirects the admin to <a href="#route-polls-list">polls.polls_list</a> after clicking. 
+        </p>
+      </li>
+    </ul>
 </details>
 
 ### Extension & Inclusion Summary
