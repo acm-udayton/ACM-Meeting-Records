@@ -152,6 +152,14 @@ The application factory is launched by Docker within the web container. This res
 <details>
 <summary id="flask-login"><strong>Flask-Login</strong></summary>
 <br>
+Flask-Login is a Flask extension that provides user session management for Flask applications. It handles the common tasks of logging in, logging out, and remembering users' sessions across requests. With Flask-Login, you can easily manage user authentication and access control in your Flask app. It provides a simple API for defining user models, handling login and logout functionality, and protecting routes that require authentication. Flask-Login also integrates well with other Flask extensions, such as <a href="#flask-sqlalchemy">Flask-SQLAlchemy</a> for database management and <a href="#flask-wtf">Flask-WTF</a> for form handling, making it a powerful tool for building secure and user-friendly web applications.
+<br><br>
+
+In our project, Flask-Login is used to manage user authentication and session management. It allows us to restrict access to certain routes and functionalities based on whether a user is logged in or not. For example, routes related to account management and poll submission are protected with Flask-Login's `@login_required` decorator, ensuring that only authenticated users can access those features. Flask-Login also provides the functionality to remember users' sessions, so they don't have to log in every time they visit the site, which enhances the user experience. 
+
+We have also built a custom `@admin-required` decorator on top of Flask-Login's `@login_required` to restrict access to admin-only routes, ensuring that only users with admin privileges can access certain parts of the application, such as the admin dashboard for managing polls.
+
+For more information on how to use Flask-Login, please refer to the official documentation: https://flask-login.readthedocs.io/en/latest/
 </details>
 
 <details>
