@@ -184,6 +184,13 @@ For more information on how to use Flask-Migrate, please refer to the official d
 <details>
 <summary id="flask-sqlalchemy"><strong>Flask-SQLAlchemy</strong></summary>
 <br>
+Flask-SQLAlchemy is a Flask extension that provides integration with SQLAlchemy, a powerful Object-Relational Mapping (ORM) library for Python. It simplifies the process of working with databases in Flask applications by providing a high-level API for defining database models, querying the database, and managing database connections. With Flask-SQLAlchemy, you can define your database models for the project as Python classes in ```app/models.py```, and it will handle the underlying SQL queries and database interactions for you. This allows you to work with your database using Python objects and methods, rather than writing raw SQL queries. Flask-SQLAlchemy also provides support for <a href="#flask-migrate">database migrations when used in conjunction with Flask-Migrate</a>, allowing you to easily manage changes to your database schema as your application evolves.
+<br><br>
+
+Each time you make changes to your database models, be sure to create a new migration script using Flask-Migrate and apply it to your database to keep your schema up to date. When possible, keep the number of migration scripts to a minimum by including all model changes in one migration script per pull request. This will help maintain a clean and organized migration history. If you need to make additional model changes after generating a migration, you can either modify the existing migration script (if it hasn't been applied yet) or create a new migration script for the additional changes. For any questions on the migration script recreation process, please reach out to the development team lead for assistance.
+
+
+For more information on how to use Flask-SQLAlchemy, please refer to the official documentation: https://flask-sqlalchemy.palletsprojects.com/en/2.x/
 </details>
 
 <details>
