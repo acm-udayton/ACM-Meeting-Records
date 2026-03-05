@@ -196,6 +196,12 @@ For more information on how to use Flask-SQLAlchemy, please refer to the officia
 <details>
 <summary id="flask-wtf"><strong>Flask-WTF</strong></summary>
 <br>
+Flask-WTF is a Flask extension that integrates the WTForms library with Flask applications. It provides a simple and flexible way to create and handle web forms in Flask. With Flask-WTF, you can define your forms as Python classes in ```app/forms.py```, and it will handle form rendering, validation, and CSRF protection for you. Flask-WTF also provides support for file uploads and custom validators, making it a powerful tool for building complex forms in your Flask application. By using Flask-WTF, you can easily manage user input and ensure that your forms are secure and user-friendly.
+<br><br>
+
+In our project, all Flask-WTF forms are defined in the `app/forms.py` file. Each form is represented as a Python class that inherits from `FlaskForm`, and the form fields are defined as class attributes. For example, we have forms for user login, registration, account updates, poll creation, and MFA verification. These forms are then imported and used in the appropriate routes to handle form rendering and processing. When a form is submitted, Flask-WTF will automatically validate the input based on the field definitions and any custom validators we have specified. If the form data is valid, we can then process it in our route functions to perform actions such as creating a new user account, updating user information, or creating a new poll.
+
+For more information on how to use Flask-WTF, please refer to the official documentation: https://flask-wtf.readthedocs.io/en/stable/
 </details>
 
 <hr>
