@@ -215,7 +215,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
 <summary id="routes-main"><strong>Main Routes</strong></summary>
 <br>
   <!-- Route Discription -->
-<p> The following routes handle serving the main app functionality. They send and retrieve data related to meeting minuts and handel checking in aswell as voting and downloading files.</p>
+<p> The following routes handle serving the main app functionality. They send and retrieve data related to meeting minutes and handle checking in as well as voting and downloading files.</p>
 
   <!-- Route Details List -->
   <ul>
@@ -234,7 +234,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
           <tr><td>featured_meeting</td><td>The first meeting found in recent_meetings or None</td></tr>
           <tr><td>polls</td><td>A list of all polls</td></tr>
           <tr><td>form</td><td>The form for checking into the meeting.</td></tr>
-          <tr><td>poll_form</td><td>The form for voring in a poll.</td></tr>
+          <tr><td>poll_form</td><td>The form for voting in a poll.</td></tr>
         </table>
       </li>
        <li id="route-main-events-list">
@@ -242,7 +242,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         <br>
         <i>events_list</i>
         <p>
-          Displays the event list ordered by id. Checks to insure admin only meetings can be displayed. A form for creating a new meating is also attached here. 
+          Displays the event list ordered by id. Checks to ensure admin only meetings can be displayed. A form for creating a new meeting is also attached here. 
         </p>
         <h4>Template file: events.html</h4>
         <table>
@@ -268,8 +268,8 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         <table>
           <tr><th>Jinja2 Parameters</th><th>Data Format</th></tr>
           <tr><td>page_title</td><td>Meeting - {meeting title}</td></tr>
-          <tr><td>meeting</td><td>Meeting object</td></tr>
-          <tr><td>all_minutes</td><td>Meetin minutes</td></tr>
+          <tr><td>meeting</td><td>Meetings object</td></tr>
+          <tr><td>all_minutes</td><td>Meeting minutes</td></tr>
           <tr><td>all_attendees</td><td>List of attendees</td></tr>
           <tr><td>all_attachments</td><td>List of attachments</td></tr>
           <tr><td>form</td><td>A form for checking into the meeting</td></tr>
@@ -286,7 +286,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
             <li>Meeting exists</li>
             <li>Form is valid</li> 
             <li>Meeting code is correct</li> 
-            <li>Metting is active</li> 
+            <li>Meeting is active</li> 
             <li>Admin status</li>
             <li>Active user status</li>
             <li>Current attendee is not already checked in.</li> 
