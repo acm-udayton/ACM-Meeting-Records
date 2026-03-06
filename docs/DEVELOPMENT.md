@@ -224,13 +224,13 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         <br>
         <i>home</i>
         <p>
-          Displays the homepage. If the current user is authenticated and has admin rights, admin only meetings will also be displayed. The meeting checking and any polls are also attached here. 
+          Displays the homepage. Admins can see the admin only meetings. The meeting checking and any polls are also attached here. 
         </p>
         <h4>Template file: index.html</h4>
         <table>
           <tr><th>Jinja2 Parameters</th><th>Data Format</th></tr>
           <tr><td>page_title</td><td>Home</td></tr>
-          <tr><td>recent_meetings</td><td> a list of meetings</td></tr>
+          <tr><td>recent_meetings</td><td> A list of meetings</td></tr>
           <tr><td>featured_meeting</td><td>The first meeting found in recent_meetings or None</td></tr>
           <tr><td>polls</td><td>A list of all polls</td></tr>
           <tr><td>form</td><td>The form for checking into the meeting.</td></tr>
@@ -242,13 +242,13 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         <br>
         <i>events_list</i>
         <p>
-          Displays the event list ordered id. Check to insure Admin only meetings can be displayed. A form for creating a new meating is also attached here. 
+          Displays the event list ordered by id. Checks to insure admin only meetings can be displayed. A form for creating a new meating is also attached here. 
         </p>
         <h4>Template file: events.html</h4>
         <table>
           <tr><th>Jinja2 Parameters</th><th>Data Format</th></tr>
           <tr><td>page_title</td><td>Meetings</td></tr>
-          <tr><td>meetings</td><td> a list of meetings</td></tr>
+          <tr><td>meetings</td><td> A list of meetings</td></tr>
           <tr><td>form</td><td> Form for creating meetings</td></tr>
         </table>
       </li>
@@ -257,7 +257,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         <br>
         <i>user_event</i>
         <p>
-          Displays details for a selected event, the checking form, attendees, minutes and attachments.  Redirects to 404 if the meeting doesn't exist. 
+          Displays details for a selected event, the check-in form, attendees, minutes and attachments. Redirects to 404 if the meeting doesn't exist. 
         </p>
         <h4>Parameters</h4>
         <table>
@@ -272,7 +272,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
           <tr><td>all_minutes</td><td>Meetin minutes</td></tr>
           <tr><td>all_attendees</td><td>List of attendees</td></tr>
           <tr><td>all_attachments</td><td>List of attachments</td></tr>
-          <tr><td>form</td><td>A form for checking in to the meeting</td></tr>
+          <tr><td>form</td><td>A form for checking into the meeting</td></tr>
         </table>
       </li>
        <li id="route-main-event-check-in">
@@ -280,7 +280,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         <br>
         <i>event_check_in</i>
         <p>
-          Check into a single meeting or displays <q>check-in failed</q> warning. Checks for the following:
+          Check into a single meeting or displays a <q>check-in failed</q> warning. Checks for the following:
           </p>
            <ul>
             <li>Meeting exists</li>
@@ -292,7 +292,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
             <li>Current attendee is not already checked in.</li> 
            </ul>
         <p>  
-          If all checks pass, a <q>check-in succeeded</q> message will be displayed and will be redirected to the home page. If the user is not activated they will be redirected to the login page. If the meeting doesn't exist then 404 will be displayed. All other failed checks will result in a <q>Check-in failed</q> message.  
+          If all checks pass, a <q>check-in succeeded</q> message will be displayed and the user will be redirected to the home page. If the user is not activated they will be redirected to the login page. If the meeting doesn't exist then 404 will be displayed. All other failed checks will result in a <q>Check-in failed</q> message.  
         </p>
       </li>
        <li id="route-main-download-file">
@@ -317,7 +317,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         </p>
       </li>
        <li id="route-main-vote-option">
-        <strong>//vote/&lt;int:option_id&gt; (POST)</strong>
+        <strong>/vote/&lt;int:option_id&gt; (POST)</strong>
         <br>
         <i>vote_option</i>
         <p>
