@@ -323,6 +323,11 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         <p>
           Handle voting for a poll option. The user must be logged in. Adds one vote to the option if user hasn't voted already. Redirects to the <q>show polls</q> page. 
         </p>
+        <h4>Patameters</h4>
+        <table>
+          <tr><th>Parameters</th><th>Type</th></tr>
+          <tr><td>option_id</td><td>Interger</td></tr>
+        </table>
       </li>
   </u>
 </details>
