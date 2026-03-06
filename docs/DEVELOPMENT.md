@@ -224,7 +224,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         <br>
         <i>home</i>
         <p>
-          Displays the homepage. if the current user is authenticated and has admin rights, admin only meetings will also be displayed. The meeting checking and any polls are also attached here. 
+          Displays the homepage. If the current user is authenticated and has admin rights, admin only meetings will also be displayed. The meeting checking and any polls are also attached here. 
         </p>
         <h4>Template file: index.html</h4>
         <table>
@@ -236,6 +236,93 @@ For POST requests, specify the type of data that should be expected, if any. Thi
           <tr><td>form</td><td>The form for checking into the meeting.</td></tr>
           <tr><td>poll_form</td><td>The form for voring in a poll.</td></tr>
         </table>
+      </li>
+       <li id="route-main-events-list">
+        <strong>/events/ (GET)</strong>
+        <br>
+        <i>events_list</i>
+        <p>
+          Displays the event list ordered id. Check to insure Admin only meetings can be displayed. A form for creating a new meating is also attached here. 
+        </p>
+        <h4>Template file: events.html</h4>
+        <table>
+          <tr><th>Jinja2 Parameters</th><th>Data Format</th></tr>
+          <tr><td>page_title</td><td>Meetings</td></tr>
+          <tr><td>meetings</td><td> a list of meetings</td></tr>
+          <tr><td>form</td><td> Form for creating meetings</td></tr>
+        </table>
+      </li>
+       <li id="route-main-user-event">
+        <strong>/event/&lt;int:meeting_id&gt;/ (Get)</strong>
+        <br>
+        <i>user_event</i>
+        <p>
+          Displays details for a selected event, the checking form, attendees, minutes and attachments.  Redirects to 404 if the meeting doesn't exist. 
+        </p>
+        <h4>Parameters</h4>
+        <table>
+        <tr><th>Parameters</th><th>Type</th></tr>
+        <tr><td>meeting_id</td><td>Integer</td></tr>
+        </table>
+        <h4>Template file: event.html</h4>
+        <table>
+          <tr><th>Jinja2 Parameters</th><th>Data Format</th></tr>
+          <tr><td>page_title</td><td>Meeting - {meeting title}</td></tr>
+          <tr><td>meeting</td><td>Meeting object</td></tr>
+          <tr><td>all_minutes</td><td>Meetin minutes</td></tr>
+          <tr><td>all_attendees</td><td>List of attendees</td></tr>
+          <tr><td>all_attachments</td><td>List of attachments</td></tr>
+          <tr><td>form</td><td>A form for checking in to the meeting</td></tr>
+        </table>
+      </li>
+       <li id="route-main-event-check-in">
+        <strong>/event/check-in/&lt;int:meeting_id&gt;/ (POST)</strong>
+        <br>
+        <i>event_check_in</i>
+        <p>
+          Check into a single meeting or displays <q>check-in failed</q> warning. Checks for the following:
+          </p>
+           <ul>
+            <li>Meeting exists</li>
+            <li>Form is valid</li> 
+            <li>Meeting code is correct</li> 
+            <li>Metting is active</li> 
+            <li>Admin status</li>
+            <li>Active user status</li>
+            <li>Current attendee is not already checked in.</li> 
+           </ul>
+        <p>  
+          If all checks pass, a <q>check-in succeeded</q> message will be displayed and will be redirected to the home page. If the user is not activated they will be redirected to the login page. If the meeting doesn't exist then 404 will be displayed. All other failed checks will result in a <q>Check-in failed</q> message.  
+        </p>
+      </li>
+       <li id="route-main-download-file">
+        <strong>/uploads/&lt;name&gt; (GET)</strong>
+        <br>
+        <i>download_file</i>
+        <p>
+          Download the specified file.
+        </p>
+        <h4>Patameters</h4>
+        <table>
+          <tr><th>Parameters</th><th>Type</th></tr>
+          <tr><td>name</td><td>string</td></tr>
+        </table>
+      </li>
+       <li id="route-main-show-polls">
+        <strong>/polls (GET)</strong>
+        <br>
+        <i>show_polls</i>
+        <p>
+          Get all polls. 
+        </p>
+      </li>
+       <li id="route-main-vote-option">
+        <strong>//vote/&lt;int:option_id&gt; (POST)</strong>
+        <br>
+        <i>vote_option</i>
+        <p>
+          Handle voting for a poll option. The user must be logged in. Adds one vote to the option if user hasn't voted already. Redirects to the <q>show polls</q> page. 
+        </p>
       </li>
   </u>
 </details>
