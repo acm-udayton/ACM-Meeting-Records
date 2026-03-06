@@ -215,7 +215,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
 <summary id="routes-main"><strong>Main Routes</strong></summary>
 <br>
   <!-- Route Discription -->
-<p> About this route</p>
+<p> The following routes handle serving the main app functionality. They send and retrieve data related to meeting minuts and handel checking in aswell as voting and downloading files.</p>
 
   <!-- Route Details List -->
   <ul>
