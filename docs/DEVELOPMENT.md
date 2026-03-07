@@ -152,6 +152,7 @@ The application factory is launched by Docker within the web container. This res
 <details>
 <summary id="flask-login"><strong>Flask-Login</strong></summary>
 <br>
+
 Flask-Login is a Flask extension that provides user session management for Flask applications. It handles the common tasks of logging in, logging out, and remembering users' sessions across requests. With Flask-Login, you can easily manage user authentication and access control in your Flask app. It provides a simple API for defining user models, handling login and logout functionality, and protecting routes that require authentication. Flask-Login also integrates well with other Flask extensions, such as <a href="#flask-sqlalchemy">Flask-SQLAlchemy</a> for database management and <a href="#flask-wtf">Flask-WTF</a> for form handling, making it a powerful tool for building secure and user-friendly web applications.
 <br><br>
 
@@ -165,6 +166,7 @@ For more information on how to use Flask-Login, please refer to the official doc
 <details>
 <summary id="flask-migrate"><strong>Flask-Migrate</strong></summary>
 <br>
+
 Flask-Migrate is a Flask extension that handles SQLAlchemy database migrations for Flask applications using Alembic. It provides a set of command-line tools to manage database schema changes, allowing us to easily create, apply, and track database migrations as the application evolves. With Flask-Migrate, you can generate migration scripts based on changes to your SQLAlchemy models, apply those migrations to the database, and keep track of the migration history. These scripts are shared as part of the codebase, allowing all developers and users to automatically apply your changes without conflict. 
 
 Whenever you make changes to the database models, you should create a new migration script and apply it to the database. This can be done using the following command sequence:
@@ -184,6 +186,7 @@ For more information on how to use Flask-Migrate, please refer to the official d
 <details>
 <summary id="flask-sqlalchemy"><strong>Flask-SQLAlchemy</strong></summary>
 <br>
+
 Flask-SQLAlchemy is a Flask extension that provides integration with SQLAlchemy, a powerful Object-Relational Mapping (ORM) library for Python. It simplifies the process of working with databases in Flask applications by providing a high-level API for defining database models, querying the database, and managing database connections. With Flask-SQLAlchemy, you can define your database models for the project as Python classes in `app/models.py`, and it will handle the underlying SQL queries and database interactions for you. This allows you to work with your database using Python objects and methods, rather than writing raw SQL queries. Flask-SQLAlchemy also provides support for <a href="#flask-migrate">database migrations when used in conjunction with Flask-Migrate</a>, allowing you to easily manage changes to your database schema as your application evolves.
 <br><br>
 
@@ -196,6 +199,7 @@ For more information on how to use Flask-SQLAlchemy, please refer to the officia
 <details>
 <summary id="flask-wtf"><strong>Flask-WTF</strong></summary>
 <br>
+
 Flask-WTF is a Flask extension that integrates the WTForms library with Flask applications. It provides a simple and flexible way to create and handle web forms in Flask. With Flask-WTF, you can define your forms as Python classes in `app/forms.py`, and it will handle form rendering, validation, and CSRF protection for you. Flask-WTF also provides support for file uploads and custom validators, making it a powerful tool for building complex forms in your Flask application. By using Flask-WTF, you can easily manage user input and ensure that your forms are secure and user-friendly.
 <br><br>
 
