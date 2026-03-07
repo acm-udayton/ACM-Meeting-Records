@@ -275,7 +275,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
           <tr><td>form</td><td>A form for checking into the meeting</td></tr>
         </table>
       </li>
-       <li id="route-main-event-check-in">
+      <li id="route-main-event-check-in">
         <strong>/event/check-in/&lt;int:meeting_id&gt;/ (POST)</strong>
         <br>
         <i>event_check_in</i>
@@ -292,7 +292,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
             <li>Current attendee is not already checked in.</li> 
            </ul>
         <p>  
-          If all checks pass, a <q>check-in succeeded</q> message will be displayed and the user will be redirected to the home page. If the user is not activated they will be redirected to the login page. If the meeting doesn't exist then 404 will be displayed. All other failed checks will result in a <q>Check-in failed</q> message.  
+          If all checks pass, a <q>check-in succeeded</q> message will be displayed. If the user is not activated they will be redirected <a href="#route-auth-login">auth.login</a> page. If the meeting doesn't exist then 404 will be displayed and the user will be redirectred to <a href="#route-main-home">main.home</a>. All other failed checks will result in a <q>Check-in failed</q> message.  
         </p>
       </li>
        <li id="route-main-download-file">
@@ -313,7 +313,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         <br>
         <i>show_polls</i>
         <p>
-          Get all polls. 
+          Get all polls.  Redirects to <a href="#route-main-home">main.home</a>
         </p>
       </li>
        <li id="route-main-vote-option">
@@ -321,7 +321,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         <br>
         <i>vote_option</i>
         <p>
-          Handle voting for a poll option. The user must be logged in. Adds one vote to the option if user hasn't voted already. Redirects to the <q>show polls</q> page. 
+          Handle voting for a poll option. The user must be logged in. Adds one vote to the option if user hasn't voted already. Redirects to <a href="#route-main-show-polls">main.show_polls</a> page. 
         </p>
         <h4>Patameters</h4>
         <table>
