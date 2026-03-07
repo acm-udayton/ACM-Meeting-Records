@@ -314,7 +314,6 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         <i>submit_poll</i>
         <p>
           Handle voting for a poll. The user must be logged in. Handles FRQ, and MCQ poll questions one at a time via helper functions also defined in the blueprint `main.py` file. Adds one vote to the question if user hasn't voted already, otherwise updates the vote for the user. Redirects to <a href="#route-main-show-polls">main.show_polls</a> page after all questions are processed. 
-
         </p>
         <h4>Parameters</h4>
         <table>
