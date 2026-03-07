@@ -39,15 +39,15 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/admin', template_folder='te
 
 # Utility function(s)
 def get_last_attended_date(user):
-        """ Get date of last attended meeting for the given user. """
-        # Query the Meetings table
-        last_meeting = db.session.query(Meetings.event_start)\
-            .join(Attendees, Meetings.id == Attendees.meeting)\
-            .filter(Attendees.username == user.username)\
-            .filter(Meetings.event_start != None)\
-            .order_by(Meetings.event_start.desc())\
-            .first()
-        return last_meeting[0] if last_meeting else None
+    """ Get date of last attended meeting for the given user. """
+    # Query the Meetings table
+    last_meeting = db.session.query(Meetings.event_start)\
+        .join(Attendees, Meetings.id == Attendees.meeting)\
+        .filter(Attendees.username == user.username)\
+        .filter(Meetings.event_start != None)\
+        .order_by(Meetings.event_start.desc())\
+        .first()
+    return last_meeting[0] if last_meeting else None
 
 # Admin web routes.
 @admin_bp.route("/dashboard/<int:meeting_id>/")
@@ -374,6 +374,8 @@ def event_add_attachment(meeting_id):
             }
             return jsonify(return_data), 400
         else:
+            # Replace spaces with underscores in the filename.
+            file.filename = file.filename.replace(" ", "_")
             # Only permit certain file types.
             allowed_extensions = ['pptx', 'pdf', 'docx', 'txt', 'png', 'jpg', 'jpeg', 'gif']
             if file.filename.lower().split('.')[-1] in allowed_extensions:
@@ -494,7 +496,7 @@ def reset_user_password(user_id):
     new_password = request.form["new_password"]
     user.set_password(new_password)
     db.session.commit()
-    flash(f"Password for user {user.username} reset successfully.")
+    flash(f"Password for user {user.username} reset successfully.", "success")
     return redirect(url_for("admin.users_list"))
 
 @admin_bp.route("/users/promote/<int:user_id>/", methods = ["POST"])
@@ -506,10 +508,10 @@ def promote_user(user_id):
     if user.role != "admin":
         user.role = "admin"
         db.session.commit()
-        flash(f"User {user.username} promoted to admin successfully.")
+        flash(f"User {user.username} promoted to admin successfully.", "success")
         return redirect(url_for("admin.users_list"))
     else:
-        flash(f"User {user.username} is already an admin.")
+        flash(f"User {user.username} is already an admin.", "danger")
         return redirect(url_for("admin.users_list"))
 
 @admin_bp.route("/users/demote/<int:user_id>/", methods = ["POST"])
@@ -524,10 +526,10 @@ def demote_user(user_id):
     if user.role != "user":
         user.role = "user"
         db.session.commit()
-        flash(f"User {user.username} demoted to user successfully.")
+        flash(f"User {user.username} demoted to user successfully.", "success")
         return redirect(url_for("admin.users_list"))
     else:
-        flash(f"User {user.username} is already a user.")
+        flash(f"User {user.username} is already a user.", "danger")
         return redirect(url_for("admin.users_list"))
 
 @admin_bp.route("/users/disable-mfa/<int:user_id>/", methods = ["POST"])

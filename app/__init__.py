@@ -38,7 +38,7 @@ def admin_required(f):
 
 def datetime_format(value):
     """Format a datetime object in a Jinja template to a custom string."""
-    time_format = "%d/%m/%Y %I:%M %p"
+    time_format = "%m/%d/%Y %I:%M %p"
     if value is None:
         return "" # Handle None values gracefully
     return value.strftime(time_format)
@@ -180,10 +180,12 @@ def create_app():
     from .blueprints.main import main_bp # pylint: disable=import-outside-toplevel
     from .blueprints.api import api_bp # pylint: disable=import-outside-toplevel
     from .blueprints.mfa import mfa_bp # pylint: disable=import-outside-toplevel
+    from .blueprints.polls import polls_bp # pylint: disable=import-outside-toplevel
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(auth_bp)
     app.register_blueprint(mfa_bp, url_prefix="/mfa")
     app.register_blueprint(main_bp)
     app.register_blueprint(api_bp, url_prefix="/api")
+    app.register_blueprint(polls_bp, url_prefix="/admin")
 
     return app
