@@ -764,18 +764,22 @@ In addition to the HTML templates passed to flask's `render_template` function, 
 <details>
 <summary id="jinja-footer"><strong>footer.html</strong></summary>
 <br>
+The Jinja2 template file `footer.html` contains the HTML code for the footer section of the application, which is displayed at the bottom of every page. It includes social media account links as well as internal site navigation links. It also has contact information. The footer is included in the <a href="#jinja-base">base.html</a> template to ensure that it appears on all pages of the application.
 </details>
 <details>
 <summary id="jinja-header"><strong>header.html</strong></summary>
 <br>
+The Jinja2 template file `header.html` contains the HTML code for the header section of the application, which is displayed at the top of every page. It includes the page metadata, favicon, default scripts and stylesheets. It also includes two blocks, `header_styles` and `header_scripts` to allow for custom styling and scripting on a per-page basis. This template is included in the <a href="#jinja-base">base.html</a> template to ensure that it appears on all pages of the application.
 </details>
 <details>
 <summary id="jinja-nav"><strong>navbar.html</strong></summary>
 <br>
+The Jinja2 template file `navbar.html` contains the HTML code for the navigation bar that is displayed at the top of every page in the application. It includes links to the main sections of the app, such as Home, Meetings, and Account. This template is included in the <a href="#jinja-base">base.html</a> template to ensure that it appears on all pages of the application.
 </details>
 <details>
 <summary id="jinja-base"><strong>base.html</strong></summary>
 <br>
+The Jinja2 template file `base.html` serves as the foundational layout for all other templates in the application. It includes the common HTML structure, links to CSS and JavaScript files, and defines blocks that child templates can override to insert page-specific content. The base template also includes the header, navbar, and footer components to ensure a consistent look and feel across all pages of the application.
 </details>
 <hr>
 
