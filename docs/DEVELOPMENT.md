@@ -137,7 +137,7 @@ The application factory within the `create_app` function in `app/__init__.py` is
 5. Initializing <a href="#flask-extensions">Flask extensions</a> with the app.
 6. Specifying the user loader for <a href="#flask-login">Flask-Login</a>.
 7. Setting the app variables such as ```.context```, ```.logs```, ```.base_url```, and ```.storage```.
-8. Defining the app's context processor for variables passed to all templatess.
+8. Defining the app's context processor for variables passed to all templates.
 9. Adding custom Jinja filters to the app.
 10. Registering the app's error handlers for HTTP status code exceptions.
 11. Registering all <a href="#route-map">app blueprints</a>.
@@ -302,10 +302,10 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         <p>
           Download the specified file.
         </p>
-        <h4>Patameters</h4>
+        <h4>Parameters</h4>
         <table>
           <tr><th>Parameters</th><th>Type</th></tr>
-          <tr><td>name</td><td>string</td></tr>
+          <tr><td>name</td><td>String</td></tr>
         </table>
       </li>
        <li id="route-main-show-polls">
@@ -323,13 +323,13 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         <p>
           Handle voting for a poll option. The user must be logged in. Adds one vote to the option if user hasn't voted already. Redirects to the <q>show polls</q> page. 
         </p>
-        <h4>Patameters</h4>
+        <h4>Parameters</h4>
         <table>
           <tr><th>Parameters</th><th>Type</th></tr>
-          <tr><td>option_id</td><td>Interger</td></tr>
+          <tr><td>option_id</td><td>Integer</td></tr>
         </table>
       </li>
-  </u>
+  </ul>
 </details>
 
 <details>
@@ -462,7 +462,7 @@ For precise configuration details, please consult the file at ```.github/workflo
 
 <details>
 <summary id="docker-image-ci"><strong>Docker Image CI</strong></summary>
-This workflow is only triggered on succesful pushes to the repository's main branch. It will automatically use the Dockerfile to build a new image for the web container. It will also use GitHub secrets (must be configured by an ACM officer with Organization manager access on GitHub) to publish this image to DockerHub. This ultimately serves the purpose of ensuring that the public build of the web app is a stable release, never a release candidate or development version.
+This workflow is only triggered on successful pushes to the repository's main branch. It will automatically use the Dockerfile to build a new image for the web container. It will also use GitHub secrets (must be configured by an ACM officer with Organization manager access on GitHub) to publish this image to DockerHub. This ultimately serves the purpose of ensuring that the public build of the web app is a stable release, never a release candidate or development version.
 <br><br>
 
 For precise configuration details, please consult the file at ```.github/workflows/docker-image.yml```.
