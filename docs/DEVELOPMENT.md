@@ -308,25 +308,18 @@ For POST requests, specify the type of data that should be expected, if any. Thi
           <tr><td>name</td><td>String</td></tr>
         </table>
       </li>
-       <li id="route-main-show-polls">
-        <strong>/polls (GET)</strong>
+       <li id="route-main-submit-poll">
+        <strong>/submit-poll/&lt;int:poll_id&gt; (POST)</strong>
         <br>
-        <i>show_polls</i>
+        <i>submit_poll</i>
         <p>
-          Get all polls.  Redirects to <a href="#route-main-home">main.home</a>
-        </p>
-      </li>
-       <li id="route-main-vote-option">
-        <strong>/vote/&lt;int:option_id&gt; (POST)</strong>
-        <br>
-        <i>vote_option</i>
-        <p>
-          Handle voting for a poll option. The user must be logged in. Adds one vote to the option if user hasn't voted already. Redirects to <a href="#route-main-show-polls">main.show_polls</a> page. 
+          Handle voting for a poll. The user must be logged in. Handles FRQ, and MCQ poll questions one at a time via helper functions also defined in the blueprint `main.py` file. Adds one vote to the question if user hasn't voted already, otherwise updates the vote for the user. Redirects to <a href="#route-main-show-polls">main.show_polls</a> page after all questions are processed. 
+
         </p>
         <h4>Parameters</h4>
         <table>
           <tr><th>Parameters</th><th>Type</th></tr>
-          <tr><td>option_id</td><td>Integer</td></tr>
+          <tr><td>poll_id</td><td>Integer</td></tr>
         </table>
       </li>
   </ul>
