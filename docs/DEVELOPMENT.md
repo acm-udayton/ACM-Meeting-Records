@@ -137,7 +137,7 @@ The application factory within the `create_app` function in `app/__init__.py` is
 5. Initializing <a href="#flask-extensions">Flask extensions</a> with the app.
 6. Specifying the user loader for <a href="#flask-login">Flask-Login</a>.
 7. Setting the app variables such as ```.context```, ```.logs```, ```.base_url```, and ```.storage```.
-8. Defining the app's context processor for variables passed to all templatess.
+8. Defining the app's context processor for variables passed to all templates.
 9. Adding custom Jinja filters to the app.
 10. Registering the app's error handlers for HTTP status code exceptions.
 11. Registering all <a href="#route-map">app blueprints</a>.
@@ -514,9 +514,118 @@ For POST requests, specify the type of data that should be expected, if any. Thi
     </ul>
 </details>
 
+  <!-- Main Routes -->
 <details>
 <summary id="routes-main"><strong>Main Routes</strong></summary>
 <br>
+  <!-- Route Discription -->
+<p> The following routes handle serving the main app functionality. They send and retrieve data related to meeting minutes and handle checking in as well as voting and downloading files.</p>
+
+  <!-- Route Details List -->
+  <ul>
+    <li id="route-main-home">
+        <strong>/ (GET)</strong>
+        <br>
+        <i>home</i>
+        <p>
+          Displays the homepage. Admins can see the admin only meetings. The meeting checking and any polls are also attached here. 
+        </p>
+        <h4>Template file: index.html</h4>
+        <table>
+          <tr><th>Jinja2 Parameters</th><th>Data Format</th></tr>
+          <tr><td>page_title</td><td>Home</td></tr>
+          <tr><td>recent_meetings</td><td> A list of meetings</td></tr>
+          <tr><td>featured_meeting</td><td>The first meeting found in recent_meetings or None</td></tr>
+          <tr><td>polls</td><td>A list of all polls</td></tr>
+          <tr><td>form</td><td>The form for checking into the meeting.</td></tr>
+          <tr><td>poll_form</td><td>The form for voting in a poll.</td></tr>
+        </table>
+      </li>
+       <li id="route-main-events-list">
+        <strong>/events/ (GET)</strong>
+        <br>
+        <i>events_list</i>
+        <p>
+          Displays the event list ordered by id. Checks to ensure admin only meetings can be displayed. A form for creating a new meeting is also attached here. 
+        </p>
+        <h4>Template file: events.html</h4>
+        <table>
+          <tr><th>Jinja2 Parameters</th><th>Data Format</th></tr>
+          <tr><td>page_title</td><td>Meetings</td></tr>
+          <tr><td>meetings</td><td> A list of meetings</td></tr>
+          <tr><td>form</td><td> Form for creating meetings</td></tr>
+        </table>
+      </li>
+       <li id="route-main-user-event">
+        <strong>/event/&lt;int:meeting_id&gt;/ (Get)</strong>
+        <br>
+        <i>user_event</i>
+        <p>
+          Displays details for a selected event, the check-in form, attendees, minutes and attachments. Redirects to 404 if the meeting doesn't exist. 
+        </p>
+        <h4>Parameters</h4>
+        <table>
+        <tr><th>Parameters</th><th>Type</th></tr>
+        <tr><td>meeting_id</td><td>Integer</td></tr>
+        </table>
+        <h4>Template file: event.html</h4>
+        <table>
+          <tr><th>Jinja2 Parameters</th><th>Data Format</th></tr>
+          <tr><td>page_title</td><td>Meeting - {meeting title}</td></tr>
+          <tr><td>meeting</td><td>Meetings object</td></tr>
+          <tr><td>all_minutes</td><td>Meeting minutes</td></tr>
+          <tr><td>all_attendees</td><td>List of attendees</td></tr>
+          <tr><td>all_attachments</td><td>List of attachments</td></tr>
+          <tr><td>form</td><td>A form for checking into the meeting</td></tr>
+        </table>
+      </li>
+      <li id="route-main-event-check-in">
+        <strong>/event/check-in/&lt;int:meeting_id&gt;/ (POST)</strong>
+        <br>
+        <i>event_check_in</i>
+        <p>
+          Check into a single meeting or displays a <q>check-in failed</q> warning. Checks for the following:
+          </p>
+           <ul>
+            <li>Meeting exists</li>
+            <li>Form is valid</li> 
+            <li>Meeting code is correct</li> 
+            <li>Meeting is active</li> 
+            <li>Admin status</li>
+            <li>Active user status</li>
+            <li>Current attendee is not already checked in.</li> 
+           </ul>
+        <p>  
+          If all checks pass, a <q>check-in succeeded</q> message will be displayed. If the user is not activated they will be redirected <a href="#route-auth-login">auth.login</a> page. If the meeting doesn't exist then 404 will be displayed and the user will be redirectred to <a href="#route-main-home">main.home</a>. All other failed checks will result in a <q>Check-in failed</q> message.  
+        </p>
+      </li>
+       <li id="route-main-download-file">
+        <strong>/uploads/&lt;name&gt; (GET)</strong>
+        <br>
+        <i>download_file</i>
+        <p>
+          Download the specified file.
+        </p>
+        <h4>Parameters</h4>
+        <table>
+          <tr><th>Parameters</th><th>Type</th></tr>
+          <tr><td>name</td><td>String</td></tr>
+        </table>
+      </li>
+       <li id="route-main-submit-poll">
+        <strong>/submit-poll/&lt;int:poll_id&gt; (POST)</strong>
+        <br>
+        <i>submit_poll</i>
+        <p>
+          Handle voting for a poll. The user must be logged in. Handles FRQ, and MCQ poll questions one at a time via helper functions also defined in the blueprint `main.py` file. Adds one vote to the question if user hasn't voted already, otherwise updates the vote for the user. Redirects to <a href="#route-main-show-polls">main.show_polls</a> page after all questions are processed. 
+        </p>
+        <h4>Parameters</h4>
+        <table>
+          <tr><th>Parameters</th><th>Type</th></tr>
+          <tr><td>poll_id</td><td>Integer</td></tr>
+        </table>
+      </li>
+  </ul>
 </details>
 
 <details>
@@ -685,7 +794,7 @@ For precise configuration details, please consult the file at ```.github/workflo
 
 <details>
 <summary id="docker-image-ci"><strong>Docker Image CI</strong></summary>
-This workflow is only triggered on succesful pushes to the repository's main branch. It will automatically use the Dockerfile to build a new image for the web container. It will also use GitHub secrets (must be configured by an ACM officer with Organization manager access on GitHub) to publish this image to DockerHub. This ultimately serves the purpose of ensuring that the public build of the web app is a stable release, never a release candidate or development version.
+This workflow is only triggered on successful pushes to the repository's main branch. It will automatically use the Dockerfile to build a new image for the web container. It will also use GitHub secrets (must be configured by an ACM officer with Organization manager access on GitHub) to publish this image to DockerHub. This ultimately serves the purpose of ensuring that the public build of the web app is a stable release, never a release candidate or development version.
 <br><br>
 
 For precise configuration details, please consult the file at ```.github/workflows/docker-image.yml```.
