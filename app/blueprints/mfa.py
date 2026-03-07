@@ -4,7 +4,7 @@
 """
 Project Name: ACM-Meeting-Records
 Project Author(s): Joseph Lefkovitz (github.com/lefkovitz)
-Last Modified: 10/7/2025
+Last Modified: 2/14/2026
 
 File Purpose: Multi-factor authentication routes for the project.
 """
@@ -74,7 +74,7 @@ def verify_recovery_code():
     if not user:
         flash('User not found.', 'danger')
         return redirect(url_for('auth.login'))
-    
+
     form = RecoveryCodeVerifyForm()
     if form.validate_on_submit():
         code = form.token.data
@@ -94,7 +94,9 @@ def verify_recovery_code():
                 return redirect(url_for('main.home'))
         flash('Invalid recovery code.', 'danger')
 
-    return render_template('auth/verify-code.html', page_title='Verify MFA Recovery Code', form=form)
+    return render_template('auth/verify-code.html',
+                           page_title='Verify MFA Recovery Code',
+                           form=form)
 
 @mfa_bp.route('/verify-totp/', methods=['GET', 'POST'])
 def verify_totp():

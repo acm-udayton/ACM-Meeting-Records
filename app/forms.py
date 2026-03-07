@@ -2,8 +2,8 @@
 
 """
 Project Name: ACM-Meeting-Records
-Project Author(s): Joseph Lefkovitz (github.com/lefkovitz)
-Last Modified: 12/16/2025
+Project Author(s): Joseph Lefkovitz (github.com/lefkovitz), Thomas Crossman (github.com/crossmant1)
+Last Modified: 2/14/2025
 
 File Purpose: Flask-WTF forms for the project.
 """
@@ -14,7 +14,7 @@ import re
 # Third-party imports.
 from flask import current_app
 from flask_wtf import FlaskForm, RecaptchaField, Recaptcha
-from wtforms import StringField, PasswordField, SubmitField, BooleanField
+from wtforms import StringField, PasswordField, SubmitField, BooleanField, FieldList, FormField
 from wtforms.validators import (
     Optional,
     Length,
@@ -29,7 +29,7 @@ from wtforms.validators import (
 # Define the custom regex validator for the semester format
 SEMESTER_REGEX = r"^(FA|SP) \d{4}$|^$" # FA YYYY or SP YYYY or empty
 
-def email_domain_validator(form, field):
+def email_domain_validator(_form, field):
     """ WTForms Validator to check for the required email domain (if applicable). """
     if field.data and current_app.context["usernames"]["enforce_usernames"] == "True":
         # Use regex to check the required email_domain.
@@ -196,3 +196,50 @@ class AccountUpdateForm(FlaskForm):
         ]
     )
     submit = SubmitField('Save Account Details')
+
+class CreatePollOptionForm(FlaskForm):
+    """ Form for options subsection of poll creation form. """
+    option_text = StringField(
+        "Option",
+        validators=[
+            InputRequired(),
+        ]
+    )
+
+class CreatePollQuestionForm(FlaskForm):
+    """ Form for questions subsection of poll creation form. """
+    question_text = StringField(
+        "Question Text",
+        validators=[
+            InputRequired(),
+        ]
+    )
+    is_free_response = BooleanField(
+        "Free Response Question",
+        default=False
+    )
+    allow_multiple_responses = BooleanField(
+        "Allow Multiple Responses",
+        default=False
+    )
+    options = FieldList(FormField(CreatePollOptionForm), min_entries=0)
+
+class CreatePollForm(FlaskForm):
+    """ Form for creating a new poll. """
+    title = StringField(
+        'Poll Title',
+        validators=[
+            InputRequired(),
+            Length(min=1, max=128)
+        ]
+    )
+    questions = FieldList(FormField(CreatePollQuestionForm), min_entries=1)
+    submit = SubmitField('Create Poll')
+
+class PollVoteForm(FlaskForm):
+    """ Form for voting in a poll. """
+    submit = SubmitField('Vote')
+
+class DeletePollForm(FlaskForm):
+    """ Form for deleting a poll. """
+    submit = SubmitField('Delete Poll')

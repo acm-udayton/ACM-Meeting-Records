@@ -14,6 +14,9 @@ form input.form-check-input:checked {
     background-color: var(--ud-blue) !important;
     border-color: var(--ud-red) !important;
 }
+form input.form-radio-input:checked {
+    accent-color: var(--ud-blue) !important;
+}
 form button[type=submit], form input[type=submit] {
     background-color: var(--ud-red) !important;
     color: white;
@@ -46,4 +49,27 @@ section#form, section#log-out {
 }
 textarea {
     min-height: 300px!important;
+}
+.poll-badge-red {
+    --bs-bg-opacity: 1;
+    background-color: var(--ud-red);
+}
+.poll-badge-blue {
+    --bs-bg-opacity: 1;
+    background-color: var(--ud-blue);
+}
+.poll-form-card {
+    border: 2px solid var(--ud-blue);
+    border-radius: 8px;
+}
+.poll-winner {
+    background-color: #dbdbdb;
+}
+.remove-option-btn {
+    background-color: var(--ud-red) !important;
+    color: white !important;
+}
+.add-option-btn {
+    background-color: var(--ud-blue) !important;
+    color: white !important;
 }

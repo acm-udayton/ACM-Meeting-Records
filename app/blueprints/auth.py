@@ -4,7 +4,7 @@
 """
 Project Name: ACM-Meeting-Records
 Project Author(s): Joseph Lefkovitz (github.com/lefkovitz)
-Last Modified: 12/15/2025
+Last Modified: 2/14/2026
 
 File Purpose: Authentication routes for the project.
 """
@@ -38,18 +38,21 @@ def login():
     if form.validate_on_submit():
         user = Users.query.filter_by(username = form.username.data).first()
 
+        needs_relogin = False
+
         # Existence check.
         if user is None:
-            flash("Login attempt failed. User does not exist.")
-            return redirect(url_for("auth.login"))
+            flash("Login attempt failed. User does not exist.", "danger")
+            needs_relogin = True
 
         # Activation check.
         if user.activated is False:
             flash(
                 "Login attempt failed. Account is not activated. "
-                "Please contact the system administrator for approval."
+                "Please contact the system administrator for approval.",
+                "danger"
             )
-            return redirect(url_for("auth.login"))
+            needs_relogin = True
 
         # Password check.
         if not user.check_password(form.password.data):
@@ -60,8 +63,13 @@ def login():
             )
             flash(
                 "Login attempt failed. Please try again or contact "
-                "the system administrator to reset your credentials."
+                "the system administrator to reset your credentials.",
+                "danger"
             )
+            needs_relogin = True
+
+        # Redirect on login failure.
+        if needs_relogin:
             return redirect(url_for("auth.login"))
 
         # MFA check.
@@ -69,9 +77,10 @@ def login():
             # Store the user ID in the session temporarily - do not login yet.
             session['mfa_user_id'] = user.id
             if user.totp_active:
-                return redirect(url_for('mfa.verify_totp'))
+                redirect_to = 'mfa.verify_totp'
             else:
-                return redirect(url_for('mfa.verify_recovery_code'))
+                redirect_to = 'mfa.verify_recovery_code'
+            return redirect(url_for(redirect_to))
 
         # Admin without MFA warning.
         if user.role == "admin":
@@ -104,7 +113,21 @@ def sign_up():
         if Users.query.filter_by(username = uname).first() is not None:
             flash(
                 "User creation failed. Username already registered. "
-                "Try logging in instead or contact an administrator.")
+                "Try logging in instead or contact an administrator."
+                , "danger"
+                )
+            return redirect(url_for("auth.sign_up"))
+        elif (current_app.context["usernames"]["enforce_usernames"] == "True" and
+              not uname.endswith(
+                  current_app.context["usernames"]["username_email_domain"])):
+            flash(
+                ("User creation failed. Username must end with "
+                f"{current_app.context['usernames']['username_email_domain']}."),
+                "danger"
+                )
+            return redirect(url_for("auth.sign_up"))
+        elif pword != conf_pword:
+            flash("User creation failed. Passwords do not match.", "danger")
             return redirect(url_for("auth.sign_up"))
         else:
             current_app.logger.warning(
@@ -117,7 +140,7 @@ def sign_up():
             new_user.set_password(pword)
             db.session.add(new_user)
             db.session.commit()
-            flash("User creation succeeded. You can now log into your new account.")
+            flash("User creation succeeded. You can now log into your new account.", "success")
             return redirect(url_for("auth.login"))
     # Handle GET requests.
     else:
@@ -145,6 +168,8 @@ def my_account():
     """ Show account details page with update form. """
     account_updated_form = AccountUpdateForm()
     num_codes = RecoveryCodes.query.filter_by(user_id=current_user.id).count()
+    account_updated_form.start_semester.data = current_user.joined
+    account_updated_form.grad_semester.data = current_user.graduated
     return render_template("account.html",
                            page_title = "My Account",
                            num_codes=num_codes,
@@ -181,10 +206,10 @@ def update_account():
             for error in errors:
                 if field == 'csrf_token':
                     flash("Security Error: Invalid or missing form data." \
-                    " Please refresh and try again.", 'error')
+                    " Please refresh and try again.", 'danger')
                 else:
                     flash((f"Error in the {getattr(form, field).label.text} "
-                        f" field - {error}", "danger"))
+                        f" field - {error}"), "danger")
                 current_app.logger.info(
                     ("Account update attempt - failure: %s from IP %s - "
                     "Field: %s, Error: %s"),
