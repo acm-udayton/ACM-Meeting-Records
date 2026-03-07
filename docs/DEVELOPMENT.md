@@ -219,6 +219,148 @@ For POST requests, specify the type of data that should be expected, if any. Thi
 <details>
 <summary id="routes-admin"><strong>Admin Routes</strong></summary>
 <br>
+<p>The following routes handle meeting operations, attendee tracking, and user management for administrators. These routes are contained within the admin blueprint (<code>/admin/...</code>) and are strictly protected by the <code>@login_required</code> and <code>@admin_required</code> decorators to prevent unauthorized access.</p>
+    <ul>
+      <li id="route-admin-dashboard">
+        <strong>/admin/dashboard/&lt;int:meeting_id&gt;/ (GET)</strong>
+        <br>
+        <i>admin_dashboard</i>
+        <p>
+          Show the administrator dashboard page for a single meeting. This endpoint queries and displays the selected meeting, its attendees, associated meeting minutes, and any uploaded attachments.
+        </p>
+        <h4>Template file: admin/dashboard.html</h4>
+        <table>
+          <tr><th>Jinja2 Parameters</th><th>Data Format</th></tr>
+          <tr><td>page_title</td><td>String - formatted as "Meeting - {meeting.title}"</td></tr>
+          <tr><td>meeting</td><td>Meetings object</td></tr>
+          <tr><td>attendees</td><td>List of Attendees objects</td></tr>
+          <tr><td>minutes</td><td>List of Minutes objects</td></tr>
+          <tr><td>attachments</td><td>List of Attachments objects</td></tr>
+          <tr><td>add_attendee_form</td><td>Flask-WTF form object - AdminAttendeeAddForm</td></tr>
+        </table>
+      </li>
+      <li id="route-admin-create">
+        <strong>/admin/create/ (POST)</strong>
+        <br>
+        <i>event_create</i>
+        <p>
+          Create a new meeting based on form inputs (title, description, and admin_only status). Uses the <code>CreateMeetingForm</code>. On success, the admin is redirected to the <a href="#route-admin-dashboard">admin.admin_dashboard</a>. On failure, they are redirected to the main events list.
+        </p>
+      </li>
+      <li id="route-admin-start">
+        <strong>/admin/start/&lt;int:meeting_id&gt;/ (POST)</strong>
+        <br>
+        <i>event_start</i>
+        <p>
+          Start a single meeting from the administrator dashboard. This generates a meeting code, updates the meeting state to "active", records the start time, and adds the starting officer as an attendee. Returns a JSON payload indicating success, along with the meeting code. If the meeting under the given meeting id is already in an active state, then a JSON payload is returned indicating failure.
+        </p>
+      </li>
+      <li id="route-admin-reset-code">
+        <strong>/admin/reset-code/&lt;int:meeting_id&gt;/ (GET)</strong>
+        <br>
+        <i>reset_code</i>
+        <p>
+          Reset the meeting join code for a currently active meeting. Generates a new code and redirects to <a href="#route-admin-show-code">/admin/show-code/</a>. If the meeting is not active, it renders an error page.
+        </p>
+      </li>
+      <li id="route-admin-show-code">
+        <strong>/admin/show-code/ (GET)</strong>
+        <br>
+        <i>show_code</i>
+        <p>
+          Show the meeting join code for a single meeting based on the URL argument.
+        </p>
+        <h4>Template file: code.html</h4>
+        <table>
+          <tr><th>Jinja2 Parameters</th><th>Data Format</th></tr>
+          <tr><td>page_title</td><td>String - "Meeting Code"</td></tr>
+          <tr><td>code</td><td>String - the active meeting code</td></tr>
+        </table>
+      </li>
+      <li id="route-admin-end">
+        <strong>/admin/end/&lt;int:meeting_id&gt;/ (POST)</strong>
+        <br>
+        <i>event_end</i>
+        <p>
+          End an active meeting from the administrator dashboard. Updates the state to "ended" and logs the end time. Returns a JSON response. If meeting state cannot be updated, returns an error message with the current state.
+        </p>
+      </li>
+      <li id="route-admin-attendees">
+        <strong>/admin/attendees/&lt;int:meeting_id&gt;/ (POST)</strong>
+        <br>
+        <i>event_attendees</i>
+        <p>
+          Manually add an attendee to a single meeting. Expects data from the <code>AdminAttendeeAddForm</code>. Returns a JSON payload indicating success or failure (e.g., if the user does not exist or is already checked in).
+        </p>
+      </li>
+      <li id="route-admin-remove-attendee">
+        <strong>/admin/remove-attendee/&lt;int:meeting_id&gt;/&lt;int:attendee_id&gt;/ (POST)</strong>
+        <br>
+        <i>event_remove_attendee</i>
+        <p>
+          Remove an attendee from a meeting based on their attendee ID. Returns a JSON payload.
+        </p>
+      </li>
+      <li id="route-admin-minutes">
+        <strong>/admin/minutes/&lt;int:meeting_id&gt;/ [and] /admin/minutes/&lt;int:meeting_id&gt;/&lt;int:minutes_id&gt;/ (POST)</strong>
+        <br>
+        <i>event_minutes</i>
+        <p>
+          Add or update minutes for a single meeting. Expects form data containing <code>meeting_minutes</code>. If a <code>minutes_id</code> is provided, it updates the existing entry; otherwise, it creates a new one. Returns a JSON response.
+        </p>
+      </li>
+      <li id="route-admin-add-attachment">
+        <strong>/admin/add-attachment/&lt;int:meeting_id&gt;/ (POST)</strong>
+        <br>
+        <i>event_add_attachment</i>
+        <p>
+          Upload a file attachment to a single meeting. Expects a file in the request payload and validates against allowed extensions (pptx, pdf, docx, txt, png, jpg, jpeg, gif). Returns a JSON response.
+        </p>
+      </li>
+      <li id="route-admin-remove-attachment">
+        <strong>/admin/remove-attachment/&lt;int:meeting_id&gt;/&lt;int:attachment_id&gt;/ (POST)</strong>
+        <br>
+        <i>event_remove_attachment</i>
+        <p>
+          Remove an attachment from a meeting. Deletes the physical file from the Docker volume directory and removes the database record. Returns a JSON response.
+        </p>
+      </li>
+      <li id="route-admin-delete">
+        <strong>/admin/delete/&lt;int:meeting_id&gt;/ (POST)</strong>
+        <br>
+        <i>event_delete</i>
+        <p>
+          Delete a meeting along with all of its cascaded data, including attendees, minutes, and attachments. Redirects to the main events list upon completion.
+        </p>
+      </li>
+      <li id="route-admin-users">
+        <strong>/admin/users/ (GET)</strong>
+        <br>
+        <i>users_list</i>
+        <p>
+          Show the user management index page. Aggregates each user's total meetings attended and their most recent check-in date.
+        </p>
+        <h4>Template file: admin/users.html</h4>
+        <table>
+          <tr><th>Jinja2 Parameters</th><th>Data Format</th></tr>
+          <tr><td>page_title</td><td>String - "Users"</td></tr>
+          <tr><td>users</td><td>List of Users objects, augmented with meeting counts and recent dates</td></tr>
+        </table>
+      </li>
+      <li id="route-admin-user-actions">
+        <strong>User Action Routes (POST)</strong>
+        <br>
+        <p>The following routes accept POST requests from the user management dashboard to perform administrative actions on specific accounts. After execution, they all flash a status message and redirect back to <a href="#route-admin-users">/admin/users/</a>.</p>
+        <ul>
+            <li><strong>/admin/users/reset-password/&lt;int:user_id&gt;/</strong> - <i>reset_user_password:</i> Overwrites a user's password with the value provided in <code>new_password</code>.</li>
+            <li><strong>/admin/users/promote/&lt;int:user_id&gt;/</strong> - <i>promote_user:</i> Grants admin privileges to a standard user.</li>
+            <li><strong>/admin/users/demote/&lt;int:user_id&gt;/</strong> - <i>demote_user:</i> Revokes admin privileges from a user. Cannot be used on the currently authenticated admin.</li>
+            <li><strong>/admin/users/disable-mfa/&lt;int:user_id&gt;/</strong> - <i>disable_user_mfa:</i> Forces disabling of TOTP and general MFA requirements for a specified user.</li>
+            <li><strong>/admin/users/disable-account/&lt;int:user_id&gt;/</strong> - <i>disable_user_account:</i> Deactivates an active user account.</li>
+            <li><strong>/admin/users/enable-account/&lt;int:user_id&gt;/</strong> - <i>enable_user_account:</i> Reactivates a disabled user account.</li>
+        </ul>
+      </li>
+    </ul>
 </details>
 
 <details>
