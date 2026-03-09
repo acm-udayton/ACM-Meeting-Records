@@ -135,7 +135,7 @@ class LoginForm(FlaskForm):
     )
     submit = SubmitField('Log In')
 
-class SignUpForm(FlaskForm):
+class SignUpFormEmail(FlaskForm):
     """ Form for registration of new user. """
     username = StringField(
         'Email',
@@ -143,6 +143,37 @@ class SignUpForm(FlaskForm):
             InputRequired(),
             Email(message='A valid email address is required.'),
             email_domain_validator
+        ]
+    )
+    password = PasswordField(
+        'Password', 
+        validators=[
+            InputRequired(),
+            Length(min=1, max=128)
+        ]
+    )
+    confirm_password = PasswordField(
+        'Confirm Password',
+        validators = [
+            InputRequired(),
+            Length(min=1, max=128),
+            EqualTo('password', message='Passwords must match.')
+        ]
+    )
+    recaptcha = RecaptchaField(
+        validators = [
+            Recaptcha(message="Please complete the CAPTCHA to continue.")
+        ]
+    )
+    submit = SubmitField("Create Account")
+
+class SignUpFormUsername(FlaskForm):
+    """ Form for registration of new user. """
+    username = StringField(
+        'Username',
+        validators=[
+            InputRequired(),
+            Length(min=1, max=64)
         ]
     )
     password = PasswordField(
