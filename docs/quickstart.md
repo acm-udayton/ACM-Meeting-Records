@@ -33,6 +33,7 @@ To get a local copy up and running follow these simple example steps.
 | CONTACT_EMAIL | The contact email for the organization. |
 | ENFORCE_USERNAMES | Whether to enforce username email domain restriction. Set to "True" to enforce, "False" to not enforce. |
 | USERNAME_EMAIL_DOMAIN | The email domain to restrict usernames to, if ENFORCE_USERNAMES is set to "True". |
+| REQUIRE_USERNAME_AS_EMAIL | Whether to require users to use their email as their username. Set to "True" to require, "False" to not require.
 | SQLALCHEMY_DATABASE_URI | The URI for the PostgreSQL database. This should be in the format: "postgresql://admin:password@db:5432/acm-meetings-db" where "password" is replaced with the password you set for the PostgreSQL database in the docker-compose.yml file. |
 | SECRET_KEY | A secret key for the Flask application. This can be any random string. |
 | RECAPTCHA_SITE_KEY | The site key for Google reCAPTCHA. This is required to enable the reCAPTCHA on the user registration page. You can obtain a site key by registering your site with Google reCAPTCHA at https://www.google.com/recaptcha/admin/create. |
