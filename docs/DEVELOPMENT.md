@@ -471,7 +471,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
           Display the registration page and create new accounts.
           <br>
           <br>
-          If the endpoint is accessed with a GET request, the user is shown the registration form. If the endpoint is accessed with a POST request, the submitted registration data (email and password) is validated.
+          If the endpoint is accessed with a GET request, the user is shown the registration form. If the system's .env file specifies that usernames must be email addresses, the SignUpFormEmail is used, otherwise the SignUpFormUsername is used. If the endpoint is accessed with a POST request, the submitted registration data (email or username and password) is validated.
           <br>
           <br>
           On successful registration, the user is redirected to <a href="#route-auth-login">/login/</a> to authenticate with their newly created credentials.
@@ -481,7 +481,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
           <tr><th>Jinja2 Parameters</th><th>Data Format</th></tr>
           <tr><td>page_title</td><td>Create New Account</td></tr>
           <tr><td>required_domain</td><td>String or None - Email domain that usernames must end with</td></tr>
-          <tr><td>form</td><td>Flask-WTF form object - SignUpForm</td></tr>
+          <tr><td>form</td><td>Flask-WTF form object - SignUpFormEmail or SignUpFormUsername</td></tr>
         </table>
       </li>
       <li id="route-auth-logout">

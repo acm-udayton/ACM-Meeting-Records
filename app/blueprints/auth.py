@@ -24,7 +24,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 
 # Local application imports.
 from app.extensions import db
-from app.forms import LoginForm, SignUpForm, AccountUpdateForm
+from app.forms import LoginForm, SignUpFormEmail, SignUpFormUsername, AccountUpdateForm
 from app.models import Users, RecoveryCodes
 
 auth_bp = Blueprint('auth', __name__, template_folder='templates')
@@ -100,7 +100,7 @@ def login():
 @auth_bp.route("/sign-up/", methods = ["GET", "POST"])
 def sign_up():
     """ Show a sign-up page and process submissions. """
-    form = SignUpForm()
+    form = SignUpFormEmail() if current_app.context["usernames"]["require_username_as_email"] == "True" else SignUpFormUsername()
 
     if form.validate_on_submit():
         # Log the user out if active.
@@ -118,6 +118,7 @@ def sign_up():
                 )
             return redirect(url_for("auth.sign_up"))
         elif (current_app.context["usernames"]["enforce_usernames"] == "True" and
+              current_app.context["usernames"]["require_username_as_email"] == "True" and
               not uname.endswith(
                   current_app.context["usernames"]["username_email_domain"])):
             flash(
@@ -144,7 +145,8 @@ def sign_up():
             return redirect(url_for("auth.login"))
     # Handle GET requests.
     else:
-        if current_app.context["usernames"]["enforce_usernames"] == "True":
+        if (current_app.context["usernames"]["enforce_usernames"] == "True" and
+            current_app.context["usernames"]["require_username_as_email"] == "True"):
             required_domain = current_app.context["usernames"]["username_email_domain"]
         else:
             required_domain = None

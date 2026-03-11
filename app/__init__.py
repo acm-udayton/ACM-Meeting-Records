@@ -143,14 +143,10 @@ def create_app():
                             }
     app.context["usernames"] = {
                                 "enforce_usernames": os.getenv("ENFORCE_USERNAMES"),
-                                "username_email_domain": os.getenv("USERNAME_EMAIL_DOMAIN")
+                                "username_email_domain": os.getenv("USERNAME_EMAIL_DOMAIN"),
+                                "require_username_as_email": os.getenv("REQUIRE_USERNAME_AS_EMAIL")
                             }
     app.context["source"] = os.getenv("GITHUB_SOURCE")
-    app.logs["error"] = os.getenv("ERROR_LOG_PATH")
-    app.logs["login"] = os.getenv("LOGIN_LOG_PATH")
-    app.logs["full"] = os.getenv("FULL_LOG_PATH")
-    app.base_url = os.getenv("BASE_URL")
-    app.storage = os.getenv("STORE_PATH")
 
     # Define the app context processor.
     @app.context_processor
