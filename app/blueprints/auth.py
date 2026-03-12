@@ -45,54 +45,54 @@ def login():
             flash("Login attempt failed. User does not exist.", "danger")
             needs_relogin = True
 
-        # Activation check.
-        if user.activated is False:
-            flash(
-                "Login attempt failed. Account is not activated. "
-                "Please contact the system administrator for approval.",
-                "danger"
-            )
-            needs_relogin = True
+        else:
+            # Activation check.
+            if user.activated is False:
+                flash(
+                    "Login attempt failed. Account is not activated. "
+                    "Please contact the system administrator for approval.",
+                    "danger"
+                )
+                needs_relogin = True
 
-        # Password check.
-        if not user.check_password(form.password.data):
-            current_app.logger.warning(
-                "Login attempt as %s from IP %s - failed",
+            # Password check.
+            if not user.check_password(form.password.data):
+                current_app.logger.warning(
+                    "Login attempt as %s from IP %s - failed",
+                    form.username.data,
+                    request.remote_addr
+                )
+                flash(
+                    "Login attempt failed. Please try again or contact "
+                    "the system administrator to reset your credentials.",
+                    "danger"
+                )
+                needs_relogin = True
+
+            # MFA check.
+            if user.mfa_active:
+                # Store the user ID in the session temporarily - do not login yet.
+                session['mfa_user_id'] = user.id
+                if user.totp_active:
+                    redirect_to = 'mfa.verify_totp'
+                else:
+                    redirect_to = 'mfa.verify_recovery_code'
+                return redirect(url_for(redirect_to))
+
+            # Admin without MFA warning.
+            if user.role == "admin":
+                flash("Please enable multi-factor authentication for this administrator account!")
+
+            login_user(user)
+            current_app.logger.info(
+                "Login attempt as %s from IP %s - success",
                 form.username.data,
                 request.remote_addr
             )
-            flash(
-                "Login attempt failed. Please try again or contact "
-                "the system administrator to reset your credentials.",
-                "danger"
-            )
-            needs_relogin = True
-
+            return redirect(url_for("main.home"))
         # Redirect on login failure.
         if needs_relogin:
             return redirect(url_for("auth.login"))
-
-        # MFA check.
-        if user.mfa_active:
-            # Store the user ID in the session temporarily - do not login yet.
-            session['mfa_user_id'] = user.id
-            if user.totp_active:
-                redirect_to = 'mfa.verify_totp'
-            else:
-                redirect_to = 'mfa.verify_recovery_code'
-            return redirect(url_for(redirect_to))
-
-        # Admin without MFA warning.
-        if user.role == "admin":
-            flash("Please enable multi-factor authentication for this administrator account!")
-
-        login_user(user)
-        current_app.logger.info(
-            "Login attempt as %s from IP %s - success",
-            form.username.data,
-            request.remote_addr
-        )
-        return redirect(url_for("main.home"))
 
     # Process GET requests or failed validation.
     return render_template("login.html", page_title = "User Log In", form=form)
