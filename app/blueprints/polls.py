@@ -50,7 +50,8 @@ def polls_list():
                           polls=all_polls,
                           voted_questions=voted_questions,
                           form=form,
-                          delete_poll_form=delete_poll_form)
+                          delete_poll_form=delete_poll_form,
+                          datetime_now=datetime.now())
 
 @polls_bp.route("/create-poll/", methods=["POST"])
 @login_required
