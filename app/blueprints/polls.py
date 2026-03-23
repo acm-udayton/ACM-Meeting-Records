@@ -11,6 +11,7 @@ Last Modfied: February 11, 2026.
 """
 
 # Standard library imports.
+from datetime import datetime
 
 # Third-party imports.
 from flask import (
@@ -64,7 +65,10 @@ def create_poll():
                 flash(f"Error in {getattr(form, field).label.text}: {error}", "danger")
         return redirect(url_for("polls.polls_list"))
     else:
-        poll = Poll(title=form.title.data)
+        if form.poll_expires.data and form.poll_expires.data <= datetime.now():
+            flash("Poll expiration datetime must be in the future.", "danger")
+            return redirect(url_for("polls.polls_list"))
+        poll = Poll(title=form.title.data, poll_expires=form.poll_expires.data)
         db.session.add(poll)
         db.session.flush()
 

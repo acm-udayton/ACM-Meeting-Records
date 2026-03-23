@@ -107,6 +107,10 @@
                         <label for="title">Title</label>
                         <input id="title" class="form-control" type="text" name="{{form.title.name}}" placeholder="Enter poll title" required>
                     </div>
+                    <div class="form mb-3">
+                        <label for="poll_expires">Poll Expiration Datetime</label>
+                        <input id="poll_expires" class="form-control" type="datetime-local" name="{{form.poll_expires.name}}" placeholder="Enter poll expiration datetime">
+                    </div>
                     <div id="questions-container"> </div>
                     
                     <button type="button" class="btn add-option-btn mb-3" onclick="addQuestion()">+ Question</button>
