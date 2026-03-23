@@ -3,11 +3,10 @@
 
 """
 Project Name: ACM-Meeting-Records 
-Project Author(s): Thomas Crossman (github.com/crossmant1)
+Project Author(s): Thomas Crossman (github.com/crossmant1), Joseph Lefkovitz (github.com/lefkovitz)
+Last Modfied: March 22, 2026. 
 
 File Purpose: Polling routes for polling system
-
-Last Modfied: February 11, 2026. 
 """
 
 # Standard library imports.
