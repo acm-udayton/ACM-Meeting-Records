@@ -3,14 +3,14 @@
 
 """
 Project Name: ACM-Meeting-Records 
-Project Author(s): Thomas Crossman (github.com/crossmant1)
+Project Author(s): Thomas Crossman (github.com/crossmant1), Joseph Lefkovitz (github.com/lefkovitz)
+Last Modfied: March 22, 2026. 
 
 File Purpose: Polling routes for polling system
-
-Last Modfied: February 11, 2026. 
 """
 
 # Standard library imports.
+from datetime import datetime
 
 # Third-party imports.
 from flask import (
@@ -50,7 +50,8 @@ def polls_list():
                           polls=all_polls,
                           voted_questions=voted_questions,
                           form=form,
-                          delete_poll_form=delete_poll_form)
+                          delete_poll_form=delete_poll_form,
+                          datetime_now=datetime.now())
 
 @polls_bp.route("/create-poll/", methods=["POST"])
 @login_required
@@ -64,7 +65,10 @@ def create_poll():
                 flash(f"Error in {getattr(form, field).label.text}: {error}", "danger")
         return redirect(url_for("polls.polls_list"))
     else:
-        poll = Poll(title=form.title.data)
+        if form.poll_expires.data and form.poll_expires.data <= datetime.now():
+            flash("Poll expiration datetime must be in the future.", "danger")
+            return redirect(url_for("polls.polls_list"))
+        poll = Poll(title=form.title.data, poll_expires=form.poll_expires.data)
         db.session.add(poll)
         db.session.flush()
 
