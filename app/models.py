@@ -164,6 +164,7 @@ class Poll(db.Model):
     __tablename__="polls"
     id=db.Column(db.Integer, primary_key=True)
     title=db.Column(db.String(250), nullable=False)
+    poll_expires=db.Column(db.DateTime, nullable=True)
 
     questions=db.relationship("PollQuestion", backref="poll", cascade="all, delete-orphan")
 

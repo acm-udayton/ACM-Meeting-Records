@@ -4,10 +4,13 @@
 """
 Project Name: ACM-Meeting-Records
 Project Author(s): Joseph Lefkovitz (github.com/lefkovitz), Thomas Crossman (github.com/crossmant1)
-Last Modified: 2/14/2026
+Last Modified: 3/22/2026
 
 File Purpose: Primary routes for the project.
 """
+
+# Standard library imports.
+from datetime import datetime
 
 # Third-party imports.
 from flask import (
@@ -156,7 +159,10 @@ def home():
     else:
         featured_meeting = None
 
-    all_polls = Poll.query.all()
+    all_polls = Poll.query.filter(
+        Poll.poll_expires.is_(None) |
+        (Poll.poll_expires > datetime.now())
+    ).all()
 
     voted_questions = set()
     voted_options = set()
@@ -283,6 +289,9 @@ def download_file(name):
 def submit_poll(poll_id):
     """Handle bulk submission of all questions in a poll."""
     poll = Poll.query.get_or_404(poll_id)
+    if poll.poll_expires and poll.poll_expires <= datetime.now():
+        flash("Poll has expired. You cannot submit responses.", "danger")
+        return redirect(url_for('main.home'))
 
     try:
         for question in poll.questions:
