@@ -254,6 +254,10 @@ class CreatePollQuestionForm(FlaskForm):
         "Allow Multiple Responses",
         default=False
     )
+    private_vote = BooleanField(
+        "Private Vote",
+        default=False
+    )
     options = FieldList(FormField(CreatePollOptionForm), min_entries=0)
 
 class CreatePollForm(FlaskForm):
