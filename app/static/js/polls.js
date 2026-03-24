@@ -45,6 +45,18 @@ function addQuestion() {
       </label>
     </div>
 
+    <div class="form-check mb-3 private-vote-section form-check form-switch">
+      <input 
+        type="checkbox" 
+        class="form-check-input private-vote-checkbox" 
+        id="private-vote-checkbox-${currentQuestionIndex}"
+        name="questions-${currentQuestionIndex}-private_vote"
+      >
+      <label class="form-check-label" for="private-vote-checkbox-${currentQuestionIndex}">
+        Allow users to vote privately. 
+      </label>
+    </div>
+
     <div class="options-section">
       <div class="options-container"></div>
       <button type="button" class="btn btn-sm add-option-btn mb-2 add-option-btn">
