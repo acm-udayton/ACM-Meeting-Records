@@ -139,9 +139,12 @@
                                           {% if option.id in voted_options %}checked{% endif %}
                                         >
                                       {% endif %}
-                                      <label class="form-check-label" for="option_{{ option.id }}">
-                                        {{ option.option_text }}
-                                      </label>
+                                        <label class="form-check-label" for="option_{{ option.id }}">
+                                          {{ option.option_text }}
+                                          {% if not question.private_vote %}
+                                            <span class="badge bg-secondary ms-2">{{ option.votes }} votes</span>
+                                          {% endif %}
+                                        </label>
                                     </div>
                                   {% endfor %}
                                 </div>
