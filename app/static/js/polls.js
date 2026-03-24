@@ -53,7 +53,7 @@ function addQuestion() {
         name="questions-${currentQuestionIndex}-private_vote"
       >
       <label class="form-check-label" for="private-vote-checkbox-${currentQuestionIndex}">
-        Allow users to vote privately. 
+        Allow users to vote privately
       </label>
     </div>
 
