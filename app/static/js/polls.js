@@ -45,6 +45,18 @@ function addQuestion() {
       </label>
     </div>
 
+    <div class="form-check mb-3 private-vote-section form-check form-switch">
+      <input 
+        type="checkbox" 
+        class="form-check-input private-vote-checkbox" 
+        id="private-vote-checkbox-${currentQuestionIndex}"
+        name="questions-${currentQuestionIndex}-private_vote"
+      >
+      <label class="form-check-label" for="private-vote-checkbox-${currentQuestionIndex}">
+        Allow users to vote privately
+      </label>
+    </div>
+
     <div class="options-section">
       <div class="options-container"></div>
       <button type="button" class="btn btn-sm add-option-btn mb-2 add-option-btn">
@@ -59,6 +71,8 @@ function addQuestion() {
   const multiResponseCheckbox = questionDiv.querySelector(".multi-response-checkbox");
   const optionsSection = questionDiv.querySelector(".options-section");
   const multiResponseSection = questionDiv.querySelector(".multi-response-section");
+  const privateVoteSection = questionDiv.querySelector(".private-vote-section");
+  const privateVoteCheckbox = questionDiv.querySelector(".private-vote-checkbox");
 
   let optionIndex = 0;
 
@@ -92,6 +106,8 @@ function addQuestion() {
       optionsSection.style.display = "none";
       multiResponseSection.style.display = "none";
       multiResponseCheckbox.checked = false;
+      privateVoteSection.style.display = "none";
+      privateVoteCheckbox.checked = false;
       
       // Remove all option inputs when switching to FRQ
       optionsContainer.innerHTML = "";
@@ -100,6 +116,7 @@ function addQuestion() {
       // Show options section and multi-response option
       optionsSection.style.display = "block";
       multiResponseSection.style.display = "block";
+      privateVoteSection.style.display = "block";
       
       // Add two default options if none exist
       if (optionsContainer.children.length === 0) {
