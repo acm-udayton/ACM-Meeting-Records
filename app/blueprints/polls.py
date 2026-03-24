@@ -75,12 +75,15 @@ def create_poll():
         for question_form in form.questions.entries:
             is_frq = question_form.form.is_free_response.data
             allow_multiple = question_form.form.allow_multiple_responses.data
+            private_votes = question_form.form.private_vote.data
+
 
             question = PollQuestion(
                 poll_id=poll.id,
                 question_text=question_form.form.question_text.data,
                 is_free_response=is_frq,
-                allow_multiple_responses=allow_multiple if not is_frq else False  # Only for MCQs
+                allow_multiple_responses=allow_multiple if not is_frq else False,  # Only for MCQs
+                private_vote = private_votes
             )
             db.session.add(question)
             db.session.flush()
