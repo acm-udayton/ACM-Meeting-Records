@@ -21,6 +21,18 @@ function addQuestion() {
       >
     </div>
 
+    <div class="form-check mb-3 immutable-question form-check form-switch">
+      <input 
+        type="checkbox" 
+        class="form-check-input immutable-question-checkbox" 
+        id="immutable-question-checkbox-${currentQuestionIndex}"
+        name="questions-${currentQuestionIndex}-immutable_question"
+      >
+      <label class="form-check-label" for="immutable-question-checkbox-${currentQuestionIndex}">
+        Make question immutable
+      </label>
+    </div>
+
     <div class="form-check mb-2 form-check form-switch">
       <input 
         type="checkbox" 
