@@ -304,9 +304,9 @@ def submit_poll(poll_id):
                 question_id=question.id
             ).first()
             if already_voted:
-                flash(f'"{question.question_text}" cannot be changed after voting.', "warning")
+                flash(f'"{question.question_text}" cannot be changed after voting.', "danger")
                 continue
-            
+
             if question.is_free_response:
                 # Handle FRQ
                 handle_frq(question)
