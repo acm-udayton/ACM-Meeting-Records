@@ -53,6 +53,9 @@ def handle_frq(question):
             question_id=question.id
         ).first()
 
+        if question.immutable_question and existing_response:
+            return
+
         if existing_response:
             existing_response.response_text = response_text
             existing_response.created_at = db.func.now()
@@ -295,6 +298,15 @@ def submit_poll(poll_id):
 
     try:
         for question in poll.questions:
+            if question.immutable_question:
+                already_voted = PollVoter.query.filter_by(
+                user_id=current_user.id,
+                question_id=question.id
+            ).first()
+            if already_voted:
+                flash(f'"{question.question_text}" cannot be changed after voting.', "warning")
+                continue
+            
             if question.is_free_response:
                 # Handle FRQ
                 handle_frq(question)
