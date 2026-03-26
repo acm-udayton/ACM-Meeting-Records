@@ -75,6 +75,8 @@ def handle_multiple_response_mcq(selected_option_ids, question):
         question_id=question.id
     ).all()
 
+    existing_option_ids = {vote.option_id for vote in existing_votes}
+
     # Decrement vote counts for removed options
     for vote in existing_votes:
         if vote.option_id not in selected_option_ids:
@@ -84,7 +86,6 @@ def handle_multiple_response_mcq(selected_option_ids, question):
             db.session.delete(vote)
 
     # Add votes for newly selected options
-    existing_option_ids = {vote.option_id for vote in existing_votes}
     for option_id in selected_option_ids:
         if option_id not in existing_option_ids:
             option = PollOption.query.get(option_id)
@@ -299,13 +300,28 @@ def submit_poll(poll_id):
     try:
         for question in poll.questions:
             if question.immutable_question:
-                already_voted = PollVoter.query.filter_by(
-                user_id=current_user.id,
-                question_id=question.id
-            ).first()
-            if already_voted:
-                flash(f'"{question.question_text}" cannot be changed after voting.', "danger")
-                continue
+                if question.is_free_response:
+
+                    submitted = request.form.get(f'question_{question.id}_frq', '').strip()
+                    existing = PollFreeResponse.query.filter_by(
+                        user_id=current_user.id,
+                        question_id=question.id
+                    ).first()
+
+                    if existing and submitted != existing.response_text:
+                        flash(f'"{question.question_text}" cannot be changed after voting.', "danger")
+                    continue
+
+                else:
+                    submitted_ids = set(request.form.getlist(f'question_{question.id}_mcq'))
+                    existing_votes = PollVoter.query.filter_by(
+                        user_id=current_user.id,
+                        question_id=question.id
+                    ).all()
+                    existing_ids = {str(v.option_id) for v in existing_votes}
+                    if existing_votes and submitted_ids != existing_ids:
+                        flash(f'"{question.question_text}" cannot be changed after voting.', "danger")
+                    continue
 
             if question.is_free_response:
                 # Handle FRQ
