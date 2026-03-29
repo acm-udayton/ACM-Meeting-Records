@@ -53,12 +53,16 @@ def handle_frq(question):
             question_id=question.id
         ).first()
 
-        if question.immutable_question and existing_response:
-            return
-
         if existing_response:
+            # Error if immutable response already exists, otherwise update.
+            if question.immutable_question:
+                print(f"Response for '{question.question_text}' cannot be changed once submitted.", "danger")
+                flash(f"Response for '{question.question_text}' cannot be changed once submitted.", "danger")
+                return False, True
+
             existing_response.response_text = response_text
             existing_response.created_at = db.func.now()
+            return True, True
         else:
             new_response = PollFreeResponse(
                 user_id=current_user.id,
@@ -66,6 +70,10 @@ def handle_frq(question):
                 response_text=response_text
             )
             db.session.add(new_response)
+            return True, True
+    else:
+        # No response entered, but not a failure.
+        return True, False
 
 def handle_multiple_response_mcq(selected_option_ids, question):
     """ Handle multiple response MCQ submissions. """
@@ -75,17 +83,24 @@ def handle_multiple_response_mcq(selected_option_ids, question):
         question_id=question.id
     ).all()
 
-    existing_option_ids = {vote.option_id for vote in existing_votes}
+    # Error if immutable response already exists, otherwise update.
+    if question.immutable_question and existing_votes:
+        print(f"Response for '{question.question_text}' cannot be changed once submitted.", "danger")
+        flash(f"Responses for '{question.question_text}' cannot be changed once submitted.", "danger")
+        return False, True
 
     # Decrement vote counts for removed options
+    changes_made = False
     for vote in existing_votes:
         if vote.option_id not in selected_option_ids:
             option = PollOption.query.get(vote.option_id)
             if option and option.votes > 0:
                 option.votes -= 1
             db.session.delete(vote)
-
+            changes_made = True
+    
     # Add votes for newly selected options
+    existing_option_ids = {vote.option_id for vote in existing_votes}
     for option_id in selected_option_ids:
         if option_id not in existing_option_ids:
             option = PollOption.query.get(option_id)
@@ -97,6 +112,11 @@ def handle_multiple_response_mcq(selected_option_ids, question):
                     option_id=option_id
                 )
                 db.session.add(new_vote)
+                changes_made = True
+            else:
+                flash("One of the selected options does not exist.", "danger")
+                return False, True  # Option not found, treat as failure
+    return True, changes_made  # Success, changes made
 
 def handle_single_mcq(selected_option_ids, question):
     """ Handle single response MCQ submissions. """
@@ -109,7 +129,14 @@ def handle_single_mcq(selected_option_ids, question):
     ).first()
 
     if existing_vote:
-        if existing_vote.option_id != option_id:
+        # Error if immutable response already exists, otherwise update.
+        if question.immutable_question:
+            print(f"Response for '{question.question_text}' cannot be changed once submitted.", "danger")
+            flash(f"Response for '{question.question_text}' cannot be changed once submitted.", "danger")
+            return False, True
+        
+        vote_changed = existing_vote.option_id != option_id
+        if vote_changed:
             # Changed vote
             old_option = PollOption.query.get(existing_vote.option_id)
             if old_option and old_option.votes > 0:
@@ -119,6 +146,7 @@ def handle_single_mcq(selected_option_ids, question):
             if new_option:
                 new_option.votes += 1
                 existing_vote.option_id = option_id
+            return True, True
     else:
         # New vote
         option = PollOption.query.get(option_id)
@@ -130,6 +158,11 @@ def handle_single_mcq(selected_option_ids, question):
                 option_id=option_id
             )
             db.session.add(new_vote)
+            return True, True
+        else:
+            flash("Selected option does not exist.", "danger")
+            return False, False  # Option not found, treat as failure
+    
 
 def handle_mcq(question):
     """  Handle both single and multiple response MCQs based on the question configuration. """
@@ -140,10 +173,13 @@ def handle_mcq(question):
 
         if question.allow_multiple_responses:
             # Multi-response.
-            handle_multiple_response_mcq(selected_option_ids, question)
+            return handle_multiple_response_mcq(selected_option_ids, question)
         else:
             # Single-response.
-            handle_single_mcq(selected_option_ids, question)
+            return handle_single_mcq(selected_option_ids, question)
+    else:
+        # No options selected, but not a failure.
+        return True, False
 
 
 # Public web routes.
@@ -292,6 +328,10 @@ def download_file(name):
 @login_required
 def submit_poll(poll_id):
     """Handle bulk submission of all questions in a poll."""
+    submission_successful = True
+    changes_made = False
+    successes = 0
+    failures = 0
     poll = Poll.query.get_or_404(poll_id)
     if poll.poll_expires and poll.poll_expires <= datetime.now():
         flash("Poll has expired. You cannot submit responses.", "danger")
@@ -299,39 +339,35 @@ def submit_poll(poll_id):
 
     try:
         for question in poll.questions:
-            if question.immutable_question:
-                if question.is_free_response:
-
-                    submitted = request.form.get(f'question_{question.id}_frq', '').strip()
-                    existing = PollFreeResponse.query.filter_by(
-                        user_id=current_user.id,
-                        question_id=question.id
-                    ).first()
-
-                    if existing and submitted != existing.response_text:
-                        flash(f'"{question.question_text}" cannot be changed after voting.', "danger")
-                    continue
-
-                else:
-                    submitted_ids = set(request.form.getlist(f'question_{question.id}_mcq'))
-                    existing_votes = PollVoter.query.filter_by(
-                        user_id=current_user.id,
-                        question_id=question.id
-                    ).all()
-                    existing_ids = {str(v.option_id) for v in existing_votes}
-                    if existing_votes and submitted_ids != existing_ids:
-                        flash(f'"{question.question_text}" cannot be changed after voting.', "danger")
-                    continue
-
             if question.is_free_response:
                 # Handle FRQ
-                handle_frq(question)
+                status, changes = handle_frq(question)
+                changes_made = changes_made or changes
+                print(f"FRQ submission status for question '{question.question_text}': {status}")
+                submission_successful = submission_successful and status
+                if status:
+                    successes += 1
+                else:
+                    failures += 1
             else:
                 # Handle MCQ (both single and multiple response)
-                handle_mcq(question)
+                status, changes = handle_mcq(question)
+                changes_made = changes_made or changes
+                print(f"MCQ submission status for question '{question.question_text}': {status}")
+                submission_successful = submission_successful and status
+                if status:
+                    successes += 1
+                else:
+                    failures += 1
 
         db.session.commit()
-        flash("All responses submitted successfully!", "success")
+        if submission_successful and changes_made:
+            flash("All responses submitted successfully!", "success")
+        elif submission_successful and not changes_made:
+            # No changes were made, but no failures either (e.g. all responses were the same as before).
+            flash("No changes were made to any responses.", "success")
+        else:
+            flash(f"Some responses were not submitted successfully. Successes: {successes}, Failures: {failures}", "danger")
 
     except Exception as e:
         db.session.rollback()
