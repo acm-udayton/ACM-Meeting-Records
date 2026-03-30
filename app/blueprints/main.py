@@ -96,7 +96,7 @@ def handle_multiple_response_mcq(selected_option_ids, question):
                 option.votes -= 1
             db.session.delete(vote)
             changes_made = True
-    
+
     # Add votes for newly selected options
     existing_option_ids = {vote.option_id for vote in existing_votes}
     for option_id in selected_option_ids:
@@ -131,7 +131,7 @@ def handle_single_mcq(selected_option_ids, question):
         if question.immutable_question:
             flash(f"Response for '{question.question_text}' cannot be changed once submitted.", "danger")
             return False, True
-        
+
         vote_changed = existing_vote.option_id != option_id
         if vote_changed:
             # Changed vote
@@ -163,7 +163,6 @@ def handle_single_mcq(selected_option_ids, question):
         else:
             flash("Selected option does not exist.", "danger")
             return False, False  # Option not found, treat as failure
-    
 
 def handle_mcq(question):
     """  Handle both single and multiple response MCQs based on the question configuration. """
