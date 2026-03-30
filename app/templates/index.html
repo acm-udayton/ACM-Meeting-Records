@@ -91,18 +91,30 @@
                               {% elif question.allow_multiple_responses %}
                                 <span class="badge poll-badge-blue ms-2">Multiple Responses Allowed</span>
                               {% endif %}
+                              {% if question.immutable_question %}
+                                <small class="text-muted"><i class="fa fa-lock me-1"></i>Your response to this question cannot be changed once submitted.</small>
+                              {% endif %}
                             </h6>
 
                             {% if question.is_free_response %}
                               <!-- Free Response Question -->
                               <div class="mt-3">
-                                {% if question.id in user_frq_responses %}
+                                {% if question.immutable_question and question.id in user_frq_responses %}
+                                  <p class="text-muted"><i class="fa fa-lock me-1"></i>You have already responded to this question and it cannot be changed.</p>
+                                  <textarea 
+                                    name="question_{{ question.id }}_frq" 
+                                    class="form-control" 
+                                    rows="3" 
+                                    disabled>{{ user_frq_responses[question.id] }}</textarea>
+
+                                {% elif question.id in user_frq_responses %}
                                   <textarea 
                                     name="question_{{ question.id }}_frq" 
                                     class="form-control" 
                                     rows="3" 
                                     placeholder="Enter your response...">{{ user_frq_responses[question.id] }}</textarea>
                                   <small class="text-muted">You previously responded to this question. Submitting will update your response.</small>
+
                                 {% else %}
                                   <textarea 
                                     name="question_{{ question.id }}_frq" 
@@ -116,37 +128,59 @@
                               <!-- Multiple Choice Question -->
                               {% if question.options %}
                                 <div class="mt-2">
-                                  {% for option in question.options %}
-                                    <div class="form-check">
-                                      {% if question.allow_multiple_responses %}
-                                        <!-- Checkbox for multi-response -->
+                                  {% if question.immutable_question and question.id in voted_questions %}
+                                    <p class="text-muted"><i class="fa fa-lock me-1"></i>You have already voted on this question and it cannot be changed.</p>
+                                    {% for option in question.options %}
+                                      <div class="form-check">
                                         <input 
                                           class="form-radio-input" 
-                                          type="checkbox" 
+                                          type="{{ 'checkbox' if question.allow_multiple_responses else 'radio' }}"
                                           name="question_{{ question.id }}_mcq" 
                                           value="{{ option.id }}"
                                           id="option_{{ option.id }}"
                                           {% if option.id in voted_options %}checked{% endif %}
+                                          disabled
                                         >
-                                      {% else %}
-                                        <!-- Radio for single-response -->
-                                        <input 
-                                          class="form-radio-input" 
-                                          type="radio" 
-                                          name="question_{{ question.id }}_mcq" 
-                                          value="{{ option.id }}"
-                                          id="option_{{ option.id }}"
-                                          {% if option.id in voted_options %}checked{% endif %}
-                                        >
-                                      {% endif %}
+                                        <label class="form-check-label text-muted" for="option_{{ option.id }}">
+                                          {{ option.option_text }}
+                                          {% if not question.private_vote %}
+                                            <span class="badge bg-secondary ms-2">{{ option.votes }} votes</span>
+                                          {% endif %}
+                                        </label>
+                                      </div>
+                                    {% endfor %}
+
+                                  {% else %}
+                                    {% for option in question.options %}
+                                      <div class="form-check">
+                                        {% if question.allow_multiple_responses %}
+                                          <input 
+                                            class="form-radio-input" 
+                                            type="checkbox" 
+                                            name="question_{{ question.id }}_mcq" 
+                                            value="{{ option.id }}"
+                                            id="option_{{ option.id }}"
+                                            {% if option.id in voted_options %}checked{% endif %}
+                                          >
+                                        {% else %}
+                                          <input 
+                                            class="form-radio-input" 
+                                            type="radio" 
+                                            name="question_{{ question.id }}_mcq" 
+                                            value="{{ option.id }}"
+                                            id="option_{{ option.id }}"
+                                            {% if option.id in voted_options %}checked{% endif %}
+                                          >
+                                        {% endif %}
                                         <label class="form-check-label" for="option_{{ option.id }}">
                                           {{ option.option_text }}
                                           {% if not question.private_vote %}
                                             <span class="badge bg-secondary ms-2">{{ option.votes }} votes</span>
                                           {% endif %}
                                         </label>
-                                    </div>
-                                  {% endfor %}
+                                      </div>
+                                    {% endfor %}
+                                  {% endif %}
                                 </div>
                               {% endif %}
                             {% endif %}

@@ -76,6 +76,7 @@ def create_poll():
             is_frq = question_form.form.is_free_response.data
             allow_multiple = question_form.form.allow_multiple_responses.data
             private_votes = question_form.form.private_vote.data
+            immutable_questions = question_form.form.immutable_question.data
 
 
             question = PollQuestion(
@@ -83,7 +84,8 @@ def create_poll():
                 question_text=question_form.form.question_text.data,
                 is_free_response=is_frq,
                 allow_multiple_responses=allow_multiple if not is_frq else False,  # Only for MCQs
-                private_vote = private_votes
+                private_vote = private_votes,
+                immutable_question = immutable_questions
             )
             db.session.add(question)
             db.session.flush()

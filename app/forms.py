@@ -258,6 +258,10 @@ class CreatePollQuestionForm(FlaskForm):
         "Private Vote",
         default=False
     )
+    immutable_question = BooleanField(
+        "Immutable Question",
+        default=False
+    )
     options = FieldList(FormField(CreatePollOptionForm), min_entries=0)
 
 class CreatePollForm(FlaskForm):

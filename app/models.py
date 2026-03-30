@@ -178,6 +178,7 @@ class PollQuestion(db.Model):
     is_free_response = db.Column(db.Boolean, nullable=False, default=False)
     allow_multiple_responses = db.Column(db.Boolean, nullable=False, default=False)
     private_vote = db.Column(db.Boolean, nullable=False, default=False, server_default = '0')
+    immutable_question = db.Column(db.Boolean, nullable=False, default=False, server_default= '0')
 
     poll_id = db.Column(db.Integer, db.ForeignKey("polls.id", ondelete="CASCADE"), nullable=False)
 
