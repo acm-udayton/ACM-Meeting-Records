@@ -56,7 +56,6 @@ def handle_frq(question):
         if existing_response:
             # Error if immutable response already exists, otherwise update.
             if question.immutable_question:
-                print(f"Response for '{question.question_text}' cannot be changed once submitted.", "danger")
                 flash(f"Response for '{question.question_text}' cannot be changed once submitted.", "danger")
                 return False, True
 
@@ -85,7 +84,6 @@ def handle_multiple_response_mcq(selected_option_ids, question):
 
     # Error if immutable response already exists, otherwise update.
     if question.immutable_question and existing_votes:
-        print(f"Response for '{question.question_text}' cannot be changed once submitted.", "danger")
         flash(f"Responses for '{question.question_text}' cannot be changed once submitted.", "danger")
         return False, True
 
@@ -131,7 +129,6 @@ def handle_single_mcq(selected_option_ids, question):
     if existing_vote:
         # Error if immutable response already exists, otherwise update.
         if question.immutable_question:
-            print(f"Response for '{question.question_text}' cannot be changed once submitted.", "danger")
             flash(f"Response for '{question.question_text}' cannot be changed once submitted.", "danger")
             return False, True
         
@@ -147,6 +144,10 @@ def handle_single_mcq(selected_option_ids, question):
                 new_option.votes += 1
                 existing_vote.option_id = option_id
             return True, True
+        else:
+            # No change in vote
+            return True, False
+        
     else:
         # New vote
         option = PollOption.query.get(option_id)
@@ -343,7 +344,6 @@ def submit_poll(poll_id):
                 # Handle FRQ
                 status, changes = handle_frq(question)
                 changes_made = changes_made or changes
-                print(f"FRQ submission status for question '{question.question_text}': {status}")
                 submission_successful = submission_successful and status
                 if status:
                     successes += 1
@@ -353,7 +353,6 @@ def submit_poll(poll_id):
                 # Handle MCQ (both single and multiple response)
                 status, changes = handle_mcq(question)
                 changes_made = changes_made or changes
-                print(f"MCQ submission status for question '{question.question_text}': {status}")
                 submission_successful = submission_successful and status
                 if status:
                     successes += 1
