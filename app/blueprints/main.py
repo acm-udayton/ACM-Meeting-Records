@@ -167,20 +167,19 @@ def handle_single_mcq(selected_option_ids, question):
 def handle_mcq(question):
     """  Handle both single and multiple response MCQs based on the question configuration. """
     selected_options = request.form.getlist(f'question_{question.id}_mcq')
-    # Only process if they selected something
-    if selected_options:
-        selected_option_ids = [int(opt_id) for opt_id in selected_options]
+    selected_option_ids = [int(opt_id) for opt_id in selected_options]
+    # Process everything
+    if question.allow_multiple_responses:
+        # Multi-response.
+        return handle_multiple_response_mcq(selected_option_ids, question)
+    else:
 
-        if question.allow_multiple_responses:
-            # Multi-response.
-            return handle_multiple_response_mcq(selected_option_ids, question)
-        else:
+        if selected_option_ids:
             # Single-response.
             return handle_single_mcq(selected_option_ids, question)
-    else:
-        # No options selected, but not a failure.
-        return True, False
-
+        else:
+            # No options selected, but not a failure.
+            return True, False
 
 # Public web routes.
 @main_bp.route("/")
