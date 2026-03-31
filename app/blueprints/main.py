@@ -54,11 +54,16 @@ def handle_frq(question):
         ).first()
 
         if existing_response:
-            # Error if immutable response already exists, otherwise update.
+            # Check if the text is identical to what's in the database
+            if existing_response.response_text == response_text:
+                return True, False
+
+            # If it's different, block it if it's immutable
             if question.immutable_question:
                 flash(f"Response for '{question.question_text}' cannot be changed once submitted.", "danger")
                 return False, True
 
+            # Process the updated text
             existing_response.response_text = response_text
             existing_response.created_at = db.func.now()
             return True, True
@@ -76,21 +81,35 @@ def handle_frq(question):
 
 def handle_multiple_response_mcq(selected_option_ids, question):
     """ Handle multiple response MCQ submissions. """
-    # Remove all existing votes, then add new ones.
+    # Grab existing votes.
     existing_votes = PollVoter.query.filter_by(
         user_id=current_user.id,
         question_id=question.id
     ).all()
 
-    # Error if immutable response already exists, otherwise update.
+    # Create sets for easy comparison.
+    existing_option_ids = {vote.option_id for vote in existing_votes}
+    new_option_ids = set(selected_option_ids)
+
+    # Check if the user's submission is identical to what's already in the database.
+    if new_option_ids == existing_option_ids:
+        return True, False
+
+    # Handle immutable questions.
     if question.immutable_question and existing_votes:
+        # Browser renders the immutable checkboxes as unchangeable
+        if not new_option_ids:
+            return True, False
+
+        # If they actually managed to submit different values, block it
         flash(f"Responses for '{question.question_text}' cannot be changed once submitted.", "danger")
         return False, True
 
-    # Decrement vote counts for removed options
     changes_made = False
+
+    # Decrement vote counts for removed options
     for vote in existing_votes:
-        if vote.option_id not in selected_option_ids:
+        if vote.option_id not in new_option_ids:
             option = PollOption.query.get(vote.option_id)
             if option and option.votes > 0:
                 option.votes -= 1
@@ -98,8 +117,7 @@ def handle_multiple_response_mcq(selected_option_ids, question):
             changes_made = True
 
     # Add votes for newly selected options
-    existing_option_ids = {vote.option_id for vote in existing_votes}
-    for option_id in selected_option_ids:
+    for option_id in new_option_ids:
         if option_id not in existing_option_ids:
             option = PollOption.query.get(option_id)
             if option:
@@ -114,11 +132,11 @@ def handle_multiple_response_mcq(selected_option_ids, question):
             else:
                 flash("One of the selected options does not exist.", "danger")
                 return False, True  # Option not found, treat as failure
+
     return True, changes_made  # Success, changes made
 
 def handle_single_mcq(selected_option_ids, question):
     """ Handle single response MCQ submissions. """
-    # Remove old vote if different, add new one.
     option_id = selected_option_ids[0]  # Only one selection for radio
 
     existing_vote = PollVoter.query.filter_by(
@@ -127,26 +145,27 @@ def handle_single_mcq(selected_option_ids, question):
     ).first()
 
     if existing_vote:
-        # Error if immutable response already exists, otherwise update.
+        # Check if they actually changed their vote first
+        vote_changed = existing_vote.option_id != option_id
+
+        if not vote_changed:
+            # No change in vote, safely exit
+            return True, False
+
         if question.immutable_question:
             flash(f"Response for '{question.question_text}' cannot be changed once submitted.", "danger")
             return False, True
 
-        vote_changed = existing_vote.option_id != option_id
-        if vote_changed:
-            # Changed vote
-            old_option = PollOption.query.get(existing_vote.option_id)
-            if old_option and old_option.votes > 0:
-                old_option.votes -= 1
+        # Process the changed vote
+        old_option = PollOption.query.get(existing_vote.option_id)
+        if old_option and old_option.votes > 0:
+            old_option.votes -= 1
 
-            new_option = PollOption.query.get(option_id)
-            if new_option:
-                new_option.votes += 1
-                existing_vote.option_id = option_id
-            return True, True
-        else:
-            # No change in vote
-            return True, False
+        new_option = PollOption.query.get(option_id)
+        if new_option:
+            new_option.votes += 1
+            existing_vote.option_id = option_id
+        return True, True
         
     else:
         # New vote
