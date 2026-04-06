@@ -342,13 +342,17 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         <br>
         <i>users_list</i>
         <p>
-          Show the user management index page. Aggregates each user's total meetings attended and their most recent check-in date.
+          Show the user management index page. Aggregates each user's total meetings attended and their most recent check-in date. Shows number of meetings optionally filtered by a specified start date, the most recent non-officer meeting, and total number of active users.
         </p>
         <h4>Template file: admin/users.html</h4>
         <table>
           <tr><th>Jinja2 Parameters</th><th>Data Format</th></tr>
           <tr><td>page_title</td><td>String - "Users"</td></tr>
           <tr><td>users</td><td>List of Users objects, augmented with meeting counts and recent dates</td></tr>
+          <tr><td>total_meetings</td><td>Integer - total number of meetings (optionally filtered by since)</td></tr>
+          <tr><td>most_recent_meeting_date</td><td>Datetime or None - most recent non-admin-only meeting start date</td></tr>
+          <tr><td>active_user_count</td><td>Integer - number of users with activated accounts</td></tr>
+          <tr><td>since</td><td>String (YYYY-MM-DD) or None - filter parameter for meetings</td></tr>
         </table>
       </li>
       <li id="route-admin-user-actions">
