@@ -4,10 +4,13 @@
 """
 Project Name: ACM-Meeting-Records
 Project Author(s): Joseph Lefkovitz (github.com/lefkovitz), Thomas Crossman (github.com/crossmant1)
-Last Modified: 2/14/2026
+Last Modified: 3/22/2026
 
 File Purpose: Primary routes for the project.
 """
+
+# Standard library imports.
+from datetime import datetime
 
 # Third-party imports.
 from flask import (
@@ -51,8 +54,19 @@ def handle_frq(question):
         ).first()
 
         if existing_response:
+            # Check if the text is identical to what's in the database
+            if existing_response.response_text == response_text:
+                return True, False
+
+            # If it's different, block it if it's immutable
+            if question.immutable_question:
+                flash(f"Response for '{question.question_text}' cannot be changed once submitted.", "danger")
+                return False, True
+
+            # Process the updated text
             existing_response.response_text = response_text
             existing_response.created_at = db.func.now()
+            return True, True
         else:
             new_response = PollFreeResponse(
                 user_id=current_user.id,
@@ -60,26 +74,50 @@ def handle_frq(question):
                 response_text=response_text
             )
             db.session.add(new_response)
+            return True, True
+    else:
+        # No response entered, but not a failure.
+        return True, False
 
 def handle_multiple_response_mcq(selected_option_ids, question):
     """ Handle multiple response MCQ submissions. """
-    # Remove all existing votes, then add new ones.
+    # Grab existing votes.
     existing_votes = PollVoter.query.filter_by(
         user_id=current_user.id,
         question_id=question.id
     ).all()
 
+    # Create sets for easy comparison.
+    existing_option_ids = {vote.option_id for vote in existing_votes}
+    new_option_ids = set(selected_option_ids)
+
+    # Check if the user's submission is identical to what's already in the database.
+    if new_option_ids == existing_option_ids:
+        return True, False
+
+    # Handle immutable questions.
+    if question.immutable_question and existing_votes:
+        # Browser renders the immutable checkboxes as unchangeable
+        if not new_option_ids:
+            return True, False
+
+        # If they actually managed to submit different values, block it
+        flash(f"Responses for '{question.question_text}' cannot be changed once submitted.", "danger")
+        return False, True
+
+    changes_made = False
+
     # Decrement vote counts for removed options
     for vote in existing_votes:
-        if vote.option_id not in selected_option_ids:
+        if vote.option_id not in new_option_ids:
             option = PollOption.query.get(vote.option_id)
             if option and option.votes > 0:
                 option.votes -= 1
             db.session.delete(vote)
+            changes_made = True
 
     # Add votes for newly selected options
-    existing_option_ids = {vote.option_id for vote in existing_votes}
-    for option_id in selected_option_ids:
+    for option_id in new_option_ids:
         if option_id not in existing_option_ids:
             option = PollOption.query.get(option_id)
             if option:
@@ -90,10 +128,15 @@ def handle_multiple_response_mcq(selected_option_ids, question):
                     option_id=option_id
                 )
                 db.session.add(new_vote)
+                changes_made = True
+            else:
+                flash("One of the selected options does not exist.", "danger")
+                return False, True  # Option not found, treat as failure
+
+    return True, changes_made  # Success, changes made
 
 def handle_single_mcq(selected_option_ids, question):
     """ Handle single response MCQ submissions. """
-    # Remove old vote if different, add new one.
     option_id = selected_option_ids[0]  # Only one selection for radio
 
     existing_vote = PollVoter.query.filter_by(
@@ -102,16 +145,28 @@ def handle_single_mcq(selected_option_ids, question):
     ).first()
 
     if existing_vote:
-        if existing_vote.option_id != option_id:
-            # Changed vote
-            old_option = PollOption.query.get(existing_vote.option_id)
-            if old_option and old_option.votes > 0:
-                old_option.votes -= 1
+        # Check if they actually changed their vote first
+        vote_changed = existing_vote.option_id != option_id
 
-            new_option = PollOption.query.get(option_id)
-            if new_option:
-                new_option.votes += 1
-                existing_vote.option_id = option_id
+        if not vote_changed:
+            # No change in vote, safely exit
+            return True, False
+
+        if question.immutable_question:
+            flash(f"Response for '{question.question_text}' cannot be changed once submitted.", "danger")
+            return False, True
+
+        # Process the changed vote
+        old_option = PollOption.query.get(existing_vote.option_id)
+        if old_option and old_option.votes > 0:
+            old_option.votes -= 1
+
+        new_option = PollOption.query.get(option_id)
+        if new_option:
+            new_option.votes += 1
+            existing_vote.option_id = option_id
+        return True, True
+        
     else:
         # New vote
         option = PollOption.query.get(option_id)
@@ -123,21 +178,27 @@ def handle_single_mcq(selected_option_ids, question):
                 option_id=option_id
             )
             db.session.add(new_vote)
+            return True, True
+        else:
+            flash("Selected option does not exist.", "danger")
+            return False, False  # Option not found, treat as failure
 
 def handle_mcq(question):
     """  Handle both single and multiple response MCQs based on the question configuration. """
     selected_options = request.form.getlist(f'question_{question.id}_mcq')
-    # Only process if they selected something
-    if selected_options:
-        selected_option_ids = [int(opt_id) for opt_id in selected_options]
+    selected_option_ids = [int(opt_id) for opt_id in selected_options]
+    # Process everything
+    if question.allow_multiple_responses:
+        # Multi-response.
+        return handle_multiple_response_mcq(selected_option_ids, question)
+    else:
 
-        if question.allow_multiple_responses:
-            # Multi-response.
-            handle_multiple_response_mcq(selected_option_ids, question)
-        else:
+        if selected_option_ids:
             # Single-response.
-            handle_single_mcq(selected_option_ids, question)
-
+            return handle_single_mcq(selected_option_ids, question)
+        else:
+            # No options selected, but not a failure.
+            return True, False
 
 # Public web routes.
 @main_bp.route("/")
@@ -156,7 +217,10 @@ def home():
     else:
         featured_meeting = None
 
-    all_polls = Poll.query.all()
+    all_polls = Poll.query.filter(
+        Poll.poll_expires.is_(None) |
+        (Poll.poll_expires > datetime.now())
+    ).all()
 
     voted_questions = set()
     voted_options = set()
@@ -282,19 +346,44 @@ def download_file(name):
 @login_required
 def submit_poll(poll_id):
     """Handle bulk submission of all questions in a poll."""
+    submission_successful = True
+    changes_made = False
+    successes = 0
+    failures = 0
     poll = Poll.query.get_or_404(poll_id)
+    if poll.poll_expires and poll.poll_expires <= datetime.now():
+        flash("Poll has expired. You cannot submit responses.", "danger")
+        return redirect(url_for('main.home'))
 
     try:
         for question in poll.questions:
             if question.is_free_response:
                 # Handle FRQ
-                handle_frq(question)
+                status, changes = handle_frq(question)
+                changes_made = changes_made or changes
+                submission_successful = submission_successful and status
+                if status:
+                    successes += 1
+                else:
+                    failures += 1
             else:
                 # Handle MCQ (both single and multiple response)
-                handle_mcq(question)
+                status, changes = handle_mcq(question)
+                changes_made = changes_made or changes
+                submission_successful = submission_successful and status
+                if status:
+                    successes += 1
+                else:
+                    failures += 1
 
         db.session.commit()
-        flash("All responses submitted successfully!", "success")
+        if submission_successful and changes_made:
+            flash("All responses submitted successfully!", "success")
+        elif submission_successful and not changes_made:
+            # No changes were made, but no failures either (e.g. all responses were the same as before).
+            flash("No changes were made to any responses.", "success")
+        else:
+            flash(f"Some responses were not submitted successfully. Successes: {successes}, Failures: {failures}", "danger")
 
     except Exception as e:
         db.session.rollback()

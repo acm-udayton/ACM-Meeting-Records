@@ -4,7 +4,7 @@
 <div align="center">
 <h3 align="center">Quick Start - ACM Meeting Records</h3>
   <p align="center">
-    An administrator's gudie to the web app system for recording attendance and notes for ACM meetings.
+    An administrator's guide to the web app system for recording attendance and notes for ACM meetings.
     <br />
   </p>
 </div>

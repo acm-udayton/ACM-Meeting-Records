@@ -485,7 +485,46 @@ def users_list():
             user.last_checkin = last_attended_meeting
         else:
             user.last_checkin = None
-    return render_template("admin/users.html", page_title = "Users", users = all_users)
+
+    # Total meetings, optionally filtered by start date.
+    since_param = request.args.get("since")
+    since_date = None
+    if since_param:
+        try:
+            since_date = datetime.datetime.strptime(since_param, "%Y-%m-%d")
+        except ValueError:
+            flash("Invalid date format for 'since' filter. Use YYYY-MM-DD.", "danger")
+            since_param = None
+
+    meetings_query = Meetings.query
+    if since_date is not None:
+        meetings_query = meetings_query.filter(Meetings.event_start >= since_date)
+    total_meetings = meetings_query.count()
+
+    # Most recent non-officer-only meeting that has been started (has event_start).
+    most_recent_public_meeting = (
+        Meetings.query
+        .filter(Meetings.admin_only != True)
+        .filter(Meetings.event_start != None)
+        .order_by(Meetings.event_start.desc())
+        .first()
+    )
+    most_recent_meeting_date = (
+        most_recent_public_meeting.event_start if most_recent_public_meeting else None
+    )
+
+    # Active user count
+    active_user_count = Users.query.filter_by(activated=True).count()
+
+    return render_template(
+        "admin/users.html",
+        page_title = "Users",
+        users = all_users,
+        total_meetings = total_meetings,
+        most_recent_meeting_date = most_recent_meeting_date,
+        active_user_count = active_user_count,
+        since = since_param,
+    )
 
 @admin_bp.route("/users/reset-password/<int:user_id>/", methods = ["POST"])
 @login_required

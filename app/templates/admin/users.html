@@ -5,8 +5,54 @@
     <div class="row">
       <main class="col-12">
         <h2>Registered Users</h2>
-        
-        <br/>
+        <!-- Metadata Information -->
+        <div class="row g-3 mb-4 mt-1">
+          <div class="col-sm-4">
+            <div class="card text-center p-3">
+              <div class="card-body p-0">
+                <p class="text-muted small mb-1">Total Meetings</p>
+                <h4 class="mb-0">{{ total_meetings }}</h4>
+                <form method="GET" action="{{ url_for('admin.users_list') }}" class="mt-2 d-flex justify-content-center gap-1">
+                  <input type="date"
+                         name="since"
+                         class="form-control form-control-sm w-auto"
+                         value="{{ since or '' }}"
+                         title="Count meetings on or after this date">
+                  <button type="submit" class="btn btn-sm btn-secondary">Filter</button>
+                  {% if since %}
+                  <a href="{{ url_for('admin.users_list') }}" class="btn btn-sm btn-outline-secondary">✕</a>
+                  {% endif %}
+                </form>
+                {% if since %}
+                <p class="text-muted small mb-0 mt-1">since {{ since }}</p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="col-sm-4">
+            <div class="card text-center p-3">
+              <div class="card-body p-0">
+                <p class="text-muted small mb-1">Most Recent Public Meeting</p>
+                <h4 class="mb-0">
+                  {% if most_recent_meeting_date %}
+                    {{ most_recent_meeting_date | datetime_format }}
+                  {% else %}
+                    N/A
+                  {% endif %}
+                </h4>
+              </div>
+            </div>
+          </div>
+          <div class="col-sm-4">
+            <div class="card text-center p-3">
+              <div class="card-body p-0">
+                <p class="text-muted small mb-1">Active Users</p>
+                <h4 class="mb-0">{{ active_user_count }}</h4>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <article>
             <table class="table">
                 <thead class="thead-light">
