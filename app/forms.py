@@ -14,8 +14,9 @@ import re
 # Third-party imports.
 from flask import current_app
 from flask_wtf import FlaskForm, RecaptchaField, Recaptcha
-from wtforms import StringField, PasswordField, SubmitField, BooleanField, FieldList, FormField
+from wtforms import DateTimeField, DateTimeLocalField, StringField, PasswordField, SubmitField, BooleanField, FieldList, FormField
 from wtforms.validators import (
+    DataRequired,
     Optional,
     Length,
     Regexp,
@@ -253,6 +254,14 @@ class CreatePollQuestionForm(FlaskForm):
         "Allow Multiple Responses",
         default=False
     )
+    private_vote = BooleanField(
+        "Private Vote",
+        default=False
+    )
+    immutable_question = BooleanField(
+        "Immutable Question",
+        default=False
+    )
     options = FieldList(FormField(CreatePollOptionForm), min_entries=0)
 
 class CreatePollForm(FlaskForm):
@@ -263,6 +272,11 @@ class CreatePollForm(FlaskForm):
             InputRequired(),
             Length(min=1, max=128)
         ]
+    )
+    poll_expires = DateTimeLocalField(
+        'Poll Expiration Datetime',
+        format='%Y-%m-%dT%H:%M',
+        validators=[Optional()]
     )
     questions = FieldList(FormField(CreatePollQuestionForm), min_entries=1)
     submit = SubmitField('Create Poll')
