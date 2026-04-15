@@ -81,7 +81,7 @@ def login():
 
             # Admin without MFA warning.
             if user.role == "admin":
-                flash("Please enable multi-factor authentication for this administrator account!")
+                flash("Please enable multi-factor authentication for this administrator account!", "danger")
 
             login_user(user)
             current_app.logger.info(

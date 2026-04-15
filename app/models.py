@@ -164,6 +164,7 @@ class Poll(db.Model):
     __tablename__="polls"
     id=db.Column(db.Integer, primary_key=True)
     title=db.Column(db.String(250), nullable=False)
+    poll_expires=db.Column(db.DateTime, nullable=True)
 
     questions=db.relationship("PollQuestion", backref="poll", cascade="all, delete-orphan")
 
@@ -176,6 +177,8 @@ class PollQuestion(db.Model):
     question_text = db.Column(db.String(500), nullable=False)
     is_free_response = db.Column(db.Boolean, nullable=False, default=False)
     allow_multiple_responses = db.Column(db.Boolean, nullable=False, default=False)
+    private_vote = db.Column(db.Boolean, nullable=False, default=False, server_default = '0')
+    immutable_question = db.Column(db.Boolean, nullable=False, default=False, server_default= '0')
 
     poll_id = db.Column(db.Integer, db.ForeignKey("polls.id", ondelete="CASCADE"), nullable=False)
 
