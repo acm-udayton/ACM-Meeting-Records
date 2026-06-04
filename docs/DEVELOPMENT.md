@@ -70,6 +70,8 @@ As you begin contributing to the ACM Meeting Records project, we recommend the f
 Follow the standard installation procedure outlined in <a href="quickstart.md">quickstart.md</a> to begin the setup process. 
 
 Next, you will need to add your DBeaver database connection. Be sure to select postgresql as your database, and fill out the details with the username, password, and port specified in the docker-compose.yml file, with localhost as the host. You can then find the database tables at ```Databases -> acm-meetings-db -> Schemas -> public -> Tables``` within DBeaver's Database Navigator pane.
+
+You will also need to install the uv tool to manage Python dependencies and run tests locally. You can find installation instructions for uv at https://docs.astral.sh/uv/getting-started/installation/.
 <hr>
 
 
