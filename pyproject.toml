@@ -6,7 +6,20 @@ build-backend = "setuptools.build_meta"
 name = "acm-meeting-records"
 version = "1.8.1"
 requires-python = ">=3.11"
-dependencies = [] # Leave this empty, as we use requirements.txt for dependencies.
+dependencies = [
+    "email-validator>=2.3.0",
+    "flask>=3.1.3",
+    "flask-login>=0.6.3",
+    "flask-migrate>=4.1.0",
+    "flask-sqlalchemy>=3.1.1",
+    "flask-wtf>=1.3.0",
+    "gunicorn>=26.0.0",
+    "pillow>=12.2.0",
+    "psycopg2-binary>=2.9.12",
+    "pyotp>=2.9.0",
+    "python-dotenv>=1.2.2",
+    "qrcode>=8.2",
+] # Leave this empty, as we use requirements.txt for dependencies.
 
 [tool.setuptools]
 packages = ["app"]
@@ -14,3 +27,9 @@ packages = ["app"]
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-cov>=7.1.0",
+]
