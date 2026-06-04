@@ -20,6 +20,9 @@
 
           - name: Sync dependencies
             run: uv sync
+          
+          - name: Install Pylint
+            run: uv pip install pylint
 
           - name: Run Pylint
             run: uv run pylint --rcfile=.github/workflows/.pylintrc app/
