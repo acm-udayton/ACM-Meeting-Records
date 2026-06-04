@@ -1,0 +1,34 @@
+name: Python Unit Tests
+
+on: [pull_request, push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run tests with coverage
+        run: |
+          # The --cov flag tracks coverage
+          # The --cov-fail-under=70 flag forces the job to fail if coverage < 70%
+          # The --cov-report term-missing shows which lines are uncovered
+          pytest --cov=app --cov-fail-under=70 --cov-report=term-missing > coverage.txt
+          cat coverage.txt
+
+      - name: Report coverage in PR
+        if: always()
+        run: |
+          # Extract the percentage from the coverage output for summary
+          COVERAGE=$(grep "TOTAL" coverage.txt | awk '{print $NF}')
+          echo "### Test Coverage: $COVERAGE" >> $GITHUB_STEP_SUMMARY
