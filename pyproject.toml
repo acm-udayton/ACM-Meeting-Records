@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "acm-meeting-records"
+version = "1.8.1"
+requires-python = ">=3.11"
+dependencies = [] # Leave this empty, as we use requirements.txt for dependencies.
+
+[tool.setuptools]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

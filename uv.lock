@@ -1,0 +1,8 @@
+version = 1
+revision = 3
+requires-python = ">=3.14"
+
+[[package]]
+name = "acm-meeting-records"
+version = "1.8.1"
+source = { editable = "." }

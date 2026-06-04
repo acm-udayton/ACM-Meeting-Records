@@ -27,3 +27,14 @@ app/test.html
 # Testing config.
 test-config.sh
 docker-compose.dev.yml
+
+# Virtual Environments.
+venv/
+.venv/
+*.egg-info/
+
+# Pytest and coverage reports.
+htmlcov/
+.pytest_cache/
+.coverage
+.cache/
