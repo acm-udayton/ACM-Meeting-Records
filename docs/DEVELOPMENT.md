@@ -65,13 +65,13 @@ As you begin contributing to the ACM Meeting Records project, we recommend the f
 1. [Docker Desktop](https://www.docker.com/products/docker-desktop/). Please note, technically you only need to ensure that Docker is installed on your system and the ```docker compose``` command is available, but for maximum debugging ease Docker desktop is the only recommended developer tooling in this category.
 2. [Visual Studio Code](https://code.visualstudio.com/)
 3. [DBeaver](https://dbeaver.io/)
+4. [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
 ### Database Access
 Follow the standard installation procedure outlined in <a href="quickstart.md">quickstart.md</a> to begin the setup process. 
 
 Next, you will need to add your DBeaver database connection. Be sure to select postgresql as your database, and fill out the details with the username, password, and port specified in the docker-compose.yml file, with localhost as the host. You can then find the database tables at ```Databases -> acm-meetings-db -> Schemas -> public -> Tables``` within DBeaver's Database Navigator pane.
 
-You will also need to install the uv tool to manage Python dependencies and run tests locally. You can find installation instructions for uv at https://docs.astral.sh/uv/getting-started/installation/.
 <hr>
 
 
