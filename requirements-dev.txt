@@ -13,3 +13,4 @@ Pillow
 
 # Testing with CI/CD or local development.
 pytest
+pytest-cov
