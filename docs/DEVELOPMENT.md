@@ -96,8 +96,6 @@ ACM-Meeting-Records
 │   ├── /uploads
 │   ├── /utilities
 │   ├── <a href="#flask-application-factory">__init__.py</a>
-│   ├── .env
-│   ├── .env.example
 │   ├── <a href="#flask-extensions">extensions.py</a>
 │   ├── <a href="#flask-wtf">forms.py</a>
 │   ├── <a href="#flask-sqlalchemy">models.py</a>
@@ -110,12 +108,15 @@ ACM-Meeting-Records
 │   └── <a href="/docs/upgrading.md">upgrading.md</a>
 ├── <a href="#flask-migrate">/migrations</a>
 ├── .dockerignore
+├── .env
+├── .env.example
 ├── .gitignore
+├── docker-compose.yml
 ├── Dockerfile
 ├── LICENSE
+├── pyproject.toml
 ├── README.md
-├── docker-compose.yml
-└── requirements.txt
+└── uv.lock
 </pre>
 <hr>
 
