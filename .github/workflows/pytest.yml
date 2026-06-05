@@ -8,23 +8,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install -r requirements-dev.txt
+        # uv sync automatically installs from your uv.lock file
+        run: uv sync
 
       - name: Run tests with coverage
         run: |
+          uv run pytest --cov=app --cov-fail-under=70 --cov-report=term-missing > coverage.txt
+          cat coverage.txt      - name: Run tests with coverage
           # The --cov flag tracks coverage
           # The --cov-fail-under=70 flag forces the job to fail if coverage < 70%
           # The --cov-report term-missing shows which lines are uncovered
-          pytest --cov=app --cov-fail-under=70 --cov-report=term-missing > coverage.txt
-          cat coverage.txt
 
       - name: Report coverage in PR
         if: always()
