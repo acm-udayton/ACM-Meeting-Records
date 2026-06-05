@@ -15,17 +15,19 @@ from app import create_app
 @pytest.fixture
 def app():
     """ Create and configure a new app instance for each test. """
-    app = create_app()
-    app.config['TESTING'] = True
-
-    yield app
+    flask_app = create_app({
+            'TESTING': True,
+            'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:', # Use in-memory database for tests.
+            'WTF_CSRF_ENABLED': False,  # Disable CSRF for tests.
+        })
+    yield flask_app
 
 @pytest.fixture
-def client(app):
+def client(flask_app):
     """ A test client for the app. """
-    return app.test_client()
+    return flask_app.test_client()
 
 @pytest.fixture
-def runner(app):
+def runner(flask_app):
     """ A test runner for the app's Click commands, if needed. """
-    return app.test_cli_runner()
+    return flask_app.test_cli_runner()

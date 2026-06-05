@@ -96,7 +96,7 @@ def register_error_handlers(app):
             error_message = "Request method not allowed."
         )
 
-def create_app():
+def create_app(config_overrides=None):
     """ Create and configure the Flask app. """
     # Load .env variables.
     load_dotenv()
@@ -114,6 +114,9 @@ def create_app():
     app.config["RECAPTCHA_PUBLIC_KEY"] = os.getenv("RECAPTCHA_SITE_KEY")
     app.config["RECAPTCHA_PRIVATE_KEY"] = os.getenv("RECAPTCHA_SECRET_KEY")
     app.config['RECAPTCHA_SKIP_IP_CHECK'] = True
+
+    if config_overrides is not None:
+        app.config.update(config_overrides)
 
     # Initialize the app extensions.
     db.init_app(app)
