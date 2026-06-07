@@ -19,6 +19,7 @@ def app():
             'TESTING': True,
             'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:', # Use in-memory database for tests.
             'WTF_CSRF_ENABLED': False,  # Disable CSRF for tests.
+            'TOTP_ISSUER_NAME': "ACM Meeting Records Test",
         })
     yield flask_app
 
