@@ -96,7 +96,18 @@ def register_error_handlers(app):
             error_message = "Request method not allowed."
         )
 
-def create_app(config_overrides=None):
+test_config = {
+    'TESTING': True,
+    'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:', # Use in-memory database for tests.
+    'WTF_CSRF_ENABLED': False,  # Disable CSRF for tests.
+    'TOTP_ISSUER_NAME': "ACM Meeting Records Test",
+    "SECRET_KEY": "test-secret-key",
+    "ENFORCE_USERNAMES": "True",
+    "REQUIRE_USERNAME_AS_EMAIL": "True",
+    "USERNAME_EMAIL_DOMAIN": "example.com"
+}
+
+def create_app(use_test_config=False):
     """ Create and configure the Flask app. """
     # Load .env variables.
     load_dotenv()
@@ -115,8 +126,8 @@ def create_app(config_overrides=None):
     app.config["RECAPTCHA_PRIVATE_KEY"] = os.getenv("RECAPTCHA_SECRET_KEY")
     app.config['RECAPTCHA_SKIP_IP_CHECK'] = True
 
-    if config_overrides is not None:
-        app.config.update(config_overrides)
+    if use_test_config:
+        app.config.update(test_config)
 
     # Initialize the app extensions.
     db.init_app(app)
@@ -150,6 +161,11 @@ def create_app(config_overrides=None):
                                 "require_username_as_email": os.getenv("REQUIRE_USERNAME_AS_EMAIL")
                             }
     app.context["source"] = os.getenv("GITHUB_SOURCE")
+
+    if use_test_config:
+        app.context["usernames"]["enforce_usernames"] = test_config["ENFORCE_USERNAMES"]
+        app.context["usernames"]["username_email_domain"] = test_config["USERNAME_EMAIL_DOMAIN"]
+        app.context["usernames"]["require_username_as_email"] = test_config["REQUIRE_USERNAME_AS_EMAIL"]
 
     # Define the app context processor.
     @app.context_processor
