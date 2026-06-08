@@ -10,7 +10,7 @@ File Purpose: Pytest configuration file with fixtures for the application.
 """
 
 import pytest
-from app import create_app
+from app import create_app, db
 
 @pytest.fixture
 def app():
@@ -21,7 +21,10 @@ def app():
             'WTF_CSRF_ENABLED': False,  # Disable CSRF for tests.
             'TOTP_ISSUER_NAME': "ACM Meeting Records Test",
         })
-    yield flask_app
+    with flask_app.app_context():
+        db.create_all()  # Create tables for the in-memory database.
+        yield flask_app
+        db.drop_all()  # Clean up the database after tests.
 
 @pytest.fixture
 def client(flask_app):
