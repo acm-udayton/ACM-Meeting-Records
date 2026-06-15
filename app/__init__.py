@@ -64,7 +64,7 @@ def register_error_handlers(app):
             "error.html",
             page_title = "401 Error",
             error_message = "Requests to this page require authentication."
-        )
+        ), 401
 
     @app.errorhandler(403)
     def forbidden(e):
@@ -74,7 +74,7 @@ def register_error_handlers(app):
             "error.html",
             page_title = "403 Error",
             error_message = "Request forbidden due to insufficient authorization."
-        )
+        ), 403
 
     @app.errorhandler(404)
     def page_not_found(e):
@@ -84,7 +84,7 @@ def register_error_handlers(app):
             "error.html",
             page_title = "404 Error",
             error_message = "Request failed because page could not be found."
-        )
+        ), 404
 
     @app.errorhandler(405)
     def method_not_allowed(e):
@@ -94,7 +94,7 @@ def register_error_handlers(app):
             "error.html",
             page_title = "405 Error",
             error_message = "Request method not allowed."
-        )
+        ), 405
 
 test_config = {
     'TESTING': True,
