@@ -58,11 +58,12 @@ def test_api_event_state(flask_app):
     with flask_app.app_context():
         # Test 404 returned without valid meeting ID.
         response = flask_app.test_client().get("/api/event/state/9999/")
-        assert response.status_code == 200
+        assert response.status_code == 404
         assert response.json == None
 
         # Write test data for meeting.
         db.session.add(Meetings(id=1, state="active", title="Test Meeting", description="Test Description", host="testuser"))
+        db.session.commit()
 
         # Test with a valid meeting ID.
         response = flask_app.test_client().get("/api/event/state/1/")
