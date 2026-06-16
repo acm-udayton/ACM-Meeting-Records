@@ -83,13 +83,14 @@ def login():
             if user.role == "admin":
                 flash("Please enable multi-factor authentication for this administrator account!", "danger")
 
-            login_user(user)
-            current_app.logger.info(
-                "Login attempt as %s from IP %s - success",
-                form.username.data,
-                request.remote_addr
-            )
-            return redirect(url_for("main.home"))
+            if not needs_relogin:
+                login_user(user)
+                current_app.logger.info(
+                    "Login attempt as %s from IP %s - success",
+                    form.username.data,
+                    request.remote_addr
+                )
+                return redirect(url_for("main.home"))
         # Redirect on login failure.
         if needs_relogin:
             return redirect(url_for("auth.login"))
