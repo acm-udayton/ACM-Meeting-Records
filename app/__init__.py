@@ -104,7 +104,8 @@ test_config = {
     "SECRET_KEY": "test-secret-key",
     "ENFORCE_USERNAMES": "True",
     "REQUIRE_USERNAME_AS_EMAIL": "True",
-    "USERNAME_EMAIL_DOMAIN": "example.com"
+    "USERNAME_EMAIL_DOMAIN": "example.com",
+    "UPLOAD_FOLDER": "tests/test_uploads",
 }
 
 def create_app(use_test_config=False):
