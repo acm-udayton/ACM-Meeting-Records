@@ -70,7 +70,7 @@ def admin_dashboard(meeting_id):
         minutes = minutes,
         attachments = attachments,
         add_attendee_form = add_attendee_form
-    ), 401
+    ), 200
 
 @admin_bp.route("/create/", methods = ["POST"])
 @login_required

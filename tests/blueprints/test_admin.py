@@ -55,10 +55,12 @@ def test_admin_dashboard(flask_app):
     """ Test the /admin/dashboard/ endpoint. """
     with flask_app.app_context():
         # Create a test admin user.
-        admin_user = Users(username="adminuser", role="admin")
+        admin_user = Users(username="adminuser", role="admin", activated=True)
         admin_user.set_password("testpassword")
         db.session.add(admin_user)
         db.session.commit()
+
+        test_client = flask_app.test_client()
 
         # Create a test  meeting to view the dashboard for.
         meeting = Meetings(title="Test Meeting", event_start=datetime.now(), state="active", description="Test Meeting Description", host="adminuser")
@@ -66,43 +68,45 @@ def test_admin_dashboard(flask_app):
         db.session.commit()
 
         # Test access without login.
-        response = flask_app.test_client().get(f"/admin/dashboard/{meeting.id}/")
+        response = test_client.get(f"/admin/dashboard/{meeting.id}/")
         assert response.status_code == 401  # Unauthorized.
 
         # Log in as the admin user.
-        login_response = flask_app.test_client().post("/login/", data={"username": "adminuser", "password": "testpassword"}, follow_redirects=True)
+        login_response = test_client.post("/login/", data={"username": "adminuser", "password": "testpassword"}, follow_redirects=True)
+        print(login_response.data)
         assert login_response.status_code == 200
 
         # Test access to the dashboard after login.
-        dashboard_response = flask_app.test_client().get(f"/admin/dashboard/{meeting.id}/")
+        dashboard_response = test_client.get(f"/admin/dashboard/{meeting.id}/")
         assert dashboard_response.status_code == 200
 
 def test_event_create(flask_app):
     """ Test the /admin/create/ endpoint. """
     with flask_app.app_context():
         # Create a test admin user.
-        admin_user = Users(username="adminuser", role="admin")
+        admin_user = Users(username="adminuser", role="admin", activated=True)
         admin_user.set_password("testpassword")
         db.session.add(admin_user)
         db.session.commit()
 
         # Test access without login.
-        response = flask_app.test_client().post("/admin/create/", data={"title": "New Meeting", "description": "Test Description", "host": "adminuser"}, follow_redirects=True)
+        test_client = flask_app.test_client()
+        response = test_client.post("/admin/create/", data={"title": "New Meeting", "description": "Test Description", "host": "adminuser"}, follow_redirects=True)
         assert response.status_code == 401  # Unauthorized.
 
         # Log in as the admin user.
-        login_response = flask_app.test_client().post("/login/", data={"username": "adminuser", "password": "testpassword"}, follow_redirects=True)
+        login_response = test_client.post("/login/", data={"username": "adminuser", "password": "testpassword"}, follow_redirects=True)
         assert login_response.status_code == 200
 
         # Test access to the create endpoint after login.
-        create_response = flask_app.test_client().post("/admin/create/", data={"title": "New Meeting", "description": "Test Description", "host": "adminuser"}, follow_redirects=True)
+        create_response = test_client.post("/admin/create/", data={"title": "New Meeting", "description": "Test Description", "host": "adminuser"}, follow_redirects=True)
         assert create_response.status_code == 200
 
 def test_event_start(flask_app):
     """ Test the /admin/start/ endpoint. """
     with flask_app.app_context():
         # Create a test admin user.
-        admin_user = Users(username="adminuser", role="admin")
+        admin_user = Users(username="adminuser", role="admin", activated=True)
         admin_user.set_password("testpassword")
         db.session.add(admin_user)
         db.session.commit()
@@ -113,14 +117,15 @@ def test_event_start(flask_app):
         db.session.commit()
 
         # Test access without login.
-        response = flask_app.test_client().post(f"/admin/start/{meeting.id}/")
+        test_client = flask_app.test_client()
+        response = test_client.post(f"/admin/start/{meeting.id}/")
         assert response.status_code == 401  # Unauthorized.
 
         # Log in as the admin user.
-        login_response = flask_app.test_client().post("/login/", data={"username": "adminuser", "password": "testpassword"}, follow_redirects=True)
+        login_response = test_client.post("/login/", data={"username": "adminuser", "password": "testpassword"}, follow_redirects=True)
         assert login_response.status_code == 200
 
 
         # Test access to the start endpoint after login.
-        start_response = flask_app.test_client().post(f"/admin/start/{meeting.id}/")
+        start_response = test_client.post(f"/admin/start/{meeting.id}/")
         assert start_response.status_code == 200
