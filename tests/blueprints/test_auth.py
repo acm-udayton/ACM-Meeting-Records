@@ -131,7 +131,7 @@ def test_auth_logout(flask_app):
     with flask_app.app_context():
         # Write test user data.
         from app.models import Users
-        user = Users(id=1, username="testuser", role="admin")
+        user = Users(id=1, username="testuser", role="admin", activated=True)
         user.set_password("password")
         db.session.add(user)
         db.session.commit()
@@ -152,7 +152,7 @@ def test_auth_update_account(flask_app):
     """ Test the /auth/update-account endpoint. """
     with flask_app.app_context():
         # Write test user data.
-        user = Users(id=1, username="testuser", role="admin")
+        user = Users(id=1, username="testuser", role="admin", activated=True)
         user.set_password("password")
         db.session.add(user)
         db.session.commit()
