@@ -20,13 +20,3 @@ def app():
         db.create_all()  # Create tables for the in-memory database.
         yield flask_app
         db.drop_all()  # Clean up the database after tests.
-
-@pytest.fixture
-def client(flask_app):
-    """ A test client for the app. """
-    return flask_app.test_client()
-
-@pytest.fixture
-def runner(flask_app):
-    """ A test runner for the app's Click commands, if needed. """
-    return flask_app.test_cli_runner()

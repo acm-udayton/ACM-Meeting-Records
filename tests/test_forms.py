@@ -12,7 +12,7 @@ File Purpose: Pytest for form validation with Flask-WTF.
 import pytest
 from werkzeug.datastructures import MultiDict
 
-from app.forms import CreateMeetingForm, SignUpFormEmail, AccountUpdateForm
+from app.forms import CreateMeetingForm, SignUpFormEmail, SignUpFormUsername, AccountUpdateForm
 from tests.conftest import app as flask_app  # Import the app fixture for context in tests
 
 def test_meeting_form_valid(flask_app):
@@ -74,6 +74,19 @@ def test_signup_email_validator(flask_app):
         form = SignUpFormEmail(formdata=form_data_correct)
         form.username.validate(form)
         assert len(form.username.errors) == 0
+
+def test_signup_username_passwords_must_match(flask_app):
+    """Test the shared password confirmation validator on the username form."""
+    with flask_app.app_context():
+        form_data = MultiDict([
+            ('username', 'testuser'),
+            ('password', 'password123'),
+            ('confirm_password', 'different')
+        ])
+
+        form = SignUpFormUsername(formdata=form_data)
+        assert form.validate() is False
+        assert 'Passwords must match.' in form.confirm_password.errors
 
 @pytest.mark.parametrize("semester, is_valid", [
     ("FA 2026", True),

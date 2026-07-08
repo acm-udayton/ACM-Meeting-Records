@@ -55,6 +55,49 @@ def test_auth_login(flask_app):
         assert response.status_code == 200
         assert b"Please enable multi-factor authentication" in response.data
 
+def test_auth_login_redirects_to_totp_mfa(flask_app):
+    """ Test that MFA-enabled users with TOTP active are routed to TOTP verification. """
+    with flask_app.app_context():
+        user = Users(id=1, username="totpuser", role="user", activated=True, mfa_active=True, totp_active=True)
+        user.set_password("password")
+        db.session.add(user)
+        db.session.commit()
+
+        client = flask_app.test_client()
+        response = client.post(
+            "/login/",
+            data={"username": "totpuser", "password": "password"},
+            follow_redirects=False,
+        )
+
+        assert response.status_code == 302
+        assert response.headers["Location"].endswith("/mfa/verify-totp/")
+
+        with client.session_transaction() as session_data:
+            assert session_data["mfa_user_id"] == user.id
+
+
+def test_auth_login_redirects_to_recovery_code_mfa(flask_app):
+    """ Test that MFA-enabled users without TOTP are routed to recovery code verification. """
+    with flask_app.app_context():
+        user = Users(id=1, username="recoveryuser", role="user", activated=True, mfa_active=True, totp_active=False)
+        user.set_password("password")
+        db.session.add(user)
+        db.session.commit()
+
+        client = flask_app.test_client()
+        response = client.post(
+            "/login/",
+            data={"username": "recoveryuser", "password": "password"},
+            follow_redirects=False,
+        )
+
+        assert response.status_code == 302
+        assert response.headers["Location"].endswith("/mfa/verify-recovery-code/")
+
+        with client.session_transaction() as session_data:
+            assert session_data["mfa_user_id"] == user.id
+
 def test_auth_sign_up_get(flask_app):
     """ Test the /auth/sign-up endpoint. """
     with flask_app.app_context():
@@ -81,38 +124,6 @@ def test_auth_sign_up_fail_if_duplicate_username(flask_app):
         assert response.status_code == 200
         assert b"Username already registered." in response.data
 
-def test_auth_sign_up_fail_with_mismatch_passwords(flask_app):
-    """ Test the /auth/sign-up endpoint for mismatched passwords. """
-    with flask_app.app_context():
-        # Test POST request with non-matching passwords.
-        response = flask_app.test_client().post("/sign-up/", data={
-            "username": "testuser2@example.com",
-            "password": "password",
-            "confirm_password": "different"
-        }, follow_redirects=True)
-        assert response.status_code == 200
-        assert (b"Passwords must match." in response.data or 
-                b"Passwords do not match." in response.data)
-
-def test_auth_sign_up_fail_with_invalid_email_domain(flask_app):
-    """ Test the /auth/sign-up endpoint for invalid email domain. """
-    with flask_app.app_context():
-        # Test POST request with incorrect email domain.
-        response = flask_app.test_client().post("/sign-up/", data={
-            "username": "testuser2@invalid.com",
-            "password": "password",
-            "confirm_password": "password"
-        }, follow_redirects=True)
-        print(flask_app.context["usernames"])
-
-        if b"User creation succeeded." in response.data:
-            print("Success")
-        print(response.data)
-        assert response.status_code == 200
-        assert (b"Username must end with example.com." in response.data or
-                b"Email must be from the domain example.com" in response.data)
-          # Reset for other tests.
-
 def test_auth_sign_up_success(flask_app):
     """ Test the /auth/sign-up endpoint for successful account creation. """
     with flask_app.app_context():
@@ -125,6 +136,43 @@ def test_auth_sign_up_success(flask_app):
         }, follow_redirects=True)
         assert response.status_code == 200
         assert b"User creation succeeded." in response.data
+
+def test_auth_sign_up_logs_out_existing_user(flask_app):
+    """ Test that sign-up logs out an already authenticated user before creating a new account. """
+    with flask_app.app_context():
+        existing_user = Users(id=1, username="loggedinuser@example.com", role="user", activated=True)
+        existing_user.set_password("password")
+        db.session.add(existing_user)
+        db.session.commit()
+
+        client = flask_app.test_client()
+
+        login_response = client.post(
+            "/login/",
+            data={"username": "loggedinuser@example.com", "password": "password"},
+            follow_redirects=True,
+        )
+        assert login_response.status_code == 200
+
+        response = client.post(
+            "/sign-up/",
+            data={
+                "username": "newuser@example.com",
+                "email": "newuser@example.com",
+                "password": "password",
+                "confirm_password": "password",
+            },
+            follow_redirects=False,
+        )
+
+        assert response.status_code == 302
+        assert response.headers["Location"].endswith("/login/")
+
+        with client.session_transaction() as session_data:
+            assert "_user_id" not in session_data
+
+        created_user = Users.query.filter_by(username="newuser@example.com").first()
+        assert created_user is not None
 
 def test_auth_logout(flask_app):
     """ Test the /auth/logout endpoint. """
