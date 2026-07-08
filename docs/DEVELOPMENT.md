@@ -84,7 +84,8 @@ ACM-Meeting-Records
 ├── <a href="#cicd-workflows">.github/workflows</a>
 │   ├── .pylintrc
 │   ├── <a href="#docker-image-ci">docker-image.yml</a>
-│   └── <a href="#pylint-ci">pylint.yml</a>
+|   ├── <a href="#pylint-ci">pylint.yml</a>
+│   └── <a href="#pytest-ci">pytest.yml</a>
 ├── /app
 │   ├── <a href="#route-map">/blueprints</a>
 │   │   ├── <a href="#routes-admin">admin.py</a>
@@ -108,6 +109,12 @@ ACM-Meeting-Records
 │   ├── DEVELOPMENT.md
 │   ├── <a href="/docs/quickstart.md">quickstart.md</a>
 │   └── <a href="/docs/upgrading.md">upgrading.md</a>
+├── <a href="#pytest-ci">/tests</a>
+│   ├──conftest.py
+│   ├── test_forms.py
+|   ├── test_models.py
+|   ├── test_utils.py
+│   └── /blueprints
 ├── <a href="#flask-migrate">/migrations</a>
 ├── .dockerignore
 ├── .env
@@ -810,6 +817,21 @@ This workflow runs on every push to the repository as well as on every pull requ
 
 For precise configuration details, please consult the file at ```.github/workflows/pylint.yml```.
 </details>
+
+<details>
+<summary id="pytest-ci"><strong>Pytest CI</strong></summary>
+This workflow runs on every push to the repository as well as on every pull request. It automatically runs pytest on the codebase and outputs a report of any test failures or errors. This allows us to ensure code quality and reliability. The "passing" standard for the workflow is currently set high at 80% coverage, as specified in the `.github/workflows/pytest.yml` file. Whenever possible, development should target 90-100% coverage, and the workflow "passing" criteria may be adjusted in the future as the codebase continues to evolve and we determine what an appropriate standard is for our project. 
+<br><br>
+
+Whenever a backend change is made, it is important to add a test for that change to ensure that the codebase remains reliable and maintainable. This is especially important for changes that affect the database schema or the behavior of the application, as these changes can have far-reaching effects on the functionality of the app. By adding tests for backend changes, we can catch potential issues early and ensure that our codebase remains stable and reliable over time. Some DevOps changes may also require adjustments to the tests and/or the workflow configuration, so it is important to review the test suite and workflow configuration whenever a backend change is made.
+<br><br>
+For precise configuration details, please consult the file at ```.github/workflows/pytest.yml```.
+
+<a href="https://docs.pytest.org/en/stable/">Pytest Documentation</a>
+
+<a href="https://flask.palletsprojects.com/en/stable/testing/">Flask Testing Documentation</a>
+</details>
+
 
 <details>
 <summary id="docker-image-ci"><strong>Docker Image CI</strong></summary>
