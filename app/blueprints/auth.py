@@ -70,7 +70,7 @@ def login():
                 needs_relogin = True
 
             # MFA check.
-            if user.mfa_active:
+            if user.mfa_active and not needs_relogin:
                 # Store the user ID in the session temporarily - do not login yet.
                 session['mfa_user_id'] = user.id
                 if user.totp_active:
@@ -79,10 +79,6 @@ def login():
                     redirect_to = 'mfa.verify_recovery_code'
                 return redirect(url_for(redirect_to))
 
-            # Admin without MFA warning.
-            if user.role == "admin":
-                flash("Please enable multi-factor authentication for this administrator account!", "danger")
-
             if not needs_relogin:
                 login_user(user)
                 current_app.logger.info(
@@ -90,6 +86,11 @@ def login():
                     form.username.data,
                     request.remote_addr
                 )
+
+                # Admin without MFA warning.
+                if user.role == "admin":
+                    flash("Please enable multi-factor authentication for this administrator account!", "danger")
+
                 return redirect(url_for("main.home"))
         # Redirect on login failure.
         if needs_relogin:
