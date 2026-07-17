@@ -2,7 +2,7 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "main", "feature/add-ghcr-github-action" ]
+    branches: [ "main" ]
 
 jobs:
   build:

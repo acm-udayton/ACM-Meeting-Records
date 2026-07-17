@@ -835,7 +835,7 @@ For precise configuration details, please consult the file at ```.github/workflo
 
 <details>
 <summary id="docker-image-ci"><strong>Docker Image CI</strong></summary>
-This workflow is only triggered on successful pushes to the repository's main branch. It will automatically use the Dockerfile to build a new image for the web container. It will also use GitHub secrets (must be configured by an ACM officer with Organization manager access on GitHub) to publish this image to DockerHub. This ultimately serves the purpose of ensuring that the public build of the web app is a stable release, never a release candidate or development version.
+This workflow is only triggered on successful pushes to the repository's main branch. It will automatically use the Dockerfile to build a new image for the web container. It will also use GitHub secrets (must be configured by an ACM officer with Organization manager access on GitHub) to publish this image to DockerHub as well as GitHub Container Registry (GHCR). This ultimately serves the purpose of ensuring that the public build of the web app is a stable release, never a release candidate or development version.
 <br><br>
 
 For precise configuration details, please consult the file at ```.github/workflows/docker-image.yml```.
