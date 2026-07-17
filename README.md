@@ -50,6 +50,7 @@ This is a basic landing page for a new installation of the application.
 * Flask
 * PostgreSQL
 * Docker
+* uv
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

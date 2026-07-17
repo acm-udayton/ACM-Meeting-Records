@@ -4,6 +4,9 @@ services:
     build: .
     ports: # Expose the web app on port 8000.
       - "8000:8000"
+    # Configure the environment variables from the .env file.
+    env_file:
+      - .env
     # Run the flask app within Gunicorn WQGI server with 10 workers.
     command: >
       sh -c "flask db upgrade && 
@@ -19,7 +22,6 @@ services:
     volumes: # Mount a volume for persistent uploads storage.
       - ./app/uploads:/app/uploads
       - ./migrations:/app/migrations
-      - ./app/.env:/app/.env
   db:
     image: postgres:13
     container_name: acm-meeting-records-db

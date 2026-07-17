@@ -58,6 +58,7 @@ File Purpose: One sentence to describe the overarching function of the file.
 ```
 2. Functions, classes, and routes should begin with a docstring explaining their function or purpose.
 3. Database models (see ```app/models.py```) should always have a ```default``` and ```server_default``` value if ```nullable = false``` is specified.
+4. All backend logic should be tested with unit tests. See the ```tests``` directory for examples of how to write unit tests for the backend. Coverage should maintain a minimum of 80%, app-wide. Target 90% or greater whenever possible.
 
 #### Linting
 
