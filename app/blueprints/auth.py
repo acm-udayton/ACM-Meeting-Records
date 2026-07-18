@@ -115,7 +115,7 @@ def sign_up():
         if Users.query.filter_by(username = uname).first() is not None:
             flash(
                 "User creation failed. Username already registered. "
-                "Try logging in instead or contact an administrator."
+                "Try logging in instead or contacting an administrator."
                 , "danger"
                 )
             return redirect(url_for("auth.sign_up"))
