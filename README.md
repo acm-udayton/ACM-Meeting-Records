@@ -62,6 +62,9 @@ This is a basic landing page for a new installation of the application.
 * Docker
 * uv
 
+## Project History
+For a complete view of the project history, see the [CHANGELOG](docs/CHANGELOG.md) file.
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
