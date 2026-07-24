@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "acm-meeting-records"
-version = "1.8.1"
+version = "1.9.0"
 requires-python = ">=3.11"
 dependencies = [
     "email-validator>=2.3.0",
@@ -19,7 +19,7 @@ dependencies = [
     "pyotp>=2.9.0",
     "python-dotenv>=1.2.2",
     "qrcode>=8.2",
-] # Leave this empty, as we use requirements.txt for dependencies.
+]
 
 [tool.setuptools]
 packages = ["app"]
