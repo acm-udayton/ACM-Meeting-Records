@@ -140,7 +140,7 @@ The application factory is a design pattern for building scalable codebases for 
 Strictly speaking, the application factory itself can be found in `app/__init__.py`. The contents of this file compiles the logic, extensions, and utilities that are specified in the rest of the python files in the codebase.
 
 The application factory within the `create_app` function in `app/__init__.py` is responsible for the following:
-1. Loading environment variables from the ```app/.env``` file.
+1. Loading environment variables from the ```.env``` file.
 2. Configuring the logger.
 3. Initializing the Flask app.
 4. Adding configuration settings to the Flask app.
