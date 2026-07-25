@@ -38,6 +38,7 @@ mfa_bp = Blueprint('mfa', __name__, template_folder='templates')
 
 
 @mfa_bp.route('/reset-recovery-codes/', methods=['GET'])
+@login_required
 def reset_recovery_codes():
     """ Generate new recovery codes for the user. """
     # Clear old codes and generate new codes.

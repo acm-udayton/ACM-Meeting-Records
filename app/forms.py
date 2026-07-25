@@ -36,7 +36,6 @@ def email_domain_validator(_form, field):
         # Use regex to check the required email_domain.
         match = re.match(r"[^@]+@([^@]+)", field.data)
         if match:
-            print(match.groups())
             required_domain = current_app.context["usernames"]["username_email_domain"]
             domain = match.group(1)
             if domain != required_domain:

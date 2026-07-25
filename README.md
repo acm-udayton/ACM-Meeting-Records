@@ -1,4 +1,14 @@
 <a id="readme-top"></a>
+<!-- PROJECT BADGES -->
+[![Contributors](https://img.shields.io/github/contributors/acm-udayton/ACM-Meeting-Records.svg?style=for-the-badge)](https://github.com/acm-udayton/ACM-Meeting-Records/graphs/contributors)
+[![GitHub stars](https://img.shields.io/github/stars/acm-udayton/ACM-Meeting-Records.svg?style=for-the-badge)](https://github.com/acm-udayton/ACM-Meeting-Records/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/acm-udayton/ACM-Meeting-Records.svg?style=for-the-badge)](https://github.com/acm-udayton/ACM-Meeting-Records/network)
+[![GitHub issues](https://img.shields.io/github/issues/acm-udayton/ACM-Meeting-Records.svg?style=for-the-badge)](https://github.com/acm-udayton/ACM-Meeting-Records/issues)
+[![GitHub license](https://img.shields.io/github/license/acm-udayton/ACM-Meeting-Records.svg?style=for-the-badge)](https://github.com/acm-udayton/ACM-Meeting-Records/blob/main/LICENSE.txt)
+[![Docker Hub](https://img.shields.io/badge/docker%20hub-2496ed?style=for-the-badge&logo=docker&logoColor=white)](https://hub.docker.com/r/acmatudayton/acm-meeting-records)
+[![GHCR](https://img.shields.io/badge/ghcr-24292e?style=for-the-badge&logo=github&logoColor=white)](https://github.com/acm-udayton/ACM-Meeting-Records/pkgs/container/ACM-Meeting-Records)
+
+
 <!-- PROJECT HEADER -->
 <br />
 <div align="center">
@@ -50,6 +60,10 @@ This is a basic landing page for a new installation of the application.
 * Flask
 * PostgreSQL
 * Docker
+* uv
+
+## Project History
+For a complete view of the project history, see the [CHANGELOG](docs/CHANGELOG.md) file.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

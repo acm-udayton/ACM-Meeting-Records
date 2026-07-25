@@ -64,7 +64,7 @@ def register_error_handlers(app):
             "error.html",
             page_title = "401 Error",
             error_message = "Requests to this page require authentication."
-        )
+        ), 401
 
     @app.errorhandler(403)
     def forbidden(e):
@@ -74,7 +74,7 @@ def register_error_handlers(app):
             "error.html",
             page_title = "403 Error",
             error_message = "Request forbidden due to insufficient authorization."
-        )
+        ), 403
 
     @app.errorhandler(404)
     def page_not_found(e):
@@ -84,7 +84,7 @@ def register_error_handlers(app):
             "error.html",
             page_title = "404 Error",
             error_message = "Request failed because page could not be found."
-        )
+        ), 404
 
     @app.errorhandler(405)
     def method_not_allowed(e):
@@ -94,9 +94,21 @@ def register_error_handlers(app):
             "error.html",
             page_title = "405 Error",
             error_message = "Request method not allowed."
-        )
+        ), 405
 
-def create_app():
+test_config = {
+    'TESTING': True,
+    'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:', # Use in-memory database for tests.
+    'WTF_CSRF_ENABLED': False,  # Disable CSRF for tests.
+    'TOTP_ISSUER_NAME': "ACM Meeting Records Test",
+    "SECRET_KEY": "test-secret-key",
+    "ENFORCE_USERNAMES": "True",
+    "REQUIRE_USERNAME_AS_EMAIL": "True",
+    "USERNAME_EMAIL_DOMAIN": "example.com",
+    "UPLOAD_FOLDER": "tests/test_uploads",
+}
+
+def create_app(use_test_config=False):
     """ Create and configure the Flask app. """
     # Load .env variables.
     load_dotenv()
@@ -114,6 +126,9 @@ def create_app():
     app.config["RECAPTCHA_PUBLIC_KEY"] = os.getenv("RECAPTCHA_SITE_KEY")
     app.config["RECAPTCHA_PRIVATE_KEY"] = os.getenv("RECAPTCHA_SECRET_KEY")
     app.config['RECAPTCHA_SKIP_IP_CHECK'] = True
+
+    if use_test_config:
+        app.config.update(test_config)
 
     # Initialize the app extensions.
     db.init_app(app)
@@ -147,6 +162,11 @@ def create_app():
                                 "require_username_as_email": os.getenv("REQUIRE_USERNAME_AS_EMAIL")
                             }
     app.context["source"] = os.getenv("GITHUB_SOURCE")
+
+    if use_test_config:
+        app.context["usernames"]["enforce_usernames"] = test_config["ENFORCE_USERNAMES"]
+        app.context["usernames"]["username_email_domain"] = test_config["USERNAME_EMAIL_DOMAIN"]
+        app.context["usernames"]["require_username_as_email"] = test_config["REQUIRE_USERNAME_AS_EMAIL"]
 
     # Define the app context processor.
     @app.context_processor

@@ -119,19 +119,6 @@ def sign_up():
                 , "danger"
                 )
             return redirect(url_for("auth.sign_up"))
-        elif (current_app.context["usernames"]["enforce_usernames"] == "True" and
-              current_app.context["usernames"]["require_username_as_email"] == "True" and
-              not uname.endswith(
-                  current_app.context["usernames"]["username_email_domain"])):
-            flash(
-                ("User creation failed. Username must end with "
-                f"{current_app.context['usernames']['username_email_domain']}."),
-                "danger"
-                )
-            return redirect(url_for("auth.sign_up"))
-        elif pword != conf_pword:
-            flash("User creation failed. Passwords do not match.", "danger")
-            return redirect(url_for("auth.sign_up"))
         else:
             current_app.logger.warning(
                 "New user %s from IP %s",
