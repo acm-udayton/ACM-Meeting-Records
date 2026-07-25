@@ -31,6 +31,32 @@ from app.__init__ import admin_required
 polls_bp = Blueprint('polls', __name__, url_prefix='/admin', template_folder='templates')
 
 
+def flash_form_errors(form):
+    """Flash human-readable validation errors, including nested FieldList/FormField entries."""
+    for field_name, field in form._fields.items():
+        if not field.errors:
+            continue
+
+        if hasattr(field, "entries"):
+            for entry in field.entries:
+                if not entry.errors:
+                    continue
+
+                for nested_name, nested_errors in entry.errors.items():
+                    nested_field = getattr(entry.form, nested_name, None)
+                    nested_label = (
+                        nested_field.label.text
+                        if nested_field is not None and hasattr(nested_field, "label")
+                        else nested_name.replace("_", " ").title()
+                    )
+                    for error in nested_errors:
+                        flash(f"Error in {nested_label}: {error}", "danger")
+            continue
+
+        for error in field.errors:
+            flash(f"Error in {field.label.text}: {error}", "danger")
+
+
 @polls_bp.route("/polls/")
 @login_required
 @admin_required
@@ -60,9 +86,7 @@ def create_poll():
     """Create a new poll from admin dashboard."""
     form = CreatePollForm()
     if not form.validate_on_submit():
-        for field, errors in form.errors.items():
-            for error in errors:
-                flash(f"Error in {getattr(form, field).label.text}: {error}", "danger")
+        flash_form_errors(form)
         return redirect(url_for("polls.polls_list"))
     else:
         if form.poll_expires.data and form.poll_expires.data <= datetime.now():

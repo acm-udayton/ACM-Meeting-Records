@@ -70,7 +70,7 @@ def admin_dashboard(meeting_id):
         minutes = minutes,
         attachments = attachments,
         add_attendee_form = add_attendee_form
-    )
+    ), 200
 
 @admin_bp.route("/create/", methods = ["POST"])
 @login_required
@@ -111,7 +111,7 @@ def event_start(meeting_id):
             meeting_code = generate_meeting_code()
             meeting.code_hash = sha_hash(meeting_code)
             meeting.state = "active"
-            meeting.event_start = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
+            meeting.event_start = datetime.datetime.now()
             # Add the user (officer) as an attendee.
             attendance = Attendees(username = current_user.username, meeting = meeting_id)
             db.session.add(attendance)
@@ -155,7 +155,7 @@ def reset_code(meeting_id):
                 "error.html",
                 page_title = "400 Error",
                 error_message = "This meeting is not active."
-            )
+            ), 400
 
 @admin_bp.route("/show-code/")
 @login_required
@@ -185,7 +185,7 @@ def event_end(meeting_id):
         meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
         if meeting.state == "active":
             meeting.state = "ended"
-            meeting.event_end = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
+            meeting.event_end = datetime.datetime.now()
             db.session.commit()
             return_data = {
                 "success": True,
@@ -323,7 +323,7 @@ def event_minutes(meeting_id, minutes_id = None):
                 return_data = {
                     "success": False,
                     "meeting_id": meeting_id,
-                    "message": "Meeting minutes could not be updated due to minutes entry."
+                    "message": "Meeting minutes could not be updated due to invalid minutes entry."
                 }
                 return jsonify(return_data), 400
         else:
@@ -362,7 +362,7 @@ def event_add_attachment(meeting_id):
                 "meeting_id": meeting_id,
                 "message": "No file part in the request."
             }
-            return jsonify(), 400
+            return jsonify(return_data), 400
 
         # File was uploaded, so process it.
         file = request.files['file']
@@ -473,6 +473,8 @@ def event_delete(meeting_id):
     return redirect(url_for("main.events_list"))
 
 @admin_bp.route("/users/")
+@login_required
+@admin_required
 def users_list():
     """ Show the users index page."""
     all_users = Users.query.order_by(Users.id).all()

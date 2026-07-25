@@ -1,0 +1,33 @@
+name: Python Unit Tests
+
+on: [pull_request, push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        # uv sync automatically installs from your uv.lock file
+        run: uv sync
+
+      - name: Run tests with coverage
+        run: |
+          uv run pytest --cov=app --cov-report=term-missing --cov-fail-under=80 > coverage.txt
+          cat coverage.txt
+          # The --cov flag tracks coverage
+          # The --cov-fail-under=80 flag forces the job to fail if coverage < 80%
+          # The --cov-report term-missing shows which lines are uncovered
+
+      - name: Report coverage in PR
+        if: always()
+        run: |
+          # Extract the percentage from the coverage output for summary
+          COVERAGE=$(grep "TOTAL" coverage.txt | awk '{print $NF}')
+          echo "### Test Coverage: $COVERAGE" >> $GITHUB_STEP_SUMMARY

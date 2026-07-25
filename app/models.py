@@ -66,12 +66,10 @@ class Users(UserMixin, db.Model):
         """ Get user data values as a dictionary. """
         return {"id": self.id,
                 "username": self.username,
-                "password": self.password,
                 "role": self.role,
                 "joined": self.joined,
                 "graduated": self.graduated,
-                "otp_secret": self.otp_secret,
-                "otp_active": self.otp_active}
+                "totp_active": self.totp_active}
 
 class RecoveryCodes(db.Model):
     """ Store recovery codes for users. """
