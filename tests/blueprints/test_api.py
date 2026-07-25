@@ -22,6 +22,7 @@ def test_api_event_attendees(flask_app):
 
         # Write test data for attendees and meeting.
         db.session.add(Attendees(id=1, meeting=1, username="testuser"))
+        db.session.commit()
 
         # Test with a valid meeting ID.
         response = flask_app.test_client().get("/api/event/attendees/1/")
@@ -42,6 +43,7 @@ def test_api_event_minutes(flask_app):
 
         # Write test data for minutes and meeting.
         db.session.add(Minutes(id=1, meeting=1, notes="Test Minutes", username_by="testuser"))
+        db.session.commit()
 
         # Test with a valid meeting ID.
         response = flask_app.test_client().get("/api/event/notes/1/")
@@ -80,6 +82,7 @@ def test_api_event_attachments(flask_app):
 
         # Write test data for attachments and meeting.
         db.session.add(Attachments(id=1, meeting=1, filename="testfile.txt", filepath="/path/to/testfile.txt"))
+        db.session.commit()
 
         # Test with a valid meeting ID.
         response = flask_app.test_client().get("/api/event/attachments/1/")

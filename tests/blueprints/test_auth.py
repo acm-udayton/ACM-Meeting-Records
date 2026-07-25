@@ -187,16 +187,17 @@ def test_auth_logout(flask_app):
         db.session.commit()
 
         # Log in the test user.
-        response = flask_app.test_client().post("/login/", data={
-            "username": "testuser",
-            "password": "password"
-        }, follow_redirects=True)
-        assert response.status_code == 200
-        assert b"Please enable multi-factor authentication" in response.data
+        with flask_app.test_client() as client:
+            response = client.post("/login/", data={
+                "username": "testuser",
+                "password": "password"
+            }, follow_redirects=True)
+            assert response.status_code == 200
+            assert b"Please enable multi-factor authentication" in response.data
 
-        # Test logout.
-        response = flask_app.test_client().get("/logout/", follow_redirects=True)
-        assert response.status_code == 200
+            # Test logout.
+            response = client.get("/logout/", follow_redirects=True)
+            assert response.status_code == 200
 
 def test_auth_update_account(flask_app):
     """ Test the /auth/update-account endpoint. """
@@ -208,21 +209,22 @@ def test_auth_update_account(flask_app):
         db.session.commit()
 
         # Log in the test user.
-        response = flask_app.test_client().post("/login/", data={
-            "username": "testuser",
-            "password": "password"
-        }, follow_redirects=True)
-        assert response.status_code == 200
+        with flask_app.test_client() as client:
+            response = client.post("/login/", data={
+                "username": "testuser",
+                "password": "password"
+            }, follow_redirects=True)
+            assert response.status_code == 200
 
-        # Test POST request to update account details.
-        response = flask_app.test_client().post("/update-account/", data={
-            "start_semester": "FA 2023",
-            "grad_semester": "SP 2027",
-            "password": "newpassword",
-        }, follow_redirects=True)
-        assert response.status_code == 200
-        print(response.data)
-        assert b"Account updated successfully." in response.data
+            # Test POST request to update account details.
+            response = client.post("/update-account/", data={
+                "start_semester": "FA 2023",
+                "grad_semester": "SP 2027",
+                "password": "newpassword",
+            }, follow_redirects=True)
+            assert response.status_code == 200
+            print(response.data)
+            assert b"Account updated successfully." in response.data
 
         # Verify that the user's account details were updated in the database.
         updated_user = db.session.get(Users, 1)
