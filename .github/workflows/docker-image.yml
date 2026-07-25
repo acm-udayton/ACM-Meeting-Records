@@ -5,10 +5,13 @@ on:
     branches: [ "main" ]
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
+    
+    # Required permissions to write to GHCR
+    permissions:
+      contents: read
+      packages: write
 
     steps:
     - uses: actions/checkout@v4
@@ -17,12 +20,18 @@ jobs:
     - name: Set up Docker variables
       id: vars
       run: |
+        # Convert repo owner to lowercase because GHCR requires lowercase namespaces
+        OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+        echo "GHCR_IMAGE_NAME=ghcr.io/${OWNER_LOWER}/acm-meeting-records" >> $GITHUB_OUTPUT
         echo "DOCKER_IMAGE_NAME=acmatudayton/acm-meeting-records" >> $GITHUB_OUTPUT
         echo "TAG=$(date +%s)" >> $GITHUB_OUTPUT
     
-    # 2. Build the Docker image
+    # 2. Build and Tag the Docker images
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag ${{ steps.vars.outputs.DOCKER_IMAGE_NAME }}:${{ steps.vars.outputs.TAG }}
+      run: |
+        docker build . --file Dockerfile \
+          --tag ${{ steps.vars.outputs.DOCKER_IMAGE_NAME }}:${{ steps.vars.outputs.TAG }} \
+          --tag ${{ steps.vars.outputs.GHCR_IMAGE_NAME }}:${{ steps.vars.outputs.TAG }}
 
     # 3. Log in to Docker Hub
     - name: Log in to Docker Hub
@@ -31,6 +40,17 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PAT }}
 
-    # 4. Push the image to Docker Hub
-    - name: Push the image
+    # 4. Log in to GHCR
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    # 5. Push the images
+    - name: Push to Docker Hub
       run: docker push ${{ steps.vars.outputs.DOCKER_IMAGE_NAME }}:${{ steps.vars.outputs.TAG }}
+
+    - name: Push to GHCR
+      run: docker push ${{ steps.vars.outputs.GHCR_IMAGE_NAME }}:${{ steps.vars.outputs.TAG }}

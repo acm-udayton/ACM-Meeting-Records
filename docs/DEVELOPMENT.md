@@ -65,11 +65,13 @@ As you begin contributing to the ACM Meeting Records project, we recommend the f
 1. [Docker Desktop](https://www.docker.com/products/docker-desktop/). Please note, technically you only need to ensure that Docker is installed on your system and the ```docker compose``` command is available, but for maximum debugging ease Docker desktop is the only recommended developer tooling in this category.
 2. [Visual Studio Code](https://code.visualstudio.com/)
 3. [DBeaver](https://dbeaver.io/)
+4. [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
 ### Database Access
 Follow the standard installation procedure outlined in <a href="quickstart.md">quickstart.md</a> to begin the setup process. 
 
 Next, you will need to add your DBeaver database connection. Be sure to select postgresql as your database, and fill out the details with the username, password, and port specified in the docker-compose.yml file, with localhost as the host. You can then find the database tables at ```Databases -> acm-meetings-db -> Schemas -> public -> Tables``` within DBeaver's Database Navigator pane.
+
 <hr>
 
 
@@ -82,7 +84,8 @@ ACM-Meeting-Records
 ├── <a href="#cicd-workflows">.github/workflows</a>
 │   ├── .pylintrc
 │   ├── <a href="#docker-image-ci">docker-image.yml</a>
-│   └── <a href="#pylint-ci">pylint.yml</a>
+|   ├── <a href="#pylint-ci">pylint.yml</a>
+│   └── <a href="#pytest-ci">pytest.yml</a>
 ├── /app
 │   ├── <a href="#route-map">/blueprints</a>
 │   │   ├── <a href="#routes-admin">admin.py</a>
@@ -96,8 +99,6 @@ ACM-Meeting-Records
 │   ├── /uploads
 │   ├── /utilities
 │   ├── <a href="#flask-application-factory">__init__.py</a>
-│   ├── .env
-│   ├── .env.example
 │   ├── <a href="#flask-extensions">extensions.py</a>
 │   ├── <a href="#flask-wtf">forms.py</a>
 │   ├── <a href="#flask-sqlalchemy">models.py</a>
@@ -108,14 +109,23 @@ ACM-Meeting-Records
 │   ├── DEVELOPMENT.md
 │   ├── <a href="/docs/quickstart.md">quickstart.md</a>
 │   └── <a href="/docs/upgrading.md">upgrading.md</a>
+├── <a href="#pytest-ci">/tests</a>
+│   ├──conftest.py
+│   ├── test_forms.py
+|   ├── test_models.py
+|   ├── test_utils.py
+│   └── /blueprints
 ├── <a href="#flask-migrate">/migrations</a>
 ├── .dockerignore
+├── .env
+├── .env.example
 ├── .gitignore
+├── docker-compose.yml
 ├── Dockerfile
 ├── LICENSE
+├── pyproject.toml
 ├── README.md
-├── docker-compose.yml
-└── requirements.txt
+└── uv.lock
 </pre>
 <hr>
 
@@ -130,7 +140,7 @@ The application factory is a design pattern for building scalable codebases for 
 Strictly speaking, the application factory itself can be found in `app/__init__.py`. The contents of this file compiles the logic, extensions, and utilities that are specified in the rest of the python files in the codebase.
 
 The application factory within the `create_app` function in `app/__init__.py` is responsible for the following:
-1. Loading environment variables from the ```app/.env``` file.
+1. Loading environment variables from the ```.env``` file.
 2. Configuring the logger.
 3. Initializing the Flask app.
 4. Adding configuration settings to the Flask app.
@@ -809,8 +819,23 @@ For precise configuration details, please consult the file at ```.github/workflo
 </details>
 
 <details>
+<summary id="pytest-ci"><strong>Pytest CI</strong></summary>
+This workflow runs on every push to the repository as well as on every pull request. It automatically runs pytest on the codebase and outputs a report of any test failures or errors. This allows us to ensure code quality and reliability. The "passing" standard for the workflow is currently set high at 80% coverage, as specified in the `.github/workflows/pytest.yml` file. Whenever possible, development should target 90-100% coverage, and the workflow "passing" criteria may be adjusted in the future as the codebase continues to evolve and we determine what an appropriate standard is for our project. 
+<br><br>
+
+Whenever a backend change is made, it is important to add a test for that change to ensure that the codebase remains reliable and maintainable. This is especially important for changes that affect the database schema or the behavior of the application, as these changes can have far-reaching effects on the functionality of the app. By adding tests for backend changes, we can catch potential issues early and ensure that our codebase remains stable and reliable over time. Some DevOps changes may also require adjustments to the tests and/or the workflow configuration, so it is important to review the test suite and workflow configuration whenever a backend change is made.
+<br><br>
+For precise configuration details, please consult the file at ```.github/workflows/pytest.yml```.
+
+<a href="https://docs.pytest.org/en/stable/">Pytest Documentation</a>
+
+<a href="https://flask.palletsprojects.com/en/stable/testing/">Flask Testing Documentation</a>
+</details>
+
+
+<details>
 <summary id="docker-image-ci"><strong>Docker Image CI</strong></summary>
-This workflow is only triggered on successful pushes to the repository's main branch. It will automatically use the Dockerfile to build a new image for the web container. It will also use GitHub secrets (must be configured by an ACM officer with Organization manager access on GitHub) to publish this image to DockerHub. This ultimately serves the purpose of ensuring that the public build of the web app is a stable release, never a release candidate or development version.
+This workflow is only triggered on successful pushes to the repository's main branch. It will automatically use the Dockerfile to build a new image for the web container. It will also use GitHub secrets (must be configured by an ACM officer with Organization manager access on GitHub) to publish this image to DockerHub as well as GitHub Container Registry (GHCR). This ultimately serves the purpose of ensuring that the public build of the web app is a stable release, never a release candidate or development version.
 <br><br>
 
 For precise configuration details, please consult the file at ```.github/workflows/docker-image.yml```.
