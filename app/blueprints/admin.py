@@ -30,7 +30,7 @@ from werkzeug.utils import secure_filename
 
 # Local application imports.
 from app.extensions import db
-from app.forms import AdminAttendeeAddForm, CreateMeetingForm
+from app.forms import AdminAttendeeAddForm, CreateMeetingForm, MeetingTimesForm
 from app.models import Users, Meetings, Attendees, Minutes, Attachments
 from app.utils import generate_meeting_code, sha_hash
 from app.__init__ import admin_required
@@ -50,12 +50,38 @@ def get_last_attended_date(user):
     return last_meeting[0] if last_meeting else None
 
 # Admin web routes.
-@admin_bp.route("/dashboard/<int:meeting_id>/")
+@admin_bp.route("/dashboard/<int:meeting_id>/", methods = ["GET", "POST"])
 @login_required
 @admin_required
 def admin_dashboard(meeting_id):
     """ Show the administrator dashboard page for a single meeting. """
     meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
+    meeting_times_form = MeetingTimesForm(obj = meeting)
+
+    if meeting_times_form.validate_on_submit():
+        previous_state = meeting.state
+        meeting_code = None
+        meeting.event_start = meeting_times_form.event_start.data
+
+        if meeting.event_start is None:
+            meeting.event_end = None
+            meeting.state = "not started"
+        else:
+            meeting.event_end = meeting_times_form.event_end.data
+            meeting.state = "ended" if meeting.event_end is not None else "active"
+            if (
+                meeting.state == "active"
+                and (previous_state != "active" or meeting.code_hash is None)
+            ):
+                meeting_code = generate_meeting_code()
+                meeting.code_hash = sha_hash(meeting_code)
+
+        db.session.commit()
+        flash("Meeting times updated successfully.", "success")
+        if meeting_code is not None:
+            return redirect(url_for("admin.show_code", code = meeting_code))
+        return redirect(url_for("admin.admin_dashboard", meeting_id = meeting.id))
+
     attendees = Attendees.query.filter_by(meeting = meeting_id).all()
     minutes = Minutes.query.filter_by(meeting = meeting_id).all()
     attachments = Attachments.query.filter_by(meeting = meeting_id).all()
@@ -69,7 +95,8 @@ def admin_dashboard(meeting_id):
         attendees = attendees,
         minutes = minutes,
         attachments = attachments,
-        add_attendee_form = add_attendee_form
+        add_attendee_form = add_attendee_form,
+        meeting_times_form = meeting_times_form
     ), 200
 
 @admin_bp.route("/create/", methods = ["POST"])
@@ -184,8 +211,20 @@ def event_end(meeting_id):
         # Mark the meeting as "ended".
         meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
         if meeting.state == "active":
+            event_end_time = datetime.datetime.now()
+            if meeting.event_start is not None and event_end_time < meeting.event_start:
+                return_data = {
+                    "success": False,
+                    "meeting_id": meeting_id,
+                    "message": (
+                        "Meeting could not be ended because its start time "
+                        "is later than the current time."
+                    )
+                }
+                return jsonify(return_data), 400
+
             meeting.state = "ended"
-            meeting.event_end = datetime.datetime.now()
+            meeting.event_end = event_end_time
             db.session.commit()
             return_data = {
                 "success": True,

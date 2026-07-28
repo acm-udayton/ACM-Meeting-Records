@@ -9,10 +9,18 @@ Last Modified: 6/4/2026
 File Purpose: Pytest for form validation with Flask-WTF.
 """
 
+from datetime import datetime, timedelta
+
 import pytest
 from werkzeug.datastructures import MultiDict
 
-from app.forms import CreateMeetingForm, SignUpFormEmail, SignUpFormUsername, AccountUpdateForm
+from app.forms import (
+    AccountUpdateForm,
+    CreateMeetingForm,
+    MeetingTimesForm,
+    SignUpFormEmail,
+    SignUpFormUsername
+)
 from tests.conftest import app as flask_app  # Import the app fixture for context in tests
 
 def test_meeting_form_valid(flask_app):
@@ -39,6 +47,41 @@ def test_meeting_form_invalid_length(flask_app):
         form = CreateMeetingForm(formdata=form_data)
         assert form.validate() is False
         assert 'This field is required.' in form.title.errors
+
+def test_meeting_times_form(flask_app):
+    """Test meeting time validation and support for clearing both fields."""
+    with flask_app.app_context():
+        invalid_form_data = MultiDict([
+            ('event_start', '2026-07-26T18:00'),
+            ('event_end', '2026-07-26T17:59')
+        ])
+        invalid_form = MeetingTimesForm(formdata=invalid_form_data)
+
+        empty_form_data = MultiDict([
+            ('event_start', ''),
+            ('event_end', '')
+        ])
+        empty_form = MeetingTimesForm(formdata=empty_form_data)
+
+        future_form_data = MultiDict([
+            ('event_start', (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%dT%H:%M')),
+            ('event_end', '')
+        ])
+        future_form = MeetingTimesForm(formdata=future_form_data)
+
+        future_end_form_data = MultiDict([
+            ('event_start', (datetime.now() - timedelta(hours=1)).strftime('%Y-%m-%dT%H:%M')),
+            ('event_end', (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%dT%H:%M'))
+        ])
+        future_end_form = MeetingTimesForm(formdata=future_end_form_data)
+
+        assert invalid_form.validate() is False
+        assert 'End time cannot be earlier than the start time.' in invalid_form.event_end.errors
+        assert empty_form.validate() is True
+        assert future_form.validate() is False
+        assert 'Start time cannot be in the future.' in future_form.event_start.errors
+        assert future_end_form.validate() is False
+        assert 'End time cannot be in the future.' in future_end_form.event_end.errors
 
 def test_signup_email_validator(flask_app):
     """

@@ -65,7 +65,13 @@ def test_admin_dashboard(flask_app):
         test_client = flask_app.test_client()
 
         # Create a test  meeting to view the dashboard for.
-        meeting = Meetings(title="Test Meeting", event_start=datetime.now(), state="active", description="Test Meeting Description", host="adminuser")
+        meeting = Meetings(
+            title="Test Meeting",
+            event_start=datetime(2026, 7, 26, 18, 0),
+            state="active",
+            description="Test Meeting Description",
+            host="adminuser"
+        )
         db.session.add(meeting)
         db.session.commit()
 
@@ -81,6 +87,96 @@ def test_admin_dashboard(flask_app):
         # Test access to the dashboard after login.
         dashboard_response = test_client.get(f"/admin/dashboard/{meeting.id}/")
         assert dashboard_response.status_code == 200
+        assert b'id="meeting-times-form"' in dashboard_response.data
+        assert b'type="datetime-local"' in dashboard_response.data
+        assert b'value="2026-07-26T18:00"' in dashboard_response.data
+
+def test_admin_dashboard_updates_meeting_times(flask_app):
+    """ Test meeting time updates, validation, clearing, and state synchronization. """
+    with flask_app.app_context():
+        admin_user = Users(username="adminuser", role="admin", activated=True)
+        admin_user.set_password("testpassword")
+        meeting = Meetings(
+            title="Test Meeting",
+            state="not started",
+            description="Test Meeting Description",
+            host="adminuser"
+        )
+        db.session.add_all([admin_user, meeting])
+        db.session.commit()
+
+        test_client = flask_app.test_client()
+        test_client.post(
+            "/login/",
+            data={"username": "adminuser", "password": "testpassword"}
+        )
+
+        meeting_times_url = f"/admin/dashboard/{meeting.id}/"
+        start_time = datetime(2026, 7, 26, 18, 0)
+        end_time = datetime(2026, 7, 26, 19, 30)
+
+        response = test_client.post(
+            meeting_times_url,
+            data={
+                "event_start": "2026-07-26T18:00",
+                "event_end": "2026-07-26T19:30"
+            }
+        )
+
+        assert response.status_code == 302
+        db.session.refresh(meeting)
+        assert meeting.event_start == start_time
+        assert meeting.event_end == end_time
+        assert meeting.state == "ended"
+
+        invalid_response = test_client.post(
+            meeting_times_url,
+            data={
+                "event_start": "2026-07-26T18:00",
+                "event_end": "2026-07-26T17:59"
+            }
+        )
+
+        assert b"End time cannot be earlier than the start time." in invalid_response.data
+        db.session.refresh(meeting)
+        assert meeting.event_start == start_time
+        assert meeting.event_end == end_time
+        assert meeting.state == "ended"
+
+        stale_code_hash = "stale-code-hash"
+        meeting.code_hash = stale_code_hash
+        db.session.commit()
+
+        reactivation_response = test_client.post(
+            meeting_times_url,
+            data={
+                "event_start": "2026-07-26T18:00",
+                "event_end": ""
+            }
+        )
+
+        assert reactivation_response.status_code == 302
+        assert "/admin/show-code/" in reactivation_response.location
+        db.session.refresh(meeting)
+        assert meeting.event_start == start_time
+        assert meeting.event_end is None
+        assert meeting.state == "active"
+        assert meeting.code_hash is not None
+        assert meeting.code_hash != stale_code_hash
+
+        test_client.post(
+            meeting_times_url,
+            data={
+                "event_start": "",
+                "event_end": "2026-07-26T19:30"
+            }
+        )
+
+        db.session.refresh(meeting)
+        assert meeting.event_start is None
+        assert meeting.event_end is None
+        assert meeting.state == "not started"
+        assert Attendees.query.filter_by(meeting=meeting.id).count() == 0
 
 def test_event_create(flask_app):
     """ Test the /admin/create/ endpoint. """
@@ -207,7 +303,14 @@ def test_event_end(flask_app):
 
         # Create a test meeting to end.
         meeting = Meetings(title="Test Meeting", state="active", description="Test Meeting Description", host="adminuser")
-        db.session.add(meeting)
+        future_meeting = Meetings(
+            title="Future Meeting",
+            state="active",
+            description="Future Test Meeting",
+            host="adminuser",
+            event_start=datetime.now() + timedelta(days=1)
+        )
+        db.session.add_all([meeting, future_meeting])
         db.session.commit()
 
         # Test access without login.
@@ -226,6 +329,13 @@ def test_event_end(flask_app):
         # Test ending an already ended meeting.
         end_response_again = test_client.post(f"/admin/end/{meeting.id}/")
         assert end_response_again.status_code == 400
+
+        # Test that the generated end time cannot precede the saved start time.
+        future_end_response = test_client.post(f"/admin/end/{future_meeting.id}/")
+        assert future_end_response.status_code == 400
+        db.session.refresh(future_meeting)
+        assert future_meeting.state == "active"
+        assert future_meeting.event_end is None
 
 def test_event_attendees(flask_app):
     """ Test the /admin/attendees/ endpoint. """
