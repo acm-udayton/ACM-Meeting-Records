@@ -13,17 +13,28 @@ File Purpose: Application factory for the project.
 from functools import wraps
 import logging
 import os
+from importlib.metadata import version, PackageNotFoundError
 
 # Third-party imports.
 from dotenv import load_dotenv
 from flask import Flask, render_template, abort, redirect, url_for
 from flask_login import current_user
+from flask_openapi3 import OpenAPI, Info
 from flask_wtf import CSRFProtect
 
 # Local application imports.
 from .extensions import db, login_manager, migrate
 
 csrf = CSRFProtect()
+
+# Name must match `name = "acm-meeting-records"` in pyproject.toml
+PACKAGE_NAME = "acm-meeting-records"
+
+try:
+    APP_VERSION = version(PACKAGE_NAME)
+except PackageNotFoundError:
+    # Fallback for local development if the package wasn't installed in editable mode
+    APP_VERSION = "0.0.0"
 
 def admin_required(f):
     """ Route decorator to restrict page access to admin users. """
@@ -116,8 +127,15 @@ def create_app(use_test_config=False):
     # Start logging setup.
     configure_logging()
 
+    # Create the OpenAPI info object.
+    info = Info(
+        title="ACM Meeting Records API",
+        version=APP_VERSION,
+        description="API for the ACM Meeting Records application.",
+    )
+
     # Create the Flask app.
-    app = Flask(__name__)
+    app = OpenAPI(__name__, info=info)
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("SQLALCHEMY_DATABASE_URI")
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
     app.config["UPLOAD_FOLDER"] = os.getenv("UPLOAD_FOLDER")
