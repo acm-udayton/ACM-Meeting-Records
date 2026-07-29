@@ -64,6 +64,32 @@
             <h2>{{ meeting.title }}</h2>
             <h5>{{ meeting.event_start|datetime_format|default("Start Time Unavailable", true) }} - {{ meeting.event_end|datetime_format|default("End Time Unavailable", true) }}<br/>{{ meeting.host }}</h5>
             <p>{{ meeting.description }}</p>
+            <form action="{{ url_for('admin.admin_dashboard', meeting_id=meeting.id) }}"
+                  method="POST"
+                  id="meeting-times-form"
+                  class="row g-3 text-start">
+              {{ meeting_times_form.hidden_tag() }}
+              <div class="col-md-6">
+                {{ meeting_times_form.event_start.label(class="form-label") }}
+                {{ meeting_times_form.event_start(class="form-control") }}
+                {% for error in meeting_times_form.event_start.errors %}
+                  <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+              </div>
+              <div class="col-md-6">
+                {{ meeting_times_form.event_end.label(class="form-label") }}
+                {{ meeting_times_form.event_end(class="form-control") }}
+                {% for error in meeting_times_form.event_end.errors %}
+                  <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+              </div>
+              <div class="col-12 text-muted">
+                <small>Clear the end time to mark the meeting active. Clear the start time to reset the meeting and clear both times.</small>
+              </div>
+              <div class="col-12">
+                {{ meeting_times_form.submit(class="form-control form-control-lg") }}
+              </div>
+            </form>
             <hr>
         </section>
 

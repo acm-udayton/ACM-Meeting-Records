@@ -9,6 +9,7 @@ File Purpose: Flask-WTF forms for the project.
 """
 
 # Standard library imports.
+import datetime
 import re
 
 # Third-party imports.
@@ -73,6 +74,36 @@ class CreateMeetingForm(FlaskForm):
         'Admin Only'
     )
     submit = SubmitField('Create Meeting')
+
+class MeetingTimesForm(FlaskForm):
+    """ Form for correcting a meeting's start and end times. """
+    event_start = DateTimeLocalField(
+        'Start Time',
+        format='%Y-%m-%dT%H:%M',
+        validators=[Optional()]
+    )
+    event_end = DateTimeLocalField(
+        'End Time',
+        format='%Y-%m-%dT%H:%M',
+        validators=[Optional()]
+    )
+    submit = SubmitField('Save Meeting Times')
+
+    def validate_event_start(self, field):
+        """ Ensure an entered start time is not in the future. """
+        if field.data is not None and field.data > datetime.datetime.now():
+            raise ValidationError('Start time cannot be in the future.')
+
+    def validate_event_end(self, field):
+        """ Ensure an entered end time is valid relative to the start and current time. """
+        if (
+            self.event_start.data is not None
+            and field.data is not None
+            and field.data < self.event_start.data
+        ):
+            raise ValidationError('End time cannot be earlier than the start time.')
+        if field.data is not None and field.data > datetime.datetime.now():
+            raise ValidationError('End time cannot be in the future.')
 
 class MeetingCheckinForm(FlaskForm):
     """ Form for check-in to a meeting. """
