@@ -58,29 +58,35 @@ def admin_dashboard(meeting_id):
     meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
     meeting_times_form = MeetingTimesForm(obj = meeting)
 
-    if meeting_times_form.validate_on_submit():
-        previous_state = meeting.state
-        meeting_code = None
-        meeting.event_start = meeting_times_form.event_start.data
+    if request.method == "POST":
+        if meeting_times_form.validate_on_submit():
+            previous_state = meeting.state
+            meeting_code = None
+            meeting.event_start = meeting_times_form.event_start.data
 
-        if meeting.event_start is None:
-            meeting.event_end = None
-            meeting.state = "not started"
+            if meeting.event_start is None:
+                meeting.event_end = None
+                meeting.state = "not started"
+            else:
+                meeting.event_end = meeting_times_form.event_end.data
+                meeting.state = "ended" if meeting.event_end is not None else "active"
+                if (
+                    meeting.state == "active"
+                    and (previous_state != "active" or meeting.code_hash is None)
+                ):
+                    meeting_code = generate_meeting_code()
+                    meeting.code_hash = sha_hash(meeting_code)
+
+            db.session.commit()
+            flash("Meeting times updated successfully.", "success")
+            if meeting_code is not None:
+                return redirect(url_for("admin.show_code", code = meeting_code))
+            return redirect(url_for("admin.admin_dashboard", meeting_id = meeting.id))
         else:
-            meeting.event_end = meeting_times_form.event_end.data
-            meeting.state = "ended" if meeting.event_end is not None else "active"
-            if (
-                meeting.state == "active"
-                and (previous_state != "active" or meeting.code_hash is None)
-            ):
-                meeting_code = generate_meeting_code()
-                meeting.code_hash = sha_hash(meeting_code)
-
-        db.session.commit()
-        flash("Meeting times updated successfully.", "success")
-        if meeting_code is not None:
-            return redirect(url_for("admin.show_code", code = meeting_code))
-        return redirect(url_for("admin.admin_dashboard", meeting_id = meeting.id))
+            flash(
+                "Meeting times update failed. Please correct the errors below and try again.",
+                "danger"
+            )
 
     attendees = Attendees.query.filter_by(meeting = meeting_id).all()
     minutes = Minutes.query.filter_by(meeting = meeting_id).all()

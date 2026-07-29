@@ -138,6 +138,10 @@ def test_admin_dashboard_updates_meeting_times(flask_app):
         )
 
         assert b"End time cannot be earlier than the start time." in invalid_response.data
+        assert (
+            b"Meeting times update failed. Please correct the errors below and try again."
+            in invalid_response.data
+        )
         db.session.refresh(meeting)
         assert meeting.event_start == start_time
         assert meeting.event_end == end_time
