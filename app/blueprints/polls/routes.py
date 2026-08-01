@@ -1,10 +1,10 @@
 #!/usr/bin/env python
-# app/blueprints/admin.py
+# app/blueprints/polls/routes.py
 
 """
 Project Name: ACM-Meeting-Records 
 Project Author(s): Thomas Crossman (github.com/crossmant1), Joseph Lefkovitz (github.com/lefkovitz)
-Last Modfied: March 22, 2026. 
+Last Modfied: August 1, 2026. 
 
 File Purpose: Polling routes for polling system
 """
@@ -15,6 +15,7 @@ from datetime import datetime
 # Third-party imports.
 from flask import (
     Blueprint,
+    abort,
     render_template,
     redirect,
     url_for,
@@ -23,9 +24,13 @@ from flask import (
 from flask_login import login_required, current_user
 
 # Local application imports.
-from app.extensions import db
-from app.models import Poll, PollQuestion, PollOption, PollVoter
 from app.forms import CreatePollForm, DeletePollForm
+from app.services.polls_service import (
+    PollResultStatus,
+    create_poll as create_poll_service,
+    delete_poll as delete_poll_service,
+    get_polls_list_data,
+)
 from app.__init__ import admin_required
 
 polls_bp = Blueprint('polls', __name__, url_prefix='/admin', template_folder='templates')
@@ -33,7 +38,7 @@ polls_bp = Blueprint('polls', __name__, url_prefix='/admin', template_folder='te
 
 def flash_form_errors(form):
     """Flash human-readable validation errors, including nested FieldList/FormField entries."""
-    for field_name, field in form._fields.items():
+    for field in form._fields.values():
         if not field.errors:
             continue
 
@@ -62,19 +67,14 @@ def flash_form_errors(form):
 @admin_required
 def polls_list():
     """ Show the polls. """
-    all_polls = Poll.query.all()
     form = CreatePollForm()
     delete_poll_form = DeletePollForm()
-    # Get all question IDs the current user has voted on
-    voted_questions = set()
-    if current_user.is_authenticated:
-        voter_records = PollVoter.query.filter_by(user_id=current_user.id).all()
-        voted_questions = {voter.question_id for voter in voter_records}
+    view_data = get_polls_list_data(current_user.id if current_user.is_authenticated else None)
 
     return render_template("admin/polls.html",
                           page_title="Polls",
-                          polls=all_polls,
-                          voted_questions=voted_questions,
+                          polls=view_data.polls,
+                          voted_questions=view_data.voted_questions,
                           form=form,
                           delete_poll_form=delete_poll_form,
                           datetime_now=datetime.now())
@@ -88,53 +88,44 @@ def create_poll():
     if not form.validate_on_submit():
         flash_form_errors(form)
         return redirect(url_for("polls.polls_list"))
-    else:
-        if form.poll_expires.data and form.poll_expires.data <= datetime.now():
-            flash("Poll expiration datetime must be in the future.", "danger")
-            return redirect(url_for("polls.polls_list"))
-        poll = Poll(title=form.title.data, poll_expires=form.poll_expires.data)
-        db.session.add(poll)
-        db.session.flush()
 
-        for question_form in form.questions.entries:
-            is_frq = question_form.form.is_free_response.data
-            allow_multiple = question_form.form.allow_multiple_responses.data
-            private_votes = question_form.form.private_vote.data
-            immutable_questions = question_form.form.immutable_question.data
+    question_payloads = []
+    for question_form in form.questions.entries:
+        question_payloads.append(
+            {
+                "question_text": question_form.form.question_text.data,
+                "is_free_response": question_form.form.is_free_response.data,
+                "allow_multiple_responses": question_form.form.allow_multiple_responses.data,
+                "private_vote": question_form.form.private_vote.data,
+                "immutable_question": question_form.form.immutable_question.data,
+                "options": [
+                    option_form.form.option_text.data
+                    for option_form in question_form.form.options.entries
+                ],
+            }
+        )
 
-
-            question = PollQuestion(
-                poll_id=poll.id,
-                question_text=question_form.form.question_text.data,
-                is_free_response=is_frq,
-                allow_multiple_responses=allow_multiple if not is_frq else False,  # Only for MCQs
-                private_vote = private_votes,
-                immutable_question = immutable_questions
-            )
-            db.session.add(question)
-            db.session.flush()
-
-            # Only add options if it's NOT a free response question
-            if not is_frq:
-                for option_form in question_form.form.options.entries:
-                    option = PollOption(
-                        question_id=question.id,
-                        option_text=option_form.form.option_text.data
-                    )
-                    db.session.add(option)
-
-        db.session.commit()
-        flash("Poll created successfully!", "success")
+    result = create_poll_service(
+        title=form.title.data or "",
+        poll_expires=form.poll_expires.data,
+        questions=question_payloads,
+    )
+    if PollResultStatus.INVALID_POLL_EXPIRATION in result.statuses:
+        flash("Poll expiration datetime must be in the future.", "danger")
         return redirect(url_for("polls.polls_list"))
+
+    flash("Poll created successfully!", "success")
+    return redirect(url_for("polls.polls_list"))
 
 @polls_bp.route("/delete-poll/<int:poll_id>/", methods=["POST"])
 @login_required
 @admin_required
 def delete_poll(poll_id):
     """Delete a poll."""
-    poll = Poll.query.get_or_404(poll_id)
-    db.session.delete(poll)
-    db.session.commit()
+    result = delete_poll_service(poll_id)
+    if PollResultStatus.POLL_NOT_FOUND in result.statuses:
+        abort(404)
+
     flash("Poll deleted successfully!", "success")
 
     return redirect(url_for("polls.polls_list"))
