@@ -218,6 +218,17 @@ In our project, all Flask-WTF forms are defined in the `app/forms.py` file. Each
 For more information on how to use Flask-WTF, please refer to the official documentation: https://flask-wtf.readthedocs.io/en/1.2.x/
 </details>
 
+<details>
+<summary id="flask-openapi3"><strong>Flask-OpenAPI3</strong></summary>
+<br>
+
+Flask-OpenAPI3 is a Flask extension that provides seamless integration with the OpenAPI 3.0 specification. It allows you to define your API endpoints using Python decorators and automatically generates OpenAPI documentation for your application. This makes it easy to document your API and provides a way for other developers to understand and use your endpoints. We use the Swagger UI integration, and you can find the dashboard at `/openapi/swagger/`.
+
+To add a new API endpoint, you can use the `@api.get`, `@api.post`, `@api.put`, or `@api.delete` decorators to define the HTTP method for your endpoint. You can also specify the path, summary, description, and response schema for your endpoint using the decorator parameters. Flask-OpenAPI3 will then generate the OpenAPI documentation based on these definitions. You must use pydantic models to define the request and response schemas for your endpoints. These models are used to validate the input and output data for your API endpoints, ensuring that they conform to the specified schema.
+
+For more information on how to use Flask-OpenAPI3, please refer to the official documentation: https://flask-openapi3.readthedocs.io/en/latest/
+</details>
+
 <hr>
 
 
