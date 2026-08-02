@@ -132,7 +132,7 @@ def create_poll():
 @admin_required
 def delete_poll(poll_id):
     """Delete a poll."""
-    poll = Poll.query.get_or_404(poll_id)
+    poll = db.get_or_404(Poll, poll_id)
     db.session.delete(poll)
     db.session.commit()
     flash("Poll deleted successfully!", "success")
