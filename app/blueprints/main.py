@@ -110,7 +110,7 @@ def handle_multiple_response_mcq(selected_option_ids, question):
     # Decrement vote counts for removed options
     for vote in existing_votes:
         if vote.option_id not in new_option_ids:
-            option = PollOption.query.get(vote.option_id)
+            option = db.session.get(PollOption, vote.option_id)
             if option and option.votes > 0:
                 option.votes -= 1
             db.session.delete(vote)
@@ -119,7 +119,7 @@ def handle_multiple_response_mcq(selected_option_ids, question):
     # Add votes for newly selected options
     for option_id in new_option_ids:
         if option_id not in existing_option_ids:
-            option = PollOption.query.get(option_id)
+            option = db.session.get(PollOption, option_id)
             if option:
                 option.votes += 1
                 new_vote = PollVoter(
@@ -157,11 +157,11 @@ def handle_single_mcq(selected_option_ids, question):
             return False, True
 
         # Process the changed vote
-        old_option = PollOption.query.get(existing_vote.option_id)
+        old_option = db.session.get(PollOption, existing_vote.option_id)
         if old_option and old_option.votes > 0:
             old_option.votes -= 1
 
-        new_option = PollOption.query.get(option_id)
+        new_option = db.session.get(PollOption, option_id)
         if new_option:
             new_option.votes += 1
             existing_vote.option_id = option_id
@@ -169,7 +169,7 @@ def handle_single_mcq(selected_option_ids, question):
         
     else:
         # New vote
-        option = PollOption.query.get(option_id)
+        option = db.session.get(PollOption, option_id)
         if option:
             option.votes += 1
             new_vote = PollVoter(
@@ -350,7 +350,7 @@ def submit_poll(poll_id):
     changes_made = False
     successes = 0
     failures = 0
-    poll = Poll.query.get_or_404(poll_id)
+    poll = db.get_or_404(Poll, poll_id)
     if poll.poll_expires and poll.poll_expires <= datetime.now():
         flash("Poll has expired. You cannot submit responses.", "danger")
         return redirect(url_for('main.home'))

@@ -707,7 +707,7 @@ def test_reset_user_password(flask_app):
         assert reset_password_response.status_code == 200
 
         # Verify that the target user's password was changed.
-        target_user_from_db = Users.query.get(target_user.id)
+        target_user_from_db = db.session.get(Users, target_user.id)
         assert target_user_from_db is not None
         assert target_user_from_db.check_password("newpassword") == True
 
@@ -740,7 +740,7 @@ def test_promote_user(flask_app):
         assert promote_response.status_code == 200
 
         # Verify that the target user's role was changed.
-        target_user_from_db = Users.query.get(target_user.id)
+        target_user_from_db = db.session.get(Users, target_user.id)
         assert target_user_from_db is not None
         assert target_user_from_db.role == "admin"
 
@@ -778,7 +778,7 @@ def test_demote_user(flask_app):
         assert demote_response.status_code == 200
 
         # Verify that the target user's role was changed.
-        target_user_from_db = Users.query.get(target_user.id)
+        target_user_from_db = db.session.get(Users, target_user.id)
         assert target_user_from_db is not None
         assert target_user_from_db.role == "user"
 
@@ -821,7 +821,7 @@ def test_disable_user_mfa(flask_app):
         assert disable_mfa_response.status_code == 200
 
         # Verify that the target user's MFA was disabled.
-        target_user_from_db = Users.query.get(target_user.id)
+        target_user_from_db = db.session.get(Users, target_user.id)
         assert target_user_from_db is not None
         assert target_user_from_db.mfa_active == False
         assert target_user_from_db.totp_active == False
@@ -861,7 +861,7 @@ def test_disable_user_account(flask_app):
         assert disable_account_response.status_code == 200
 
         # Verify that the target user's account was disabled.
-        target_user_from_db = Users.query.get(target_user.id)
+        target_user_from_db = db.session.get(Users, target_user.id)
         assert target_user_from_db is not None
         assert target_user_from_db.activated == False
 
@@ -899,7 +899,7 @@ def test_enable_user_account(flask_app):
         assert enable_account_response.status_code == 200
 
         # Verify that the target user's account was enabled.
-        target_user_from_db = Users.query.get(target_user.id)
+        target_user_from_db = db.session.get(Users, target_user.id)
         assert target_user_from_db is not None
         assert target_user_from_db.activated == True
 

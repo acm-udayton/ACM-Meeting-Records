@@ -236,7 +236,7 @@ def test_setup_totp_success(flask_app):
 
         # Verify the database model updated and generated a secret.
         with flask_app.app_context():
-            updated_user = Users.query.get(user.id)
+            updated_user = db.session.get(Users, user.id)
             assert updated_user.totp_secret is not None
 
         # Verify the temporary secret was dropped into the session transaction queue.
@@ -279,7 +279,7 @@ def test_verify_totp_setup_success_redirect_recovery(flask_app):
         assert response.status_code == 302
 
         with flask_app.app_context():
-            updated_user = Users.query.get(user.id)
+            updated_user = db.session.get(Users, user.id)
             assert updated_user.mfa_active is True
             assert updated_user.totp_active is True
 
@@ -351,7 +351,7 @@ def test_verify_totp_setup_invalid_code(flask_app):
             assert get_flashed_messages() == ['Invalid code. Please try scanning and verifying again.']
 
         with flask_app.app_context():
-            updated_user = Users.query.get(user.id)
+            updated_user = db.session.get(Users, user.id)
             assert updated_user.totp_active is False
 
 def test_verify_totp_setup_invalid_form(flask_app):
@@ -394,7 +394,7 @@ def test_disable_totp_success(flask_app):
 
         # Verify the database model updated and TOTP is now inactive.
         with flask_app.app_context():
-            updated_user = Users.query.get(user.id)
+            updated_user = db.session.get(Users, user.id)
             assert not updated_user.totp_active
 
 def test_disable_totp_unauthenticated(flask_app):
@@ -436,7 +436,7 @@ def test_disable_mfa_success(flask_app):
 
         # Verify the database model updated and MFA is now inactive.
         with flask_app.app_context():
-            updated_user = Users.query.get(user.id)
+            updated_user = db.session.get(Users, user.id)
             assert not updated_user.mfa_active
             assert not updated_user.totp_active
             assert updated_user.totp_secret is None

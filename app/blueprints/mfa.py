@@ -46,7 +46,7 @@ def reset_recovery_codes():
         db.session.delete(old_code)
 
     # Ensure MFA is active for the user.
-    user = Users.query.get(current_user.id)
+    user = db.session.get(Users, current_user.id)
     user.mfa_active = True
 
     # Store codes for display in template.
@@ -71,7 +71,7 @@ def verify_recovery_code():
         flash('You must log in before using a recovery code.', 'warning')
         return redirect(url_for('auth.login'))
 
-    user = Users.query.get(user_id)
+    user = db.session.get(Users, user_id)
     if not user:
         flash('User not found.', 'danger')
         return redirect(url_for('auth.login'))
@@ -109,7 +109,7 @@ def verify_totp():
         return redirect(url_for('auth.login'))
 
     # Verify that the user exists and has TOTP active.
-    user = Users.query.get(user_id)
+    user = db.session.get(Users, user_id)
     if not user or not user.totp_active:
         flash('TOTP MFA not required or user not found.', 'danger')
         return redirect(url_for('auth.login'))
