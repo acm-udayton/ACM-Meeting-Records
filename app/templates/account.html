@@ -67,20 +67,28 @@
                   {% else %}
                     {% set codes_word_1 = 'Generate' %}
                   {% endif %}
-                  <p><a href="{{ url_for('mfa.reset_recovery_codes') }}"><button role="button" class="btn btn-danger blue-link-btn">{{ codes_word_1 }} Recovery Codes</button></a></p>
+                  <form action="{{ url_for('mfa.reset_recovery_codes') }}"
+                        method="POST"
+                        onsubmit="return confirm('This will invalidate all existing recovery codes. Continue?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="btn btn-danger blue-link-btn">{{ codes_word_1 }} Recovery Codes</button>
+                  </form>
                 </td>
                 <td class="align-middle">
                   <!-- TOTP MFA -->
                   {% if current_user.totp_active %}
-                    {% set totp_word_1 = 'Disable' %}
-                    {% set totp_link = url_for('mfa.disable_totp') %}
-                    {% set totp_color = 'red-link-btn' %}
+                    <form action="{{ url_for('mfa.disable_totp') }}"
+                          method="POST"
+                          onsubmit="return confirm('Are you sure you want to disable TOTP authentication?');">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                      <button type="submit" class="btn btn-danger red-link-btn">Disable TOTP MFA (authenticator app)</button>
+                    </form>
                   {% else %}
-                    {% set totp_word_1 = 'Enable' %}
-                    {% set totp_link = url_for('mfa.setup_totp') %}
-                    {% set totp_color = 'blue-link-btn' %}
+                    <form action="{{ url_for('mfa.setup_totp') }}" method="POST">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                      <button type="submit" class="btn btn-danger blue-link-btn">Enable TOTP MFA (authenticator app)</button>
+                    </form>
                   {% endif %}
-                  <p><a href="{{ totp_link }}"><button role="button" class="btn btn-danger {{ totp_color }}">{{ totp_word_1 }} TOTP MFA (authenticator app)</button></a></p>
                 </td>
               </tr>
             </table>
@@ -90,7 +98,12 @@
             {% if current_user.role == 'admin' %}, especially for administrators,{% endif %}
             as it reduces account security.
           </p>
-          <p><a href="{{ url_for('mfa.disable_mfa') }}"><button role="button" class="btn btn-danger red-link-btn">Disable All MFA</button></a></p>
+          <form action="{{ url_for('mfa.disable_mfa') }}"
+                method="POST"
+                onsubmit="return confirm('Are you sure you want to disable all multi-factor authentication?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button type="submit" class="btn btn-danger red-link-btn">Disable All MFA</button>
+          </form>
 
         {% else %}
             <!-- MFA Disabled -->
@@ -106,11 +119,19 @@
                 <tr>
                   <td class="align-middle">
                     <!-- MFA Recovery Codes -->
-                    <p><a href="{{ url_for('mfa.reset_recovery_codes') }}"><button role="button" class="btn btn-primary blue-link-btn">Enable MFA with Recovery Codes</button></a></p>
+                    <form action="{{ url_for('mfa.reset_recovery_codes') }}"
+                          method="POST"
+                          onsubmit="return confirm('Generate new recovery codes and enable MFA?');">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                      <button type="submit" class="btn btn-primary blue-link-btn">Enable MFA with Recovery Codes</button>
+                    </form>
                   </td>
                   <td class="align-middle">
                     <!-- TOTP MFA -->
-                    <p><a href="{{ url_for('mfa.setup_totp') }}"><button role="button" class="btn btn-primary blue-link-btn">Enable MFA with TOTP (authenticator app)</button></a></p>
+                    <form action="{{ url_for('mfa.setup_totp') }}" method="POST">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                      <button type="submit" class="btn btn-primary blue-link-btn">Enable MFA with TOTP (authenticator app)</button>
+                    </form>
                   </td>
                 </tr>
               </table>
