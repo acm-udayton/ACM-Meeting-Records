@@ -12,9 +12,7 @@ File Purpose: Pytest for the blueprints/main endpoints.
 from datetime import datetime, timedelta
 
 from flask import get_flashed_messages
-from flask_login import login_user as flask_login_user
 
-from app.blueprints import main as main_module
 from app.extensions import db
 from app.models import (
     Meetings,
@@ -26,6 +24,8 @@ from app.models import (
     PollVoter,
     PollFreeResponse
 )
+from app.services import main_service as main_module
+from app.services.main_service import MainResultStatus
 from app.utils import sha_hash
 from tests.conftest import app as flask_app
 
@@ -119,6 +119,12 @@ def add_free_response(user_id, question_id, response_text):
     db.session.add(response)
     db.session.flush()
     return response
+
+
+def assert_main_result(result, status, changes_made):
+    """Assert the status and legacy change flag returned by a main service operation."""
+    assert result.statuses == (status,)
+    assert result.changes_made is changes_made
 
 def test_home_no_recent_meetings(flask_app):
     """The home page should render the empty-state message when no meetings exist."""
@@ -437,6 +443,56 @@ def test_submit_poll_immutable_free_response_failure(flask_app):
             assert get_flashed_messages() == ["Response for 'What changed?' cannot be changed once submitted.", "Some responses were not submitted successfully. Successes: 0, Failures: 1"]
             assert PollFreeResponse.query.filter_by(user_id=user.id, question_id=question.id).one().response_text == "Original response"
 
+
+def test_submit_poll_immutable_multiple_response_failure(flask_app):
+    """An immutable multi-select should preserve votes and flash the plural error."""
+    with flask_app.app_context():
+        user = create_user()
+        test_client = flask_app.test_client()
+        login_user(test_client)
+
+        poll = create_poll(
+            "Immutable Multi Poll",
+            expires=datetime.now() + timedelta(days=1),
+        )
+        question = create_question(
+            poll,
+            "Immutable multi route",
+            allow_multiple=True,
+            immutable_question=True,
+        )
+        first_option = create_option(question, "Original option")
+        second_option = create_option(question, "Changed option")
+        add_voter(user.id, question.id, first_option.id, poll.id)
+        first_option.votes += 1
+        db.session.commit()
+
+        with test_client:
+            response = test_client.post(
+                f"/submit-poll/{poll.id}",
+                data={f"question_{question.id}_mcq": str(second_option.id)},
+                follow_redirects=True,
+            )
+            assert response.status_code == 200
+            assert get_flashed_messages() == [
+                (
+                    "Responses for 'Immutable multi route' cannot be changed "
+                    "once submitted."
+                ),
+                (
+                    "Some responses were not submitted successfully. "
+                    "Successes: 0, Failures: 1"
+                ),
+            ]
+            saved_vote = PollVoter.query.filter_by(
+                user_id=user.id,
+                question_id=question.id,
+            ).one()
+            assert saved_vote.option_id == first_option.id
+            assert first_option.votes == 1
+            assert second_option.votes == 0
+
+
 def test_submit_poll_frq_blank_response_no_change(flask_app):
     """Blank FRQ input should be treated as no change."""
     with flask_app.app_context():
@@ -445,13 +501,13 @@ def test_submit_poll_frq_blank_response_no_change(flask_app):
         question = create_question(poll, "Share a thought", is_free_response=True)
         db.session.commit()
 
-        with flask_app.test_request_context(
-            f"/submit-poll/{poll.id}",
-            method="POST",
-            data={f"question_{question.id}_frq": ""},
-        ):
-            flask_login_user(user)
-            assert main_module.handle_frq(question) == (True, False)
+        result = main_module.handle_frq(user.id, question.id, "")
+        assert_main_result(result, MainResultStatus.SUCCESS, False)
+        db.session.flush()
+        assert PollFreeResponse.query.filter_by(
+            user_id=user.id,
+            question_id=question.id,
+        ).count() == 0
 
 
 def test_submit_poll_frq_creates_new_response(flask_app):
@@ -462,13 +518,18 @@ def test_submit_poll_frq_creates_new_response(flask_app):
         question = create_question(poll, "Share a thought", is_free_response=True)
         db.session.commit()
 
-        with flask_app.test_request_context(
-            f"/submit-poll/{poll.id}",
-            method="POST",
-            data={f"question_{question.id}_frq": "Initial response"},
-        ):
-            flask_login_user(user)
-            assert main_module.handle_frq(question) == (True, True)
+        result = main_module.handle_frq(
+            user.id,
+            question.id,
+            "Initial response",
+        )
+        assert_main_result(result, MainResultStatus.SUCCESS, True)
+        db.session.flush()
+        saved_response = PollFreeResponse.query.filter_by(
+            user_id=user.id,
+            question_id=question.id,
+        ).one()
+        assert saved_response.response_text == "Initial response"
 
 
 def test_submit_poll_frq_same_response_no_change(flask_app):
@@ -482,13 +543,19 @@ def test_submit_poll_frq_same_response_no_change(flask_app):
         add_free_response(user.id, question.id, "Initial response")
         db.session.commit()
 
-        with flask_app.test_request_context(
-            f"/submit-poll/{poll.id}",
-            method="POST",
-            data={f"question_{question.id}_frq": "Initial response"},
-        ):
-            flask_login_user(user)
-            assert main_module.handle_frq(question) == (True, False)
+        result = main_module.handle_frq(
+            user.id,
+            question.id,
+            "Initial response",
+        )
+        assert_main_result(result, MainResultStatus.SUCCESS, False)
+        db.session.flush()
+        saved_responses = PollFreeResponse.query.filter_by(
+            user_id=user.id,
+            question_id=question.id,
+        ).all()
+        assert len(saved_responses) == 1
+        assert saved_responses[0].response_text == "Initial response"
 
 
 def test_submit_poll_frq_updates_existing_response(flask_app):
@@ -502,13 +569,19 @@ def test_submit_poll_frq_updates_existing_response(flask_app):
         add_free_response(user.id, question.id, "Initial response")
         db.session.commit()
 
-        with flask_app.test_request_context(
-            f"/submit-poll/{poll.id}",
-            method="POST",
-            data={f"question_{question.id}_frq": "Updated response"},
-        ):
-            flask_login_user(user)
-            assert main_module.handle_frq(question) == (True, True)
+        result = main_module.handle_frq(
+            user.id,
+            question.id,
+            "Updated response",
+        )
+        assert_main_result(result, MainResultStatus.SUCCESS, True)
+        db.session.flush()
+        saved_responses = PollFreeResponse.query.filter_by(
+            user_id=user.id,
+            question_id=question.id,
+        ).all()
+        assert len(saved_responses) == 1
+        assert saved_responses[0].response_text == "Updated response"
 
 
 def test_submit_poll_immutable_free_response_rejects_change(flask_app):
@@ -522,13 +595,20 @@ def test_submit_poll_immutable_free_response_rejects_change(flask_app):
         add_free_response(user.id, question.id, "Immutable response")
         db.session.commit()
 
-        with flask_app.test_request_context(
-            f"/submit-poll/{poll.id}",
-            method="POST",
-            data={f"question_{question.id}_frq": "Changed immutable response"},
-        ):
-            flask_login_user(user)
-            assert main_module.handle_frq(question) == (False, True)
+        result = main_module.handle_frq(
+            user.id,
+            question.id,
+            "Changed immutable response",
+        )
+        assert_main_result(result, MainResultStatus.IMMUTABLE_RESPONSE, True)
+        assert result.question_text == "Immutable thought"
+        db.session.flush()
+        saved_responses = PollFreeResponse.query.filter_by(
+            user_id=user.id,
+            question_id=question.id,
+        ).all()
+        assert len(saved_responses) == 1
+        assert saved_responses[0].response_text == "Immutable response"
 
 
 def test_submit_poll_single_mcq_creates_vote(flask_app):
@@ -538,16 +618,19 @@ def test_submit_poll_single_mcq_creates_vote(flask_app):
         poll = create_poll("MCQ Branch Poll", expires=datetime.now() + timedelta(days=1))
         question = create_question(poll, "Single choice", allow_multiple=False)
         option = create_option(question, "Single A")
-        create_option(question, "Single B")
+        other_option = create_option(question, "Single B")
         db.session.commit()
 
-        with flask_app.test_request_context(
-            f"/submit-poll/{poll.id}",
-            method="POST",
-            data={f"question_{question.id}_mcq": str(option.id)},
-        ):
-            flask_login_user(user)
-            assert main_module.handle_mcq(question) == (True, True)
+        result = main_module.handle_mcq(user.id, question.id, [option.id])
+        assert_main_result(result, MainResultStatus.SUCCESS, True)
+        db.session.flush()
+        saved_vote = PollVoter.query.filter_by(
+            user_id=user.id,
+            question_id=question.id,
+        ).one()
+        assert saved_vote.option_id == option.id
+        assert option.votes == 1
+        assert other_option.votes == 0
 
 
 def test_submit_poll_single_mcq_same_vote_no_change(flask_app):
@@ -564,13 +647,16 @@ def test_submit_poll_single_mcq_same_vote_no_change(flask_app):
         option.votes += 1
         db.session.commit()
 
-        with flask_app.test_request_context(
-            f"/submit-poll/{poll.id}",
-            method="POST",
-            data={f"question_{question.id}_mcq": str(option.id)},
-        ):
-            flask_login_user(user)
-            assert main_module.handle_mcq(question) == (True, False)
+        result = main_module.handle_mcq(user.id, question.id, [option.id])
+        assert_main_result(result, MainResultStatus.SUCCESS, False)
+        db.session.flush()
+        saved_votes = PollVoter.query.filter_by(
+            user_id=user.id,
+            question_id=question.id,
+        ).all()
+        assert len(saved_votes) == 1
+        assert saved_votes[0].option_id == option.id
+        assert option.votes == 1
 
 
 def test_submit_poll_single_mcq_updates_vote(flask_app):
@@ -587,13 +673,16 @@ def test_submit_poll_single_mcq_updates_vote(flask_app):
         old_option.votes += 1
         db.session.commit()
 
-        with flask_app.test_request_context(
-            f"/submit-poll/{poll.id}",
-            method="POST",
-            data={f"question_{question.id}_mcq": str(new_option.id)},
-        ):
-            flask_login_user(user)
-            assert main_module.handle_mcq(question) == (True, True)
+        result = main_module.handle_mcq(user.id, question.id, [new_option.id])
+        assert_main_result(result, MainResultStatus.SUCCESS, True)
+        db.session.flush()
+        saved_vote = PollVoter.query.filter_by(
+            user_id=user.id,
+            question_id=question.id,
+        ).one()
+        assert saved_vote.option_id == new_option.id
+        assert old_option.votes == 0
+        assert new_option.votes == 1
 
 
 def test_submit_poll_single_mcq_no_selection_no_change(flask_app):
@@ -604,13 +693,13 @@ def test_submit_poll_single_mcq_no_selection_no_change(flask_app):
         question = create_question(poll, "No selection", allow_multiple=False)
         db.session.commit()
 
-        with flask_app.test_request_context(
-            f"/submit-poll/{poll.id}",
-            method="POST",
-            data={},
-        ):
-            flask_login_user(user)
-            assert main_module.handle_mcq(question) == (True, False)
+        result = main_module.handle_mcq(user.id, question.id, [])
+        assert_main_result(result, MainResultStatus.SUCCESS, False)
+        db.session.flush()
+        assert PollVoter.query.filter_by(
+            user_id=user.id,
+            question_id=question.id,
+        ).count() == 0
 
 
 def test_submit_poll_immutable_single_mcq_rejects_change(flask_app):
@@ -627,13 +716,21 @@ def test_submit_poll_immutable_single_mcq_rejects_change(flask_app):
         first_option.votes += 1
         db.session.commit()
 
-        with flask_app.test_request_context(
-            f"/submit-poll/{poll.id}",
-            method="POST",
-            data={f"question_{question.id}_mcq": str(second_option.id)},
-        ):
-            flask_login_user(user)
-            assert main_module.handle_mcq(question) == (False, True)
+        result = main_module.handle_mcq(
+            user.id,
+            question.id,
+            [second_option.id],
+        )
+        assert_main_result(result, MainResultStatus.IMMUTABLE_RESPONSE, True)
+        assert result.question_text == "Immutable single"
+        db.session.flush()
+        saved_vote = PollVoter.query.filter_by(
+            user_id=user.id,
+            question_id=question.id,
+        ).one()
+        assert saved_vote.option_id == first_option.id
+        assert first_option.votes == 1
+        assert second_option.votes == 0
 
 
 def test_submit_poll_multiple_mcq_creates_votes(flask_app):
@@ -646,13 +743,23 @@ def test_submit_poll_multiple_mcq_creates_votes(flask_app):
         second_option = create_option(question, "Multi B")
         db.session.commit()
 
-        with flask_app.test_request_context(
-            f"/submit-poll/{poll.id}",
-            method="POST",
-            data={f"question_{question.id}_mcq": [str(first_option.id), str(second_option.id)]},
-        ):
-            flask_login_user(user)
-            assert main_module.handle_mcq(question) == (True, True)
+        result = main_module.handle_mcq(
+            user.id,
+            question.id,
+            [first_option.id, second_option.id],
+        )
+        assert_main_result(result, MainResultStatus.SUCCESS, True)
+        db.session.flush()
+        saved_option_ids = {
+            vote.option_id
+            for vote in PollVoter.query.filter_by(
+                user_id=user.id,
+                question_id=question.id,
+            ).all()
+        }
+        assert saved_option_ids == {first_option.id, second_option.id}
+        assert first_option.votes == 1
+        assert second_option.votes == 1
 
 
 def test_submit_poll_multiple_mcq_same_selection_no_change(flask_app):
@@ -671,13 +778,23 @@ def test_submit_poll_multiple_mcq_same_selection_no_change(flask_app):
         second_option.votes += 1
         db.session.commit()
 
-        with flask_app.test_request_context(
-            f"/submit-poll/{poll.id}",
-            method="POST",
-            data={f"question_{question.id}_mcq": [str(first_option.id), str(second_option.id)]},
-        ):
-            flask_login_user(user)
-            assert main_module.handle_multiple_response_mcq([first_option.id, second_option.id], question) == (True, False)
+        result = main_module.handle_multiple_response_mcq(
+            user.id,
+            question.id,
+            [first_option.id, second_option.id],
+        )
+        assert_main_result(result, MainResultStatus.SUCCESS, False)
+        db.session.flush()
+        saved_option_ids = {
+            vote.option_id
+            for vote in PollVoter.query.filter_by(
+                user_id=user.id,
+                question_id=question.id,
+            ).all()
+        }
+        assert saved_option_ids == {first_option.id, second_option.id}
+        assert first_option.votes == 1
+        assert second_option.votes == 1
 
 
 def test_submit_poll_multiple_mcq_updates_selection(flask_app):
@@ -697,13 +814,24 @@ def test_submit_poll_multiple_mcq_updates_selection(flask_app):
         second_option.votes += 1
         db.session.commit()
 
-        with flask_app.test_request_context(
-            f"/submit-poll/{poll.id}",
-            method="POST",
-            data={f"question_{question.id}_mcq": [str(first_option.id), str(third_option.id)]},
-        ):
-            flask_login_user(user)
-            assert main_module.handle_multiple_response_mcq([first_option.id, third_option.id], question) == (True, True)
+        result = main_module.handle_multiple_response_mcq(
+            user.id,
+            question.id,
+            [first_option.id, third_option.id],
+        )
+        assert_main_result(result, MainResultStatus.SUCCESS, True)
+        db.session.flush()
+        saved_option_ids = {
+            vote.option_id
+            for vote in PollVoter.query.filter_by(
+                user_id=user.id,
+                question_id=question.id,
+            ).all()
+        }
+        assert saved_option_ids == {first_option.id, third_option.id}
+        assert first_option.votes == 1
+        assert second_option.votes == 0
+        assert third_option.votes == 1
 
 
 def test_submit_poll_multiple_mcq_no_selection_no_change(flask_app):
@@ -714,13 +842,17 @@ def test_submit_poll_multiple_mcq_no_selection_no_change(flask_app):
         question = create_question(poll, "Empty multi", allow_multiple=True)
         db.session.commit()
 
-        with flask_app.test_request_context(
-            f"/submit-poll/{poll.id}",
-            method="POST",
-            data={f"question_{question.id}_mcq": []},
-        ):
-            flask_login_user(user)
-            assert main_module.handle_multiple_response_mcq([], question) == (True, False)
+        result = main_module.handle_multiple_response_mcq(
+            user.id,
+            question.id,
+            [],
+        )
+        assert_main_result(result, MainResultStatus.SUCCESS, False)
+        db.session.flush()
+        assert PollVoter.query.filter_by(
+            user_id=user.id,
+            question_id=question.id,
+        ).count() == 0
 
 
 def test_submit_poll_immutable_multiple_mcq_blank_selection_no_change(flask_app):
@@ -736,13 +868,19 @@ def test_submit_poll_immutable_multiple_mcq_blank_selection_no_change(flask_app)
         first_option.votes += 1
         db.session.commit()
 
-        with flask_app.test_request_context(
-            f"/submit-poll/{poll.id}",
-            method="POST",
-            data={f"question_{question.id}_mcq": []},
-        ):
-            flask_login_user(user)
-            assert main_module.handle_multiple_response_mcq([], question) == (True, False)
+        result = main_module.handle_multiple_response_mcq(
+            user.id,
+            question.id,
+            [],
+        )
+        assert_main_result(result, MainResultStatus.SUCCESS, False)
+        db.session.flush()
+        saved_vote = PollVoter.query.filter_by(
+            user_id=user.id,
+            question_id=question.id,
+        ).one()
+        assert saved_vote.option_id == first_option.id
+        assert first_option.votes == 1
 
 
 def test_submit_poll_immutable_multiple_mcq_rejects_change(flask_app):
@@ -759,13 +897,21 @@ def test_submit_poll_immutable_multiple_mcq_rejects_change(flask_app):
         first_option.votes += 1
         db.session.commit()
 
-        with flask_app.test_request_context(
-            f"/submit-poll/{poll.id}",
-            method="POST",
-            data={f"question_{question.id}_mcq": [str(second_option.id)]},
-        ):
-            flask_login_user(user)
-            assert main_module.handle_multiple_response_mcq([second_option.id], question) == (False, True)
+        result = main_module.handle_multiple_response_mcq(
+            user.id,
+            question.id,
+            [second_option.id],
+        )
+        assert_main_result(result, MainResultStatus.IMMUTABLE_RESPONSES, True)
+        assert result.question_text == "Immutable multi"
+        db.session.flush()
+        saved_vote = PollVoter.query.filter_by(
+            user_id=user.id,
+            question_id=question.id,
+        ).one()
+        assert saved_vote.option_id == first_option.id
+        assert first_option.votes == 1
+        assert second_option.votes == 0
 
 
 def test_submit_poll_multiple_mcq_invalid_option_rejected(flask_app):
@@ -774,16 +920,25 @@ def test_submit_poll_multiple_mcq_invalid_option_rejected(flask_app):
         user = create_user()
         poll = create_poll("MCQ Branch Poll", expires=datetime.now() + timedelta(days=1))
         question = create_question(poll, "Invalid multi", allow_multiple=True)
-        create_option(question, "Valid option")
+        valid_option = create_option(question, "Valid option")
         db.session.commit()
 
-        with flask_app.test_request_context(
-            f"/submit-poll/{poll.id}",
-            method="POST",
-            data={f"question_{question.id}_mcq": ["999999"]},
-        ):
-            flask_login_user(user)
-            assert main_module.handle_multiple_response_mcq([999999], question) == (False, True)
+        result = main_module.handle_multiple_response_mcq(
+            user.id,
+            question.id,
+            [999999],
+        )
+        assert_main_result(
+            result,
+            MainResultStatus.ONE_SELECTED_OPTION_NOT_FOUND,
+            True,
+        )
+        db.session.flush()
+        assert PollVoter.query.filter_by(
+            user_id=user.id,
+            question_id=question.id,
+        ).count() == 0
+        assert valid_option.votes == 0
 
 
 def test_submit_poll_single_mcq_invalid_option_rejected(flask_app):
@@ -792,16 +947,21 @@ def test_submit_poll_single_mcq_invalid_option_rejected(flask_app):
         user = create_user()
         poll = create_poll("MCQ Branch Poll", expires=datetime.now() + timedelta(days=1))
         question = create_question(poll, "Invalid choice", allow_multiple=False)
-        create_option(question, "Valid option")
+        valid_option = create_option(question, "Valid option")
         db.session.commit()
 
-        with flask_app.test_request_context(
-            f"/submit-poll/{poll.id}",
-            method="POST",
-            data={f"question_{question.id}_mcq": "999999"},
-        ):
-            flask_login_user(user)
-            assert main_module.handle_mcq(question) == (False, False)
+        result = main_module.handle_mcq(user.id, question.id, [999999])
+        assert_main_result(
+            result,
+            MainResultStatus.SELECTED_OPTION_NOT_FOUND,
+            False,
+        )
+        db.session.flush()
+        assert PollVoter.query.filter_by(
+            user_id=user.id,
+            question_id=question.id,
+        ).count() == 0
+        assert valid_option.votes == 0
 
 def test_submit_poll_commit_exception(flask_app, monkeypatch):
     """A commit failure should trigger the generic submit_poll exception handler."""
@@ -881,6 +1041,35 @@ def test_submit_poll_successfully_persists_responses(flask_app):
             assert PollVoter.query.filter_by(user_id=user.id, question_id=single.id).count() == 1
 
 
+def test_submit_poll_ignores_noncanonical_question_alias(flask_app):
+    """A leading-zero question alias must not override the canonical field."""
+    with flask_app.app_context():
+        user = create_user()
+        test_client = flask_app.test_client()
+        login_user(test_client)
+
+        poll = create_poll("Canonical Field Poll", expires=datetime.now() + timedelta(days=1))
+        question = create_question(poll, "Canonical response", is_free_response=True)
+        db.session.commit()
+
+        with test_client:
+            response = test_client.post(
+                f"/submit-poll/{poll.id}",
+                data={
+                    f"question_{question.id}_frq": "Canonical value",
+                    f"question_0{question.id}_frq": "Alias value",
+                },
+                follow_redirects=True,
+            )
+            assert response.status_code == 200
+            assert get_flashed_messages() == ["All responses submitted successfully!"]
+            saved_response = PollFreeResponse.query.filter_by(
+                user_id=user.id,
+                question_id=question.id,
+            ).one()
+            assert saved_response.response_text == "Canonical value"
+
+
 def test_submit_poll_repeat_submission_reports_no_changes(flask_app):
     """Resubmitting the same composite poll answers should be a no-op."""
     with flask_app.app_context():
@@ -926,6 +1115,51 @@ def test_submit_poll_rejects_expired_poll(flask_app):
             response = test_client.post(f"/submit-poll/{poll.id}", data={}, follow_redirects=True)
             assert response.status_code == 200
             assert get_flashed_messages() == ["Poll has expired. You cannot submit responses."]
+
+
+def test_submit_poll_missing_poll_returns_not_found(flask_app):
+    """Submitting answers for a missing poll should retain the 404 contract."""
+    with flask_app.app_context():
+        create_user()
+        test_client = flask_app.test_client()
+        login_user(test_client)
+
+        response = test_client.post("/submit-poll/999999", data={})
+        assert response.status_code == 404
+
+
+def test_submit_poll_reports_invalid_multiple_option(flask_app):
+    """A tampered multi-select should flash the plural lookup failure."""
+    with flask_app.app_context():
+        user = create_user()
+        test_client = flask_app.test_client()
+        login_user(test_client)
+
+        poll = create_poll("Tampered Multi Poll", expires=datetime.now() + timedelta(days=1))
+        question = create_question(poll, "Choose several", allow_multiple=True)
+        valid_option = create_option(question, "Real option")
+        db.session.commit()
+
+        with test_client:
+            response = test_client.post(
+                f"/submit-poll/{poll.id}",
+                data={f"question_{question.id}_mcq": "999999"},
+                follow_redirects=True,
+            )
+            assert response.status_code == 200
+            assert get_flashed_messages() == [
+                "One of the selected options does not exist.",
+                (
+                    "Some responses were not submitted successfully. "
+                    "Successes: 0, Failures: 1"
+                ),
+            ]
+            assert PollVoter.query.filter_by(
+                user_id=user.id,
+                question_id=question.id,
+            ).count() == 0
+            assert valid_option.votes == 0
+
 
 def test_submit_poll_reports_invalid_option(flask_app):
     """A tampered poll submission should surface the option lookup failure."""
