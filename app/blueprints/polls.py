@@ -68,7 +68,7 @@ def polls_list():
     # Get all question IDs the current user has voted on
     voted_questions = set()
     if current_user.is_authenticated:
-        voter_records = PollVoter.query.filter_by(user_id=current_user.id).all()
+        voter_records = PollVoter.query.filter(PollVoter.user_id == current_user.id).all()
         voted_questions = {voter.question_id for voter in voter_records}
 
     return render_template("admin/polls.html",

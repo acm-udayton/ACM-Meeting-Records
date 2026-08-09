@@ -21,26 +21,26 @@ api_bp = Blueprint('api', __name__, template_folder='templates')
 @api_bp.route("/event/attendees/<int:meeting_id>/")
 def api_event_attendees(meeting_id):
     """ Get attendee list for a single meeting. """
-    attendees = Attendees.query.filter_by(meeting = meeting_id).all()
+    attendees = Attendees.query.filter(Attendees.meeting == meeting_id).all()
     attendees_data = [attendee.to_dict() for attendee in attendees]
     return jsonify(attendees_data), 200
 
 @api_bp.route("/event/notes/<int:meeting_id>/")
 def api_event_minutes(meeting_id):
     """ Get minutes for a single meeting. """
-    minutes = Minutes.query.filter_by(meeting = meeting_id).all()
+    minutes = Minutes.query.filter(Minutes.meeting == meeting_id).all()
     minutes_data = [minute.to_dict() for minute in minutes]
     return jsonify(minutes_data), 200
 
 @api_bp.route("/event/state/<int:meeting_id>/")
 def api_event_state(meeting_id):
     """ Get current state of a single meeting. """
-    meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
+    meeting = Meetings.query.filter(Meetings.id == meeting_id).first_or_404()
     return jsonify(meeting.state.title()), 200
 
 @api_bp.route("/event/attachments/<int:meeting_id>/")
 def api_event_attachments(meeting_id):
     """ Get attachments for a single meeting. """
-    attachments = Attachments.query.filter_by(meeting = meeting_id).all()
+    attachments = Attachments.query.filter(Attachments.meeting == meeting_id).all()
     attachments_data = [attachment.to_dict() for attachment in attachments]
     return jsonify(attachments_data), 200
