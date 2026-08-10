@@ -39,7 +39,7 @@ def test_mfa_reset_recovery_codes(flask_app):
 
         # Test that 10 new codes were generated in the database.
         with flask_app.app_context():
-            codes = RecoveryCodes.query.filter_by(user_id=user.id).all()
+            codes = RecoveryCodes.query.filter(RecoveryCodes.user_id == user.id).all()
             assert len(codes) == 10
         
         # Test that old codes are deleted when new codes are generated.
@@ -49,7 +49,7 @@ def test_mfa_reset_recovery_codes(flask_app):
             assert response.status_code == 200
 
             # Check that there are still only 10 codes and they are all new.
-            codes_after = RecoveryCodes.query.filter_by(user_id=user.id).all()
+            codes_after = RecoveryCodes.query.filter(RecoveryCodes.user_id==user.id).all()
             assert len(codes_after) == 10
             for code in codes_after:
                 assert code not in codes  # Ensure they are new codes.
@@ -80,7 +80,7 @@ def test_verify_recovery_code_success(flask_app):
 
         # Test that the used code is deleted from the database.
         with flask_app.app_context():
-            used_code = RecoveryCodes.query.filter_by(id=code.id).first()
+            used_code = RecoveryCodes.query.filter(RecoveryCodes.id==code.id).first()
             assert used_code is None  # Code should be deleted after use.
 
 def test_verify_recovery_code_invalid(flask_app):
@@ -442,7 +442,7 @@ def test_disable_mfa_success(flask_app):
             assert updated_user.totp_secret is None
 
             # Verify that recovery codes are deleted.
-            codes_after = RecoveryCodes.query.filter_by(user_id=user.id).all()
+            codes_after = RecoveryCodes.query.filter(RecoveryCodes.user_id==user.id).all()
             assert len(codes_after) == 0
 
 def test_disable_mfa_unauthenticated(flask_app):

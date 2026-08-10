@@ -36,7 +36,7 @@ def login():
     """ Show a login page and process submissions. """
     form = LoginForm()
     if form.validate_on_submit():
-        user = Users.query.filter_by(username = form.username.data).first()
+        user = Users.query.filter(Users.username == form.username.data).first()
 
         needs_relogin = False
 
@@ -112,7 +112,7 @@ def sign_up():
         pword = form.password.data
         conf_pword = form.confirm_password.data
         # Handle new username and password issues or create the new user.
-        if Users.query.filter_by(username = uname).first() is not None:
+        if Users.query.filter(Users.username == uname).first() is not None:
             flash(
                 "User creation failed. Username already registered. "
                 "Try logging in instead or contacting an administrator."
@@ -158,7 +158,7 @@ def logout():
 def my_account():
     """ Show account details page with update form. """
     account_updated_form = AccountUpdateForm()
-    num_codes = RecoveryCodes.query.filter_by(user_id=current_user.id).count()
+    num_codes = RecoveryCodes.query.filter(RecoveryCodes.user_id == current_user.id).count()
     account_updated_form.start_semester.data = current_user.joined
     account_updated_form.grad_semester.data = current_user.graduated
     return render_template("account.html",

@@ -42,7 +42,7 @@ mfa_bp = Blueprint('mfa', __name__, template_folder='templates')
 def reset_recovery_codes():
     """ Generate new recovery codes for the user. """
     # Clear old codes and generate new codes.
-    for old_code in RecoveryCodes.query.filter_by(user_id=current_user.id).all():
+    for old_code in RecoveryCodes.query.filter(RecoveryCodes.user_id == current_user.id).all():
         db.session.delete(old_code)
 
     # Ensure MFA is active for the user.
@@ -79,7 +79,7 @@ def verify_recovery_code():
     form = RecoveryCodeVerifyForm()
     if form.validate_on_submit():
         code = form.token.data
-        recovery_code_entry = RecoveryCodes.query.filter_by(user_id=user.id).all()
+        recovery_code_entry = RecoveryCodes.query.filter(RecoveryCodes.user_id == user.id).all()
         for entry in recovery_code_entry:
             if entry.check_code(code):
                 # Code used, so delete it.
@@ -191,7 +191,7 @@ def verify_totp_setup():
             flash('TOTP MFA successfully enabled!', 'success')
 
             # Prompt user to set up recovery codes if not already present.
-            if not RecoveryCodes.query.filter_by(user_id=current_user.id).first():
+            if not RecoveryCodes.query.filter(RecoveryCodes.user_id == current_user.id).first():
                 return redirect(url_for('mfa.reset_recovery_codes'))
             return redirect(url_for('auth.my_account'))
         else:
@@ -223,7 +223,7 @@ def disable_mfa():
     current_user.mfa_active = False
     current_user.totp_active = False
     current_user.totp_secret = None
-    RecoveryCodes.query.filter_by(user_id=current_user.id).delete()
+    RecoveryCodes.query.filter(RecoveryCodes.user_id == current_user.id).delete()
     db.session.commit()
     flash('Multi-Factor Authentication has been disabled.', 'success')
     return redirect(url_for('auth.my_account'))

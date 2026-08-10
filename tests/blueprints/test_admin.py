@@ -180,7 +180,7 @@ def test_admin_dashboard_updates_meeting_times(flask_app):
         assert meeting.event_start is None
         assert meeting.event_end is None
         assert meeting.state == "not started"
-        assert Attendees.query.filter_by(meeting=meeting.id).count() == 0
+        assert Attendees.query.filter(Attendees.meeting == meeting.id).count() == 0
 
 def test_event_create(flask_app):
     """ Test the /admin/create/ endpoint. """
@@ -479,7 +479,7 @@ def test_event_minutes(flask_app):
         assert login_response2.status_code == 200
 
         # Get the minutes entry ID for the meeting.
-        minutes_entry = Minutes.query.filter_by(meeting=meeting_id).first()
+        minutes_entry = Minutes.query.filter(Minutes.meeting == meeting_id).first()
         minutes_id = minutes_entry.id if minutes_entry else None
 
         # Attempt to update the minutes with the second admin user.
@@ -642,10 +642,10 @@ def test_event_delete(flask_app):
         # Test access to the delete endpoint after login.
         delete_response = test_client.post(f"/admin/delete/{meeting.id}/", follow_redirects=True)
         assert delete_response.status_code == 200
-        assert Attendees.query.filter_by(meeting=meeting.id).first() is None
-        assert Minutes.query.filter_by(meeting=meeting.id).first() is None
-        assert Attachments.query.filter_by(meeting=meeting.id).first() is None
-        assert Meetings.query.filter_by(id=meeting.id).first() is None
+        assert Attendees.query.filter(Attendees.meeting == meeting.id).first() is None
+        assert Minutes.query.filter(Minutes.meeting == meeting.id).first() is None
+        assert Attachments.query.filter(Attachments.meeting == meeting.id).first() is None
+        assert Meetings.query.filter(Meetings.id == meeting.id).first() is None
 
 def test_users(flask_app):
     """ Test the /admin/users/ endpoint. """
