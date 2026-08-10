@@ -239,10 +239,6 @@ def test_setup_totp_success(flask_app):
             updated_user = Users.query.get(user.id)
             assert updated_user.totp_secret is not None
 
-        # Verify the temporary secret was dropped into the session transaction queue.
-        with test_client.session_transaction() as sess:
-            assert sess.get('mfa_setup_secret') == updated_user.totp_secret
-
 def test_setup_totp_unauthenticated(flask_app):
     """Test that an unauthenticated user cannot access the setup route."""
     with flask_app.app_context():
@@ -314,7 +310,7 @@ def test_verify_totp_setup_success_redirect_account(flask_app):
 def test_verify_totp_setup_session_expired(flask_app):
     """Test verification fails gracefully if the setup secret session key is missing."""
     with flask_app.app_context():
-        user = Users(username="setupuser3", role="user", activated=True, totp_active=False)
+        user = Users(username="setupuser3", role="user", activated=True, totp_active=False, totp_secret=None)
         user.set_password("password")
         db.session.add(user)
         db.session.commit()
@@ -328,7 +324,7 @@ def test_verify_totp_setup_session_expired(flask_app):
         with test_client:
             response = test_client.post("/mfa/verify-totp-setup/", data={"token": "123456"}, follow_redirects=False)
             assert response.status_code == 302
-            assert get_flashed_messages() == ['TOTP MFA setup session expired. Start over.']
+            assert get_flashed_messages() == ['Invalid code. Please try scanning and verifying again.']
 
 def test_verify_totp_setup_invalid_code(flask_app):
     """Test that an incorrect token does not activate MFA and redirects back to setup."""

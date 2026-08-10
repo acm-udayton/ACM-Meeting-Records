@@ -98,6 +98,10 @@ def verify_totp():
         return redirect(url_for("auth.login"))
 
     user = Users.query.get(user_id)
+    if not user or not user.totp_active:
+        flash("TOTP MFA not required or user not found.", "danger")
+        return redirect(url_for("auth.login"))
+    
     form = TotpVerifyForm()
 
     if form.validate_on_submit():
