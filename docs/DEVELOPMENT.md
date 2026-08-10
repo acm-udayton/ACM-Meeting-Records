@@ -155,6 +155,16 @@ The application factory within the `create_app` function in `app/__init__.py` is
 The application factory is launched by Docker within the web container. This results in a clean build of the flask app, combining the entire codebase and all of its extensions into one app that can be run and debugged within the web container. This also allows us to avoid many issues that arise with monolithic flask apps, such as circular imports and messy code structure. By following the application factory design pattern, we also ensure that our codebase is modular, scalable, and maintainable as we continue to build out the project.
 <hr>
 
+### MVC + Service Layer Architecture
+
+The project follows the Model-View-Controller (MVC) architecture, which is a design pattern that separates the application into three interconnected components: models, views, and controllers. Additionally, we  use a service layer to encapsulate the business logic and provide a clean separation between the presentation layer and the data layer. This separation of concerns allows for better organization, maintainability, and scalability of the codebase. 
+
+All new sections of the application should be built using the MVC + Service Layer architecture. The following is a brief overview of how each component is structured in the project:
+
+* Models: The models are defined in `app/models.py` and represent the data structure of the application. They are responsible for interacting with the database using Flask-SQLAlchemy and defining the relationships between different entities. Each model corresponds to a table in the database and contains attributes that map to the columns of the table.
+* Views: The views are defined in the templates folder and are responsible for rendering the user interface of the application. They use Jinja2 templating to dynamically generate HTML pages based on the data provided by the controllers. The views are designed to be reusable and modular, allowing for easy customization and extension of the user interface.
+* Controllers: The controllers are defined in the blueprints folder and are responsible for handling user requests, processing input data, and returning appropriate responses. They act as intermediaries between the models and views, coordinating the flow of data and ensuring that the application behaves as expected. Each controller corresponds to a specific route or set of routes in the application.
+* Service Layer: The service layer is defined in the `app/services` folder and contains the business logic of the application. It provides a set of reusable functions and classes that encapsulate the core functionality of the application, such as user authentication, data validation, and external API integration. The service layer allows for better separation of concerns and promotes code reusability, making it easier to maintain and extend the application over time.
 
 <!-- Flask Extensions -->
 ## Flask Extensions
