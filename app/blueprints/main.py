@@ -14,6 +14,7 @@ from datetime import datetime
 
 # Third-party imports.
 from flask import (
+    abort,
     Blueprint,
     render_template,
     request,
@@ -38,7 +39,7 @@ from app.models import (Meetings,
     PollFreeResponse
 )
 from app.extensions import db
-from app.utils import sha_hash
+from app.utils import is_admin, is_not_admin, sha_hash, filter_out_admin_only
 
 main_bp = Blueprint('main', __name__, template_folder='templates')
 
@@ -206,7 +207,7 @@ def home():
     """ Show the home page. """
     form = MeetingCheckinForm()
     poll_form = PollVoteForm()
-    if not (current_user.is_authenticated and current_user.role == "admin"):
+    if is_not_admin(current_user):
         recent_meetings = Meetings.query.filter(
             Meetings.admin_only != True,
         ).order_by(desc(Meetings.id)).limit(4).all()
@@ -254,7 +255,7 @@ def events_list():
     all_meetings = Meetings.query.order_by(desc(Meetings.id)).all()
     visible_meetings = []
     form = CreateMeetingForm()
-    if current_user.is_authenticated and current_user.role == "admin":
+    if is_admin(current_user):
         return render_template("events.html",
                                page_title = "Meetings",
                                meetings = all_meetings,
@@ -273,6 +274,8 @@ def user_event(meeting_id):
     """ Show a page with the details of a single meeting. """
     form = MeetingCheckinForm()
     meeting = Meetings.query.filter(Meetings.id == meeting_id).first_or_404()
+    if is_not_admin(current_user) and meeting.admin_only:
+        abort(403, description="You do not have permission to view this meeting.")
     attendees = Attendees.query.filter(Attendees.meeting == meeting_id).all()
     minutes = Minutes.query.filter(Minutes.meeting == meeting_id).all()
     attachments = Attachments.query.filter(Attachments.meeting == meeting_id).all()
@@ -302,7 +305,7 @@ def event_check_in(meeting_id):
                 ).first() is None:
                     if sha_hash(code) == meeting.code_hash:
                         # Check for admin-only meeting status.
-                        if meeting.admin_only and current_user.role != "admin":
+                        if meeting.admin_only and is_not_admin(current_user):
                             flash("Check-in failed. "
                                   "This meeting is restricted to administrators only.",
                                 "danger")
