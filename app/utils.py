@@ -11,6 +11,7 @@ File Purpose: Provide utilities used by the webserver for the project.
 import hashlib
 import secrets
 import string
+from typing import Any
 
 from flask_login import AnonymousUserMixin
 
@@ -39,9 +40,9 @@ def is_not_admin(user: Users) -> bool:
     """ Helper function to determine if a user is not an admin. """
     return not is_admin(user)
 
-def filter_out_admin_only(user: Users | AnonymousUserMixin, meetings: list[Meetings]) -> list[Meetings]:
-    """ Filter out meetings that are admin-only if the user is not an admin. """
+def filter_by_role(query: Any, user: Users | AnonymousUserMixin) -> Any:
+    """ Filter a query based on the user's role. """
     if is_admin(user):
-        return meetings
+        return query
     else:
-        return [meeting for meeting in meetings if not meeting.admin_only]
+        return query.filter(Meetings.admin_only == False)

@@ -39,7 +39,7 @@ from app.models import (Meetings,
     PollFreeResponse
 )
 from app.extensions import db
-from app.utils import is_admin, is_not_admin, sha_hash, filter_out_admin_only
+from app.utils import filter_by_role, is_admin, is_not_admin, sha_hash
 
 main_bp = Blueprint('main', __name__, template_folder='templates')
 
@@ -207,12 +207,7 @@ def home():
     """ Show the home page. """
     form = MeetingCheckinForm()
     poll_form = PollVoteForm()
-    if is_not_admin(current_user):
-        recent_meetings = Meetings.query.filter(
-            Meetings.admin_only != True,
-        ).order_by(desc(Meetings.id)).limit(4).all()
-    else:
-        recent_meetings = Meetings.query.order_by(desc(Meetings.id)).limit(4).all()
+    recent_meetings = filter_by_role(Meetings.query, current_user).order_by(desc(Meetings.id)).limit(4).all()
     if len(recent_meetings) != 0:
         featured_meeting = recent_meetings.pop(0)
     else:

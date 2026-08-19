@@ -14,7 +14,9 @@ import pytest
 from flask_login import login_user, logout_user
 from tests.conftest import app as flask_app  # Import the app fixture for context in tests.
 
-from app.utils import sha_hash, generate_meeting_code, is_admin, is_not_admin, filter_out_admin_only
+from app.extensions import db
+
+from app.utils import filter_by_role, sha_hash, generate_meeting_code, is_admin, is_not_admin
 from app.models import Meetings, Users
 
 def test_sha_hash(flask_app):
@@ -86,21 +88,26 @@ def test_is_not_admin(flask_app):
         # None
         assert is_not_admin(None) is True
         
-def test_filter_out_admin_only(flask_app):
-    """ Test the filter_out_admin_only function. """
+def test_filter_by_role(flask_app):
+    """ Test the filter_by_role function. """
     with flask_app.app_context():
         admin_user = Users(username="admin", role="admin")
         non_admin_user = Users(username="user", role="member")
 
         meetings = [
-            Meetings(title="General Meeting", admin_only=False),
-            Meetings(title="Another Admin Meeting", admin_only=True)
+            Meetings(title="General Meeting", admin_only=False, state="active", host="admin", description="A general meeting."),
+            Meetings(title="Another Admin Meeting", admin_only=True, state="active", host="admin", description="An admin-only meeting."),
         ]
-        
+        db.session.add_all(meetings)
+        db.session.commit()
+
+    with flask_app.test_request_context():
         # Test with an admin user.
-        filtered_meetings = filter_out_admin_only(admin_user, meetings)
+        login_user(admin_user)
+        filtered_meetings = filter_by_role(Meetings.query, admin_user).all()
         assert len(filtered_meetings) == 2  # Admin sees all meetings.
+        logout_user()
 
         # Test with a non-admin user.
-        filtered_meetings = filter_out_admin_only(non_admin_user, meetings)
+        filtered_meetings = filter_by_role(Meetings.query, non_admin_user).all()
         assert len(filtered_meetings) == 1  # Non-admin sees only non-admin meetings.
