@@ -835,7 +835,7 @@ def test_download_file(flask_app, tmp_path):
         client = flask_app.test_client()
         upload_dir = tmp_path / "uploads"
         upload_dir.mkdir()
-        file_path = upload_dir / "notes.txt"
+        file_path = upload_dir / "meeting-1-notes.txt"
         file_path.write_text("meeting notes", encoding="utf-8")
         flask_app.config["UPLOAD_FOLDER"] = str(upload_dir)
 
@@ -849,12 +849,18 @@ def test_download_file(flask_app, tmp_path):
         db.session.add(attachment)
         db.session.commit()
 
-        response = client.get("/uploads/notes.txt")
+        # Bad filename should return 400.
+        response = client.get("/uploads/nonexistent-file.txt")
+        assert response.status_code == 400
+        assert response.json == {"error": "Invalid file name format."}
+
+        # Non-admin user should get 403 when trying to access the file.
+        response = client.get("/uploads/meeting-1-notes.txt")
         assert response.status_code == 403
         assert response.json == {"error": "You do not have permission to access this file."}
 
         flask_login_user(admin_user)
-        response = client.get("/uploads/notes.txt")
+        response = client.get("/uploads/meeting-1-notes.txt")
         assert response.status_code == 200
         assert response.get_data(as_text=True) == "meeting notes"
 

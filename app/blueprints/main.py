@@ -340,7 +340,11 @@ def event_check_in(meeting_id):
 def download_file(name):
     """ Serve an uploaded file. """
     # Check permissions on the file based on its meeting association.
-    attachment = Attachments.query.filter(Attachments.filename == name).first_or_404()
+    # Extract filename from the format: meeting-<id>-<filename>
+    filename_parts = name.split('-', 2)
+    if len(filename_parts) < 3 or not filename_parts[0] == "meeting":
+        return jsonify({"error": "Invalid file name format."}), 400
+    attachment = Attachments.query.filter(Attachments.filename == filename_parts[2]).first_or_404()
     meeting = Meetings.query.filter(Meetings.id == attachment.meeting).first_or_404()
     if not user_can_access_meeting_by_id(current_user, meeting.id):
         return jsonify({"error": "You do not have permission to access this file."}), 403
