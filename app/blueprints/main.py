@@ -39,7 +39,7 @@ from app.models import (Meetings,
     PollFreeResponse
 )
 from app.extensions import db
-from app.utils import filter_by_role, is_admin, is_not_admin, sha_hash
+from app.utils import filter_by_role, is_admin, is_not_admin, sha_hash, user_can_access_meeting_by_id
 
 main_bp = Blueprint('main', __name__, template_folder='templates')
 
@@ -338,6 +338,11 @@ def event_check_in(meeting_id):
 @main_bp.route('/uploads/<name>')
 def download_file(name):
     """ Serve an uploaded file. """
+    # Check permissions on the file based on its meeting association.
+    attachment = Attachments.query.filter(Attachments.filename == name).first_or_404()
+    meeting = Meetings.query.filter(Meetings.id == attachment.meeting).first_or_404()
+    if not user_can_access_meeting_by_id(current_user, meeting.id):
+        abort(403, description="You do not have permission to access this file.")
     return send_from_directory(current_app.config["UPLOAD_FOLDER"], name)
 
 @main_bp.route('/submit-poll/<int:poll_id>', methods=['POST'])
