@@ -17,6 +17,7 @@ from flask_login import login_user as flask_login_user
 from app.blueprints import main as main_module
 from app.extensions import db
 from app.models import (
+    Attachments,
     Meetings,
     Attendees,
     Users,
@@ -830,14 +831,30 @@ def test_submit_poll_commit_exception(flask_app, monkeypatch):
 
 def test_download_file(flask_app, tmp_path):
     """Uploaded files should be served from the configured upload folder."""
-    with flask_app.app_context():
+    with flask_app.test_request_context():
+        client = flask_app.test_client()
         upload_dir = tmp_path / "uploads"
         upload_dir.mkdir()
         file_path = upload_dir / "notes.txt"
         file_path.write_text("meeting notes", encoding="utf-8")
         flask_app.config["UPLOAD_FOLDER"] = str(upload_dir)
 
-        response = flask_app.test_client().get("/uploads/notes.txt")
+        # Create an admin-only meeting and associate the uploaded file with it.
+        admin_user = Users(username="testuser", password="password", role="admin")
+        attachment_meeting = Meetings(title="File Meeting", state="active", description="Meeting with file", host="testuser", admin_only=True)
+        db.session.add(attachment_meeting)
+        db.session.commit()
+
+        attachment = Attachments(filename="notes.txt", filepath=str(file_path), meeting=attachment_meeting.id)
+        db.session.add(attachment)
+        db.session.commit()
+
+        response = client.get("/uploads/notes.txt")
+        assert response.status_code == 403
+        assert response.json == {"error": "You do not have permission to access this file."}
+
+        flask_login_user(admin_user)
+        response = client.get("/uploads/notes.txt")
         assert response.status_code == 200
         assert response.get_data(as_text=True) == "meeting notes"
 
