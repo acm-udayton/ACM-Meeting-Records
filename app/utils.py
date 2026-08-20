@@ -40,6 +40,15 @@ def is_not_admin(user: Users) -> bool:
     """ Helper function to determine if a user is not an admin. """
     return not is_admin(user)
 
+def user_can_access_meeting_by_id(user: Users | AnonymousUserMixin, meeting_id: int) -> bool:
+    """ Determine if a user can access a given meeting. """
+    meeting = Meetings.query.filter(Meetings.id == meeting_id).first()
+    if not meeting:
+        return True  # Meeting does not exist, return a 404/empty response data.
+    if is_admin(user):
+        return True
+    return not meeting.admin_only
+
 def filter_by_role(query: Any, user: Users | AnonymousUserMixin) -> Any:
     """ Filter a query based on the user's role. """
     if is_admin(user):
