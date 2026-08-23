@@ -48,9 +48,9 @@ def handle_frq(question):
     response_text = request.form.get(f'question_{question.id}_frq', '').strip()
 
     if response_text:  # Only save if they entered something
-        existing_response = PollFreeResponse.query.filter_by(
-            user_id=current_user.id,
-            question_id=question.id
+        existing_response = PollFreeResponse.query.filter(
+            PollFreeResponse.user_id == current_user.id,
+            PollFreeResponse.question_id == question.id
         ).first()
 
         if existing_response:
@@ -82,9 +82,9 @@ def handle_frq(question):
 def handle_multiple_response_mcq(selected_option_ids, question):
     """ Handle multiple response MCQ submissions. """
     # Grab existing votes.
-    existing_votes = PollVoter.query.filter_by(
-        user_id=current_user.id,
-        question_id=question.id
+    existing_votes = PollVoter.query.filter(
+        PollVoter.user_id == current_user.id,
+        PollVoter.question_id == question.id
     ).all()
 
     # Create sets for easy comparison.
@@ -110,7 +110,7 @@ def handle_multiple_response_mcq(selected_option_ids, question):
     # Decrement vote counts for removed options
     for vote in existing_votes:
         if vote.option_id not in new_option_ids:
-            option = PollOption.query.get(vote.option_id)
+            option = db.session.get(PollOption, vote.option_id)
             if option and option.votes > 0:
                 option.votes -= 1
             db.session.delete(vote)
@@ -119,7 +119,7 @@ def handle_multiple_response_mcq(selected_option_ids, question):
     # Add votes for newly selected options
     for option_id in new_option_ids:
         if option_id not in existing_option_ids:
-            option = PollOption.query.get(option_id)
+            option = db.session.get(PollOption, option_id)
             if option:
                 option.votes += 1
                 new_vote = PollVoter(
@@ -139,9 +139,9 @@ def handle_single_mcq(selected_option_ids, question):
     """ Handle single response MCQ submissions. """
     option_id = selected_option_ids[0]  # Only one selection for radio
 
-    existing_vote = PollVoter.query.filter_by(
-        user_id=current_user.id,
-        question_id=question.id
+    existing_vote = PollVoter.query.filter(
+        PollVoter.user_id == current_user.id,
+        PollVoter.question_id == question.id
     ).first()
 
     if existing_vote:
@@ -157,11 +157,11 @@ def handle_single_mcq(selected_option_ids, question):
             return False, True
 
         # Process the changed vote
-        old_option = PollOption.query.get(existing_vote.option_id)
+        old_option = db.session.get(PollOption, existing_vote.option_id)
         if old_option and old_option.votes > 0:
             old_option.votes -= 1
 
-        new_option = PollOption.query.get(option_id)
+        new_option = db.session.get(PollOption, option_id)
         if new_option:
             new_option.votes += 1
             existing_vote.option_id = option_id
@@ -169,7 +169,7 @@ def handle_single_mcq(selected_option_ids, question):
         
     else:
         # New vote
-        option = PollOption.query.get(option_id)
+        option = db.session.get(PollOption, option_id)
         if option:
             option.votes += 1
             new_vote = PollVoter(
@@ -227,11 +227,11 @@ def home():
     user_frq_responses = {}
 
     if current_user.is_authenticated:
-        voter_records = PollVoter.query.filter_by(user_id=current_user.id).all()
+        voter_records = PollVoter.query.filter(PollVoter.user_id == current_user.id).all()
         voted_questions = {voter.question_id for voter in voter_records}
         voted_options = {voter.option_id for voter in voter_records}
 
-        frq_records = PollFreeResponse.query.filter_by(user_id=current_user.id).all()
+        frq_records = PollFreeResponse.query.filter(PollFreeResponse.user_id == current_user.id).all()
         user_frq_responses = {frq.question_id: frq.response_text for frq in frq_records}
         voted_questions.update(user_frq_responses.keys())
 
@@ -272,10 +272,10 @@ def events_list():
 def user_event(meeting_id):
     """ Show a page with the details of a single meeting. """
     form = MeetingCheckinForm()
-    meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
-    attendees = Attendees.query.filter_by(meeting = meeting_id).all()
-    minutes = Minutes.query.filter_by(meeting = meeting_id).all()
-    attachments = Attachments.query.filter_by(meeting = meeting_id).all()
+    meeting = Meetings.query.filter(Meetings.id == meeting_id).first_or_404()
+    attendees = Attendees.query.filter(Attendees.meeting == meeting_id).all()
+    minutes = Minutes.query.filter(Minutes.meeting == meeting_id).all()
+    attachments = Attachments.query.filter(Attachments.meeting == meeting_id).all()
     return render_template(
         "event.html",
         page_title = f"Meeting - {meeting.title}",
@@ -290,15 +290,15 @@ def user_event(meeting_id):
 @login_required
 def event_check_in(meeting_id):
     """ Check into a single meeting from the homepage. """
-    if Meetings.query.filter_by(id = meeting_id).first() is not None:
+    if Meetings.query.filter(Meetings.id == meeting_id).first() is not None:
         form = MeetingCheckinForm()
         if form.validate_on_submit():
             code = form.code.data
-            meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
+            meeting = Meetings.query.filter(Meetings.id == meeting_id).first_or_404()
             if meeting.state == "active":
-                if Attendees.query.filter_by(
-                meeting = meeting_id,
-                username = current_user.username
+                if Attendees.query.filter(
+                Attendees.meeting == meeting_id,
+                Attendees.username == current_user.username
                 ).first() is None:
                     if sha_hash(code) == meeting.code_hash:
                         # Check for admin-only meeting status.
@@ -350,7 +350,7 @@ def submit_poll(poll_id):
     changes_made = False
     successes = 0
     failures = 0
-    poll = Poll.query.get_or_404(poll_id)
+    poll = db.get_or_404(Poll, poll_id)
     if poll.poll_expires and poll.poll_expires <= datetime.now():
         flash("Poll has expired. You cannot submit responses.", "danger")
         return redirect(url_for('main.home'))

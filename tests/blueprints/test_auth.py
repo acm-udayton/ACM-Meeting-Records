@@ -173,7 +173,7 @@ def test_auth_sign_up_logs_out_existing_user(flask_app):
         with client.session_transaction() as session_data:
             assert "_user_id" not in session_data
 
-        created_user = Users.query.filter_by(username="newuser@example.com").first()
+        created_user = Users.query.filter(Users.username == "newuser@example.com").first()
         assert created_user is not None
 
 def test_auth_logout(flask_app):

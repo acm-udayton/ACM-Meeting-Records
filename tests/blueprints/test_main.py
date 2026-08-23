@@ -298,7 +298,7 @@ def test_event_check_in_success(flask_app):
             )
             assert response.status_code == 200
             assert get_flashed_messages() == ["Check-in succeeded. Attendance updated successfully."]
-            assert Attendees.query.filter_by(username=user.username, meeting=meeting.id).first() is not None
+            assert Attendees.query.filter(Attendees.username == user.username, Attendees.meeting == meeting.id).first() is not None
 
 
 def test_event_check_in_duplicate_is_rejected(flask_app):
@@ -413,7 +413,7 @@ def test_event_check_in_unactivated_user_is_logged_out(flask_app):
             assert response.status_code == 200
             assert response.request.path == "/login/"
             assert get_flashed_messages() == ["Check-in failed. Your account is not activated. Please check in again."]
-            assert Attendees.query.filter_by(username=user.username, meeting=meeting.id).first() is None
+            assert Attendees.query.filter(Attendees.username == user.username, Attendees.meeting == meeting.id).first() is None
 
 def test_submit_poll_immutable_free_response_failure(flask_app):
     """An immutable free-response question should fail when the user tries to change an existing response."""
@@ -435,7 +435,7 @@ def test_submit_poll_immutable_free_response_failure(flask_app):
             )
             assert response.status_code == 200
             assert get_flashed_messages() == ["Response for 'What changed?' cannot be changed once submitted.", "Some responses were not submitted successfully. Successes: 0, Failures: 1"]
-            assert PollFreeResponse.query.filter_by(user_id=user.id, question_id=question.id).one().response_text == "Original response"
+            assert PollFreeResponse.query.filter(PollFreeResponse.user_id == user.id, PollFreeResponse.question_id == question.id).one().response_text == "Original response"
 
 def test_submit_poll_frq_blank_response_no_change(flask_app):
     """Blank FRQ input should be treated as no change."""
@@ -876,9 +876,9 @@ def test_submit_poll_successfully_persists_responses(flask_app):
             )
             assert response.status_code == 200
             assert get_flashed_messages() == ["All responses submitted successfully!"]
-            assert PollFreeResponse.query.filter_by(user_id=user.id, question_id=frq.id).one().response_text == "Good work"
-            assert PollVoter.query.filter_by(user_id=user.id, question_id=multi.id).count() == 2
-            assert PollVoter.query.filter_by(user_id=user.id, question_id=single.id).count() == 1
+            assert PollFreeResponse.query.filter(PollFreeResponse.user_id == user.id, PollFreeResponse.question_id == frq.id).one().response_text == "Good work"
+            assert PollVoter.query.filter(PollVoter.user_id == user.id, PollVoter.question_id == multi.id).count() == 2
+            assert PollVoter.query.filter(PollVoter.user_id == user.id, PollVoter.question_id == single.id).count() == 1
 
 
 def test_submit_poll_repeat_submission_reports_no_changes(flask_app):

@@ -39,7 +39,7 @@ mfa_bp = Blueprint('mfa', __name__, template_folder='templates')
 
 def _generate_recovery_codes(user_id):
     """Replace a user's recovery codes and return their plaintext values once."""
-    RecoveryCodes.query.filter_by(user_id=user_id).delete()
+    RecoveryCodes.query.filter(RecoveryCodes.user_id == user_id).delete()
     code_values = []
 
     for _ in range(10):
@@ -96,7 +96,7 @@ def verify_recovery_code():
         flash('You must log in before using a recovery code.', 'warning')
         return redirect(url_for('auth.login'))
 
-    user = Users.query.get(user_id)
+    user = db.session.get(Users, user_id)
     if not user:
         flash('User not found.', 'danger')
         return redirect(url_for('auth.login'))
@@ -104,7 +104,7 @@ def verify_recovery_code():
     form = RecoveryCodeVerifyForm()
     if form.validate_on_submit():
         code = form.token.data
-        recovery_code_entry = RecoveryCodes.query.filter_by(user_id=user.id).all()
+        recovery_code_entry = RecoveryCodes.query.filter(RecoveryCodes.user_id == user.id).all()
         for entry in recovery_code_entry:
             if entry.check_code(code):
                 # Code used, so delete it.
@@ -134,7 +134,7 @@ def verify_totp():
         return redirect(url_for('auth.login'))
 
     # Verify that the user exists and has TOTP active.
-    user = Users.query.get(user_id)
+    user = db.session.get(Users, user_id)
     if not user or not user.totp_active:
         flash('TOTP MFA not required or user not found.', 'danger')
         return redirect(url_for('auth.login'))
@@ -196,7 +196,7 @@ def verify_totp_setup():
             flash('TOTP MFA successfully enabled!', 'success')
 
             # Generate recovery codes within this protected POST when none exist.
-            if not RecoveryCodes.query.filter_by(user_id=current_user.id).first():
+            if not RecoveryCodes.query.filter(RecoveryCodes.user_id == current_user.id).first():
                 codes = _generate_recovery_codes(current_user.id)
                 db.session.commit()
                 return render_template(
@@ -236,7 +236,7 @@ def disable_mfa():
     current_user.totp_active = False
     current_user.totp_secret = None
     session.pop('mfa_setup_secret', None)
-    RecoveryCodes.query.filter_by(user_id=current_user.id).delete()
+    RecoveryCodes.query.filter(RecoveryCodes.user_id == current_user.id).delete()
     db.session.commit()
     flash('Multi-Factor Authentication has been disabled.', 'success')
     return redirect(url_for('auth.my_account'))

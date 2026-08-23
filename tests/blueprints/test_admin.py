@@ -189,7 +189,7 @@ def test_admin_dashboard_updates_meeting_times(flask_app):
         assert meeting.event_start is None
         assert meeting.event_end is None
         assert meeting.state == "not started"
-        assert Attendees.query.filter_by(meeting=meeting.id).count() == 0
+        assert Attendees.query.filter(Attendees.meeting == meeting.id).count() == 0
 
 def test_event_create(flask_app):
     """ Test the /admin/create/ endpoint. """
@@ -520,7 +520,7 @@ def test_event_minutes(flask_app):
         assert login_response2.status_code == 200
 
         # Get the minutes entry ID for the meeting.
-        minutes_entry = Minutes.query.filter_by(meeting=meeting_id).first()
+        minutes_entry = Minutes.query.filter(Minutes.meeting == meeting_id).first()
         minutes_id = minutes_entry.id if minutes_entry else None
 
         # Attempt to update the minutes with the second admin user.
@@ -683,10 +683,10 @@ def test_event_delete(flask_app):
         # Test access to the delete endpoint after login.
         delete_response = test_client.post(f"/admin/delete/{meeting.id}/", follow_redirects=True)
         assert delete_response.status_code == 200
-        assert Attendees.query.filter_by(meeting=meeting.id).first() is None
-        assert Minutes.query.filter_by(meeting=meeting.id).first() is None
-        assert Attachments.query.filter_by(meeting=meeting.id).first() is None
-        assert Meetings.query.filter_by(id=meeting.id).first() is None
+        assert Attendees.query.filter(Attendees.meeting == meeting.id).first() is None
+        assert Minutes.query.filter(Minutes.meeting == meeting.id).first() is None
+        assert Attachments.query.filter(Attachments.meeting == meeting.id).first() is None
+        assert Meetings.query.filter(Meetings.id == meeting.id).first() is None
 
 def test_users(flask_app):
     """ Test the /admin/users/ endpoint. """
@@ -748,7 +748,7 @@ def test_reset_user_password(flask_app):
         assert reset_password_response.status_code == 200
 
         # Verify that the target user's password was changed.
-        target_user_from_db = Users.query.get(target_user.id)
+        target_user_from_db = db.session.get(Users, target_user.id)
         assert target_user_from_db is not None
         assert target_user_from_db.check_password("newpassword") == True
 
@@ -781,7 +781,7 @@ def test_promote_user(flask_app):
         assert promote_response.status_code == 200
 
         # Verify that the target user's role was changed.
-        target_user_from_db = Users.query.get(target_user.id)
+        target_user_from_db = db.session.get(Users, target_user.id)
         assert target_user_from_db is not None
         assert target_user_from_db.role == "admin"
 
@@ -819,7 +819,7 @@ def test_demote_user(flask_app):
         assert demote_response.status_code == 200
 
         # Verify that the target user's role was changed.
-        target_user_from_db = Users.query.get(target_user.id)
+        target_user_from_db = db.session.get(Users, target_user.id)
         assert target_user_from_db is not None
         assert target_user_from_db.role == "user"
 
@@ -862,7 +862,7 @@ def test_disable_user_mfa(flask_app):
         assert disable_mfa_response.status_code == 200
 
         # Verify that the target user's MFA was disabled.
-        target_user_from_db = Users.query.get(target_user.id)
+        target_user_from_db = db.session.get(Users, target_user.id)
         assert target_user_from_db is not None
         assert target_user_from_db.mfa_active == False
         assert target_user_from_db.totp_active == False
@@ -902,7 +902,7 @@ def test_disable_user_account(flask_app):
         assert disable_account_response.status_code == 200
 
         # Verify that the target user's account was disabled.
-        target_user_from_db = Users.query.get(target_user.id)
+        target_user_from_db = db.session.get(Users, target_user.id)
         assert target_user_from_db is not None
         assert target_user_from_db.activated == False
 
@@ -940,7 +940,7 @@ def test_enable_user_account(flask_app):
         assert enable_account_response.status_code == 200
 
         # Verify that the target user's account was enabled.
-        target_user_from_db = Users.query.get(target_user.id)
+        target_user_from_db = db.session.get(Users, target_user.id)
         assert target_user_from_db is not None
         assert target_user_from_db.activated == True
 

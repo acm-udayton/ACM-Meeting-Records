@@ -58,7 +58,7 @@ def test_mfa_reset_recovery_codes(flask_app):
         assert b"method=\"POST\"" in account_response.data
         original_hashes = {
             code.code_hash
-            for code in RecoveryCodes.query.filter_by(user_id=user.id).all()
+            for code in RecoveryCodes.query.filter(RecoveryCodes.user_id == user.id).all()
         }
 
         get_response = test_client.get("/mfa/reset-recovery-codes/")
@@ -73,7 +73,7 @@ def test_mfa_reset_recovery_codes(flask_app):
         assert invalid_token_response.status_code == 400
         unchanged_hashes = {
             code.code_hash
-            for code in RecoveryCodes.query.filter_by(user_id=user.id).all()
+            for code in RecoveryCodes.query.filter(RecoveryCodes.user_id == user.id).all()
         }
         assert unchanged_hashes == original_hashes
 
@@ -84,7 +84,7 @@ def test_mfa_reset_recovery_codes(flask_app):
         assert response.status_code == 200
         assert b"Store these codes securely." in response.data
 
-        codes = RecoveryCodes.query.filter_by(user_id=user.id).all()
+        codes = RecoveryCodes.query.filter(RecoveryCodes.user_id == user.id).all()
         assert len(codes) == 10
         first_hashes = {code.code_hash for code in codes}
         assert first_hashes.isdisjoint(original_hashes)
@@ -94,7 +94,7 @@ def test_mfa_reset_recovery_codes(flask_app):
             data={"csrf_token": csrf_token}
         )
         assert second_response.status_code == 200
-        codes_after = RecoveryCodes.query.filter_by(user_id=user.id).all()
+        codes_after = RecoveryCodes.query.filter(RecoveryCodes.user_id == user.id).all()
         assert len(codes_after) == 10
         assert {code.code_hash for code in codes_after}.isdisjoint(first_hashes)
 
@@ -124,7 +124,7 @@ def test_verify_recovery_code_success(flask_app):
 
         # Test that the used code is deleted from the database.
         with flask_app.app_context():
-            used_code = RecoveryCodes.query.filter_by(id=code.id).first()
+            used_code = RecoveryCodes.query.filter(RecoveryCodes.id==code.id).first()
             assert used_code is None  # Code should be deleted after use.
 
 def test_verify_recovery_code_invalid(flask_app):
@@ -346,7 +346,7 @@ def test_verify_totp_setup_success_redirect_recovery(flask_app):
         assert user.mfa_active is True
         assert user.totp_active is True
         assert user.totp_secret == pending_secret
-        assert RecoveryCodes.query.filter_by(user_id=user.id).count() == 10
+        assert RecoveryCodes.query.filter(RecoveryCodes.user_id == user.id).count() == 10
 
 def test_verify_totp_setup_success_redirect_account(flask_app):
     """Test valid token redirects straight to account if recovery codes already exist."""
@@ -535,7 +535,7 @@ def test_disable_mfa_success(flask_app):
         original_secret = user.totp_secret
         original_code_hashes = {
             code.code_hash
-            for code in RecoveryCodes.query.filter_by(user_id=user.id).all()
+            for code in RecoveryCodes.query.filter(RecoveryCodes.user_id == user.id).all()
         }
 
         get_response = test_client.get("/mfa/disable-mfa/")
@@ -553,7 +553,7 @@ def test_disable_mfa_success(flask_app):
         assert user.totp_secret == original_secret
         assert {
             code.code_hash
-            for code in RecoveryCodes.query.filter_by(user_id=user.id).all()
+            for code in RecoveryCodes.query.filter(RecoveryCodes.user_id == user.id).all()
         } == original_code_hashes
 
         with test_client:
@@ -569,7 +569,7 @@ def test_disable_mfa_success(flask_app):
         assert not user.mfa_active
         assert not user.totp_active
         assert user.totp_secret is None
-        assert RecoveryCodes.query.filter_by(user_id=user.id).count() == 0
+        assert RecoveryCodes.query.filter(RecoveryCodes.user_id == user.id).count() == 0
 
 def test_disable_mfa_unauthenticated(flask_app):
     """Test that an unauthenticated user cannot access the disable MFA route."""
