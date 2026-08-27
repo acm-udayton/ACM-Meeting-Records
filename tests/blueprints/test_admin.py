@@ -20,7 +20,7 @@ from tests.conftest import app as flask_app, db  # Import the app fixture for co
 
 def test_get_last_attended_date(flask_app):
     """ Test the get_last_attended_date function. """
-    from app.blueprints.admin import get_last_attended_date
+    from app.services.admin_service import get_last_attended_date
     with flask_app.app_context():
 
         user1 = Users(username="testuser1", role="member")
@@ -42,15 +42,15 @@ def test_get_last_attended_date(flask_app):
 
 
         # Test the function with the test data.
-        last_attended_date = get_last_attended_date(user1)
+        last_attended_date = get_last_attended_date(user1.username)
         assert last_attended_date is not None
         assert last_attended_date == current_time
 
-        last_attended_date = get_last_attended_date(user2)
+        last_attended_date = get_last_attended_date(user2.username)
         assert last_attended_date is not None
         assert last_attended_date == current_time - timedelta(days=1)
 
-        last_attended_date = get_last_attended_date(user3)
+        last_attended_date = get_last_attended_date(user3.username)
         assert last_attended_date is None
 
 def test_admin_dashboard(flask_app):
