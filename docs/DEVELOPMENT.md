@@ -230,6 +230,8 @@ Document each endpoint. Include the route, overarching function, and return. If 
 
 For POST requests, specify the type of data that should be expected, if any. This is usually specified by the Flask-WTF form used on the page. Also make note of what templates send data to the endpoint.
 
+Unless explicitly exempted, POST requests are protected by the application's Flask-WTF CSRF validation.
+
 <details>
 <summary id="routes-admin"><strong>Admin Routes</strong></summary>
 <br>
@@ -274,7 +276,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         <br>
         <i>reset_code</i>
         <p>
-          Reset the meeting join code for a currently active meeting after administrator confirmation. Requires a valid CSRF token, generates a new code, and redirects to <a href="#route-admin-show-code">/admin/show-code/</a>. If the meeting is not active, it renders an error page.
+          Reset the meeting join code for a currently active meeting. Generates a new code and redirects to <a href="#route-admin-show-code">/admin/show-code/</a>. If the meeting is not active, it renders an error page.
         </p>
       </li>
       <li id="route-admin-show-code">
@@ -656,7 +658,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         <br>
         <i>reset_recovery_codes</i>
         <p>
-          After user confirmation and CSRF validation, remove all of a user's unused recovery codes and generate 10 new recovery codes.
+          Remove all of a user's unused recovery codes and generate 10 new recovery codes.
         </p>
         <h4>Template file: auth/reset-codes.html</h4>
         <table>
@@ -698,7 +700,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         <br>
         <i>setup_totp</i>
         <p>
-          Begin TOTP Multi-Factor Authentication setup after CSRF validation. A new secret remains pending in the user's signed session and is not persisted to the account until verification succeeds. The response shows a QR code, secret key, and verification form that submits to <a href="#route-mfa-verify-totp-setup">mfa.verify_totp_setup</a>.
+          Begin TOTP Multi-Factor Authentication setup. A new secret remains pending in the user's signed session and is not persisted to the account until verification succeeds. The response shows a QR code, secret key, and verification form that submits to <a href="#route-mfa-verify-totp-setup">mfa.verify_totp_setup</a>.
         </p>
         <h4>Template file: auth/setup-totp.html</h4>
         <table>
@@ -714,7 +716,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         <br>
         <i>verify_totp_setup</i>
         <p>
-          Verify the pending TOTP secret during MFA configuration. If the submitted code is valid, the secret is persisted and MFA is enabled. If the user has no recovery codes, 10 codes are generated within the same protected POST and displayed once; otherwise the user is redirected to <a href="#route-auth-my-account">auth.my_account</a>. Invalid codes leave the secret pending and redisplay the setup page.
+          Verify the pending TOTP secret during MFA configuration. If the submitted code is valid, the secret is persisted and MFA is enabled. If the user has no recovery codes, 10 codes are generated within the same POST request and displayed once; otherwise the user is redirected to <a href="#route-auth-my-account">auth.my_account</a>. Invalid codes leave the secret pending and redisplay the setup page.
         </p>
       </li>
       <li id="route-mfa-disable-totp">
@@ -722,7 +724,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         <br>
         <i>disable_totp</i>
         <p>
-          After user confirmation and CSRF validation, disable TOTP-based MFA and remove its stored secret. Upon success, the user is redirected to <a href="#route-auth-my-account">auth.my_account</a>.
+          Disable TOTP-based MFA and remove its stored secret. Upon success, the user is redirected to <a href="#route-auth-my-account">auth.my_account</a>.
         </p>
       </li>
       <li id="route-mfa-disable-mfa">
@@ -730,7 +732,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         <br>
         <i>disable_mfa</i>
         <p>
-          After user confirmation and CSRF validation, disable all MFA methods for the user account, remove the TOTP secret, and delete all recovery codes. Upon success, the user is redirected to <a href="#route-auth-my-account">auth.my_account</a>.
+          Disable all MFA methods for the user account, remove the TOTP secret, and delete all recovery codes. Upon success, the user is redirected to <a href="#route-auth-my-account">auth.my_account</a>.
         </p>
     </ul>
 </details>
