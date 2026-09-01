@@ -97,7 +97,11 @@ def login():
             return redirect(url_for("auth.login"))
 
     # Process GET requests or failed validation.
-    return render_template("login.html", page_title = "User Log In", form=form)
+    if request.method == "POST":
+        status_code = 400
+    else:
+        status_code = 200
+    return render_template("login.html", page_title = "User Log In", form=form), status_code
 
 @auth_bp.route("/sign-up/", methods = ["GET", "POST"])
 def sign_up():
