@@ -16,13 +16,26 @@
       <aside class="col-lg-3">
         <h5>Meeting Status</h5>
         <section id="meeting-status">
-        <p id="status-p"><strong>Current Status: </strong>{{ meeting.state | title }}
+        <div id="status-p">
+          <strong>Current Status: </strong>{{ meeting.state | title }}
+          {% if meeting.state == "active" %}
+            <br>
+            <strong>Meeting Code: </strong>
+            <form action="{{ url_for('admin.reset_code', meeting_id=meeting.id) }}"
+                  method="POST"
+                  target="_blank"
+                  class="d-inline"
+                  onsubmit="return confirm('Resetting the meeting code will invalidate the current code. Continue?');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+              <button type="submit" class="btn btn-link p-0 align-baseline">Reset Code</button>
+            </form>
+          {% endif %}
+        </div>
         {% if meeting.state == "not started" %}
           <form action="/admin/start/{{ meeting.id }}/" id="meeting-status-form" method="POST" class="col-lg-8">
             <button type="submit" class="form-control form-control-lg" id="meeting-status-submit">Start Meeting</button>
           </form>
         {% elif meeting.state == "active" %}
-          <strong>Meeting Code: </strong><a href="/admin/reset-code/{{ meeting.id }}" target="_blank">Reset Code</a></p>
           <form action="/admin/end/{{ meeting.id }}/" id="meeting-status-form" method="POST" class="col-lg-8">
             <button type="submit" class="form-control form-control-lg" id="meeting-status-submit">End Meeting</button>
           </form>

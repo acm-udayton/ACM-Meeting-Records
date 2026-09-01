@@ -230,6 +230,8 @@ Document each endpoint. Include the route, overarching function, and return. If 
 
 For POST requests, specify the type of data that should be expected, if any. This is usually specified by the Flask-WTF form used on the page. Also make note of what templates send data to the endpoint.
 
+Unless explicitly exempted, POST requests are protected by the application's Flask-WTF CSRF validation.
+
 <details>
 <summary id="routes-admin"><strong>Admin Routes</strong></summary>
 <br>
@@ -270,7 +272,7 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         </p>
       </li>
       <li id="route-admin-reset-code">
-        <strong>/admin/reset-code/&lt;int:meeting_id&gt;/ (GET)</strong>
+        <strong>/admin/reset-code/&lt;int:meeting_id&gt;/ (POST)</strong>
         <br>
         <i>reset_code</i>
         <p>
@@ -652,11 +654,11 @@ For POST requests, specify the type of data that should be expected, if any. Thi
 <p>The following routes handle Multi-Factor Authentication (MFA) functionalities, including TOTP setup and verification, as well as recovery code management. All routes here are contained within the mfa Blueprint (.../mfa/...) and should be restricted to logged-in users. </p>
     <ul>
       <li id="route-mfa-reset-recovery-codes">
-        <strong>/reset-recovery-codes/ (GET)</strong>
+        <strong>/reset-recovery-codes/ (POST)</strong>
         <br>
         <i>reset_recovery_codes</i>
         <p>
-          Remove all of a user's unused recovery codes and generate 10 new recovery codes. 
+          Remove all of a user's unused recovery codes and generate 10 new recovery codes.
         </p>
         <h4>Template file: auth/reset-codes.html</h4>
         <table>
@@ -694,11 +696,11 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         </table>
       </li>
       <li id="route-mfa-setup-totp">
-        <strong>/setup-totp/ (GET)</strong>
+        <strong>/setup-totp/ (POST)</strong>
         <br>
         <i>setup_totp</i>
         <p>
-          Setup Multi-Factor Authentication (MFA) for a user account. The user is shown the MFA setup page with a QR code and secret key for TOTP configuration as well as a form to verify the TOTP setup. Upon submission of the form, the form data is sent as a POST request to <a href="#route-mfa-verify-totp-setup">mfa.verify_totp_setup</a>.
+          Begin TOTP Multi-Factor Authentication setup. A new secret remains pending in the user's signed session and is not persisted to the account until verification succeeds. The response shows a QR code, secret key, and verification form that submits to <a href="#route-mfa-verify-totp-setup">mfa.verify_totp_setup</a>.
         </p>
         <h4>Template file: auth/setup-totp.html</h4>
         <table>
@@ -714,23 +716,23 @@ For POST requests, specify the type of data that should be expected, if any. Thi
         <br>
         <i>verify_totp_setup</i>
         <p>
-          Verify the TOTP setup during MFA configuration. The submitted TOTP code from the setup form is verified using cookie data, and if valid, MFA is enabled for the user account. If the user doesn't yet have recovery codes set up, they are redirected to <a href="#route-mfa-reset-recovery-codes">mfa.reset_recovery_codes</a>. Otherwise, redirect to <a href="#route-auth-my-account">auth.my_account</a>. If the code is invalid, an error message is shown on the setup page.
+          Verify the pending TOTP secret during MFA configuration. If the submitted code is valid, the secret is persisted and MFA is enabled. If the user has no recovery codes, 10 codes are generated within the same POST request and displayed once; otherwise the user is redirected to <a href="#route-auth-my-account">auth.my_account</a>. Invalid codes leave the secret pending and redisplay the setup page.
         </p>
       </li>
       <li id="route-mfa-disable-totp">
-        <strong>/disable-totp/ (GET)</strong>
+        <strong>/disable-totp/ (POST)</strong>
         <br>
         <i>disable_totp</i>
         <p>
-          Disable TOTP-based MFA for the user account. Upon successful disabling, the user is redirected to <a href="#route-auth-my-account">auth.my_account</a>.
+          Disable TOTP-based MFA and remove its stored secret. Upon success, the user is redirected to <a href="#route-auth-my-account">auth.my_account</a>.
         </p>
       </li>
       <li id="route-mfa-disable-mfa">
-        <strong>/disable-mfa/ (GET)</strong>
+        <strong>/disable-mfa/ (POST)</strong>
         <br>
         <i>disable_mfa</i>
         <p>
-          Disable all MFA methods for the user account, including TOTP and recovery codes. Upon successful disabling, the user is redirected to <a href="#route-auth-my-account">auth.my_account</a>.
+          Disable all MFA methods for the user account, remove the TOTP secret, and delete all recovery codes. Upon success, the user is redirected to <a href="#route-auth-my-account">auth.my_account</a>.
         </p>
     </ul>
 </details>
