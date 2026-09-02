@@ -106,7 +106,10 @@ def login():
 @auth_bp.route("/sign-up/", methods = ["GET", "POST"])
 def sign_up():
     """ Show a sign-up page and process submissions. """
-    form = SignUpFormEmail() if current_app.context["usernames"]["require_username_as_email"] == "True" else SignUpFormUsername()
+    if current_app.config["REQUIRE_USERNAME_AS_EMAIL"]:
+        form = SignUpFormEmail()
+    else:
+        form = SignUpFormUsername()
 
     if form.validate_on_submit():
         # Log the user out if active.
@@ -138,9 +141,9 @@ def sign_up():
             return redirect(url_for("auth.login"))
     # Handle GET requests.
     else:
-        if (current_app.context["usernames"]["enforce_usernames"] == "True" and
-            current_app.context["usernames"]["require_username_as_email"] == "True"):
-            required_domain = current_app.context["usernames"]["username_email_domain"]
+        if (current_app.config["ENFORCE_USERNAMES"] and
+            current_app.config["REQUIRE_USERNAME_AS_EMAIL"]):
+            required_domain = current_app.config["USERNAME_EMAIL_DOMAIN"]
         else:
             required_domain = None
         return render_template("sign_up.html",
