@@ -26,6 +26,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from app.extensions import db
 from app.forms import LoginForm, SignUpFormEmail, SignUpFormUsername, AccountUpdateForm
 from app.models import Users, RecoveryCodes
+from app.utils import is_admin
 
 auth_bp = Blueprint('auth', __name__, template_folder='templates')
 
@@ -88,7 +89,7 @@ def login():
                 )
 
                 # Admin without MFA warning.
-                if user.role == "admin":
+                if is_admin(user):
                     flash("Please enable multi-factor authentication for this administrator account!", "danger")
 
                 return redirect(url_for("main.home"))

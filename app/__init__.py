@@ -20,6 +20,8 @@ from flask import Flask, render_template, abort, redirect, url_for
 from flask_login import current_user
 from flask_wtf import CSRFProtect
 
+from app.utils import is_admin, is_admin, is_not_admin
+
 # Local application imports.
 from .extensions import db, login_manager, migrate
 
@@ -31,7 +33,7 @@ def admin_required(f):
     def decorated_admin_required(*args, **kwargs):
         if not current_user.is_authenticated:
             return redirect(url_for("home"))
-        if current_user.role != "admin":
+        if is_not_admin(current_user):
             abort(403)
         return f(*args, **kwargs)
     return decorated_admin_required
@@ -181,6 +183,8 @@ def create_app(use_test_config=False):
                         contact_email = app.context["details"]["email"],
                         organization_name = app.context["details"]["organization"],
                         current_user = current_user,
+                        is_admin = is_admin,
+                        is_not_admin = is_not_admin
                         )
         return context
 

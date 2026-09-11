@@ -87,7 +87,7 @@
           </div>
           <!-- Diable all MFA -->
           <p>Disabling MFA is not advised
-            {% if current_user.role == 'admin' %}, especially for administrators,{% endif %}
+            {% if is_admin(current_user) %}, especially for administrators,{% endif %}
             as it reduces account security.
           </p>
           <p><a href="{{ url_for('mfa.disable_mfa') }}"><button role="button" class="btn btn-danger red-link-btn">Disable All MFA</button></a></p>
@@ -118,7 +118,7 @@
         {% endif %}
       </div>
 
-    {% if current_user.role == 'admin' and current_user.is_authenticated %}
+    {% if is_admin(current_user) %}
     <section id="admin" class="justify-content-center">
       <div class="col-12 justify-content-center text-center">
         <h3>User Dashboard</h3>

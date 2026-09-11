@@ -14,7 +14,9 @@ from datetime import datetime
 
 # Third-party imports.
 from flask import (
+    abort,
     Blueprint,
+    jsonify,
     render_template,
     request,
     redirect,
@@ -38,7 +40,7 @@ from app.models import (Meetings,
     PollFreeResponse
 )
 from app.extensions import db
-from app.utils import sha_hash
+from app.utils import filter_by_role, is_admin, is_not_admin, sha_hash, user_can_access_meeting_by_id
 
 main_bp = Blueprint('main', __name__, template_folder='templates')
 
@@ -206,12 +208,7 @@ def home():
     """ Show the home page. """
     form = MeetingCheckinForm()
     poll_form = PollVoteForm()
-    if not (current_user.is_authenticated and current_user.role == "admin"):
-        recent_meetings = Meetings.query.filter(
-            Meetings.admin_only != True,
-        ).order_by(desc(Meetings.id)).limit(4).all()
-    else:
-        recent_meetings = Meetings.query.order_by(desc(Meetings.id)).limit(4).all()
+    recent_meetings = filter_by_role(Meetings.query, current_user).order_by(desc(Meetings.id)).limit(4).all()
     if len(recent_meetings) != 0:
         featured_meeting = recent_meetings.pop(0)
     else:
@@ -254,7 +251,7 @@ def events_list():
     all_meetings = Meetings.query.order_by(desc(Meetings.id)).all()
     visible_meetings = []
     form = CreateMeetingForm()
-    if current_user.is_authenticated and current_user.role == "admin":
+    if is_admin(current_user):
         return render_template("events.html",
                                page_title = "Meetings",
                                meetings = all_meetings,
@@ -273,6 +270,8 @@ def user_event(meeting_id):
     """ Show a page with the details of a single meeting. """
     form = MeetingCheckinForm()
     meeting = Meetings.query.filter(Meetings.id == meeting_id).first_or_404()
+    if is_not_admin(current_user) and meeting.admin_only:
+        abort(403, description="You do not have permission to view this meeting.")
     attendees = Attendees.query.filter(Attendees.meeting == meeting_id).all()
     minutes = Minutes.query.filter(Minutes.meeting == meeting_id).all()
     attachments = Attachments.query.filter(Attachments.meeting == meeting_id).all()
@@ -302,7 +301,7 @@ def event_check_in(meeting_id):
                 ).first() is None:
                     if sha_hash(code) == meeting.code_hash:
                         # Check for admin-only meeting status.
-                        if meeting.admin_only and current_user.role != "admin":
+                        if meeting.admin_only and is_not_admin(current_user):
                             flash("Check-in failed. "
                                   "This meeting is restricted to administrators only.",
                                 "danger")
@@ -340,6 +339,15 @@ def event_check_in(meeting_id):
 @main_bp.route('/uploads/<name>')
 def download_file(name):
     """ Serve an uploaded file. """
+    # Check permissions on the file based on its meeting association.
+    # Extract filename from the format: meeting-<id>-<filename>
+    filename_parts = name.split('-', 2)
+    if len(filename_parts) < 3 or not filename_parts[0] == "meeting":
+        return jsonify({"error": "Invalid file name format."}), 400
+    attachment = Attachments.query.filter(Attachments.filename == filename_parts[2] and Attachements.meeting == filename_parts[1]).first_or_404()
+    meeting = Meetings.query.filter(Meetings.id == attachment.meeting).first_or_404()
+    if not user_can_access_meeting_by_id(current_user, meeting.id):
+        return jsonify({"error": "You do not have permission to access this file."}), 403
     return send_from_directory(current_app.config["UPLOAD_FOLDER"], name)
 
 @main_bp.route('/submit-poll/<int:poll_id>', methods=['POST'])
