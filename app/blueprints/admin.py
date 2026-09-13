@@ -165,7 +165,7 @@ def event_start(meeting_id):
             }
             return jsonify(return_data), 400
 
-@admin_bp.route("/reset-code/<int:meeting_id>/")
+@admin_bp.route("/reset-code/<int:meeting_id>/", methods = ["POST"])
 @login_required
 @admin_required
 def reset_code(meeting_id):
