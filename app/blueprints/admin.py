@@ -32,7 +32,7 @@ from werkzeug.utils import secure_filename
 from app.extensions import db
 from app.forms import AdminAttendeeAddForm, CreateMeetingForm, MeetingTimesForm
 from app.models import Users, Meetings, Attendees, Minutes, Attachments
-from app.utils import generate_meeting_code, sha_hash
+from app.utils import generate_meeting_code, is_admin, is_not_admin, sha_hash
 from app.__init__ import admin_required
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin', template_folder='templates')
@@ -134,7 +134,7 @@ def event_create():
 @admin_required
 def event_start(meeting_id):
     """ Start a single meeting from the administrator dashboard. """
-    if current_user.role != "admin":
+    if is_not_admin(current_user):
         # User is not an officer, so prevent access.
         abort(403)
     else:
@@ -170,7 +170,7 @@ def event_start(meeting_id):
 @admin_required
 def reset_code(meeting_id):
     """ Reset the meeting join code for a single meeting. """
-    if current_user.role != "admin":
+    if is_not_admin(current_user):
         # User is not an officer, so prevent access.
         abort(403)
     else:
@@ -210,7 +210,7 @@ def show_code():
 @admin_required
 def event_end(meeting_id):
     """ End a single meeting from the administrator dashboard. """
-    if current_user.role != "admin":
+    if is_not_admin(current_user):
         # User is not an officer, so prevent access.
         abort(403)
     else:
@@ -591,7 +591,7 @@ def reset_user_password(user_id):
 def promote_user(user_id):
     """ Promote a user to an admin role. """
     user = Users.query.filter(Users.id == user_id).first_or_404()
-    if user.role != "admin":
+    if is_not_admin(user):
         user.role = "admin"
         db.session.commit()
         flash(f"User {user.username} promoted to admin successfully.", "success")
@@ -609,7 +609,7 @@ def demote_user(user_id):
         flash("You cannot demote your own account.")
         return redirect(url_for("admin.users_list"))
     user = Users.query.filter(Users.id == user_id).first_or_404()
-    if user.role != "user":
+    if is_admin(user):
         user.role = "user"
         db.session.commit()
         flash(f"User {user.username} demoted to user successfully.", "success")
