@@ -344,7 +344,11 @@ def download_file(name):
     filename_parts = name.split('-', 2)
     if len(filename_parts) < 3 or not filename_parts[0] == "meeting":
         return jsonify({"error": "Invalid file name format."}), 400
-    attachment = Attachments.query.filter(Attachments.filename == filename_parts[2] and Attachements.meeting == filename_parts[1]).first_or_404()
+    attachment = Attachments.query.filter(
+        Attachments.filename == filename_parts[2],
+        Attachments.meeting == filename_parts[1]).first_or_404()
+    print(f"Attachment found: {attachment.filename}, meeting ID: {attachment.meeting}")
+    print(f"DEBUG: Attachements is coming from: {globals().get('Attachements')}")
     meeting = Meetings.query.filter(Meetings.id == attachment.meeting).first_or_404()
     if not user_can_access_meeting_by_id(current_user, meeting.id):
         return jsonify({"error": "You do not have permission to access this file."}), 403
