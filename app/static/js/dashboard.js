@@ -75,7 +75,17 @@ document.addEventListener('DOMContentLoaded', function () {
             } else if (statusData == "Ended") {
                 statusP.innerHTML = `<strong>Current Status: </strong> ${statusData}`;
             } else {
-                statusP.innerHTML = `<strong>Current Status: </strong> ${statusData}<br/><strong>Meeting Code: </strong><a href="/admin/reset-code/${CURRENT_MEETING_ID}" target="_blank">Reset Code</a>`;
+                statusP.innerHTML = `
+                    <strong>Current Status: </strong> ${statusData}<br/>
+                    <strong>Meeting Code: </strong>
+                    <form action="/admin/reset-code/${CURRENT_MEETING_ID}/"
+                          method="POST"
+                          target="_blank"
+                          class="d-inline"
+                          onsubmit="return confirm('Resetting the meeting code will invalidate the current code. Continue?');">
+                        <input type="hidden" name="csrf_token" value="${getCsrfToken()}"/>
+                        <button type="submit" class="btn btn-link p-0 align-baseline">Reset Code</button>
+                    </form>`;
                 if (submitButton) submitButton.innerHTML = "End Meeting";
             }
         } catch (error) {

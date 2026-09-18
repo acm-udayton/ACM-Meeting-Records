@@ -11,12 +11,21 @@ File Purpose: Pytest for the blueprints/admin endpoints.
 
 import io
 import os
+import re
 from datetime import datetime, timedelta
 
 from flask import current_app, get_flashed_messages
 
 from app.models import Attachments, Attendees, Meetings, Minutes, Users
 from tests.conftest import app as flask_app, db  # Import the app fixture for context in tests.
+
+
+def get_csrf_token(response):
+    """Extract a Flask-WTF CSRF token from a rendered form."""
+    match = re.search(rb'name="csrf_token" value="([^"]+)"', response.data)
+    assert match is not None
+    return match.group(1).decode()
+
 
 def test_get_last_attended_date(flask_app):
     """ Test the get_last_attended_date function. """
@@ -236,7 +245,7 @@ def test_event_start(flask_app):
         assert start_response_again.status_code == 400
 
 def test_reset_code(flask_app):
-    """ Test the /admin/reset-code/ endpoint. """
+    """Test resetting a meeting code requires POST and a valid CSRF token."""
     with flask_app.app_context():
         # Create a test admin user.
         admin_user = Users(username="adminuser", role="admin", activated=True)
@@ -245,7 +254,13 @@ def test_reset_code(flask_app):
         db.session.commit()
 
         # Create a test meeting to reset the code for.
-        meeting = Meetings(title="Test Meeting", state="active", description="Test Meeting Description", host="adminuser")
+        meeting = Meetings(
+            title="Test Meeting",
+            state="active",
+            description="Test Meeting Description",
+            host="adminuser",
+            code_hash="original-code-hash"
+        )
         db.session.add(meeting)
         db.session.commit()
 
@@ -255,19 +270,45 @@ def test_reset_code(flask_app):
 
         # Test access without login.
         test_client = flask_app.test_client()
-        response = test_client.get(f"/admin/reset-code/{meeting.id}/", follow_redirects=True)
+        response = test_client.post(f"/admin/reset-code/{meeting.id}/", follow_redirects=True)
         assert response.status_code == 401  # Unauthorized.
 
         # Log in as the admin user.
         login_response = test_client.post("/login/", data={"username": "adminuser", "password": "testpassword"}, follow_redirects=True)
         assert login_response.status_code == 200
+        flask_app.config["WTF_CSRF_ENABLED"] = True
 
-        # Test access to the reset code endpoint after login.
-        reset_code_response = test_client.get(f"/admin/reset-code/{meeting.id}/", follow_redirects=True)
+        dashboard_response = test_client.get(f"/admin/dashboard/{meeting.id}/")
+        csrf_token = get_csrf_token(dashboard_response)
+        assert b"Resetting the meeting code will invalidate the current code." in dashboard_response.data
+
+        get_response = test_client.get(f"/admin/reset-code/{meeting.id}/")
+        assert get_response.status_code == 405
+        missing_token_response = test_client.post(f"/admin/reset-code/{meeting.id}/")
+        assert missing_token_response.status_code == 400
+        invalid_token_response = test_client.post(
+            f"/admin/reset-code/{meeting.id}/",
+            data={"csrf_token": "invalid"}
+        )
+        assert invalid_token_response.status_code == 400
+        db.session.refresh(meeting)
+        assert meeting.code_hash == "original-code-hash"
+
+        reset_code_response = test_client.post(
+            f"/admin/reset-code/{meeting.id}/",
+            data={"csrf_token": csrf_token},
+            follow_redirects=True
+        )
         assert reset_code_response.status_code == 200
+        db.session.refresh(meeting)
+        assert meeting.code_hash != "original-code-hash"
 
         # Test resetting the code for an inactive meeting.
-        reset_code_response_inactive = test_client.get(f"/admin/reset-code/{inactive_meeting.id}/", follow_redirects=True)
+        reset_code_response_inactive = test_client.post(
+            f"/admin/reset-code/{inactive_meeting.id}/",
+            data={"csrf_token": csrf_token},
+            follow_redirects=True
+        )
         assert reset_code_response_inactive.status_code == 400
 
 def test_show_code(flask_app):

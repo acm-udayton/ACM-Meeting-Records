@@ -82,7 +82,7 @@
                         <td>
                             <div class="d-flex justify-content-left">
                                 {{ user.role|capitalize }}
-                                {% if user.role != 'admin' %}
+                                {% if is_not_admin(user) %}
                                                                 <button type="button" 
                                         class="btn btn-sm red-link-btn container d-flex justify-content-center align-items-center"
                                         data-bs-toggle="modal" 
