@@ -24,6 +24,7 @@ from app.utils import is_admin, is_admin, is_not_admin
 
 # Local application imports.
 from .extensions import db, login_manager, migrate
+from .utils import get_env_bool
 
 csrf = CSRFProtect()
 
@@ -104,8 +105,8 @@ test_config = {
     'WTF_CSRF_ENABLED': False,  # Disable CSRF for tests.
     'TOTP_ISSUER_NAME': "ACM Meeting Records Test",
     "SECRET_KEY": "test-secret-key",
-    "ENFORCE_USERNAMES": "True",
-    "REQUIRE_USERNAME_AS_EMAIL": "True",
+    "ENFORCE_USERNAMES": True,
+    "REQUIRE_USERNAME_AS_EMAIL": True,
     "USERNAME_EMAIL_DOMAIN": "example.com",
     "UPLOAD_FOLDER": "tests/test_uploads",
 }
@@ -128,6 +129,9 @@ def create_app(use_test_config=False):
     app.config["RECAPTCHA_PUBLIC_KEY"] = os.getenv("RECAPTCHA_SITE_KEY")
     app.config["RECAPTCHA_PRIVATE_KEY"] = os.getenv("RECAPTCHA_SECRET_KEY")
     app.config['RECAPTCHA_SKIP_IP_CHECK'] = True
+    app.config["ENFORCE_USERNAMES"] = get_env_bool("ENFORCE_USERNAMES")
+    app.config["REQUIRE_USERNAME_AS_EMAIL"] = get_env_bool("REQUIRE_USERNAME_AS_EMAIL")
+    app.config["USERNAME_EMAIL_DOMAIN"] = os.getenv("USERNAME_EMAIL_DOMAIN")
 
     if use_test_config:
         app.config.update(test_config)
@@ -158,17 +162,7 @@ def create_app(use_test_config=False):
                                 "email": os.getenv("CONTACT_EMAIL"),
                                 "organization": os.getenv("ORGANIZATION_NAME")
                             }
-    app.context["usernames"] = {
-                                "enforce_usernames": os.getenv("ENFORCE_USERNAMES"),
-                                "username_email_domain": os.getenv("USERNAME_EMAIL_DOMAIN"),
-                                "require_username_as_email": os.getenv("REQUIRE_USERNAME_AS_EMAIL")
-                            }
     app.context["source"] = os.getenv("GITHUB_SOURCE")
-
-    if use_test_config:
-        app.context["usernames"]["enforce_usernames"] = test_config["ENFORCE_USERNAMES"]
-        app.context["usernames"]["username_email_domain"] = test_config["USERNAME_EMAIL_DOMAIN"]
-        app.context["usernames"]["require_username_as_email"] = test_config["REQUIRE_USERNAME_AS_EMAIL"]
 
     # Define the app context processor.
     @app.context_processor
