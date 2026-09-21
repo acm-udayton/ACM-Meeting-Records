@@ -9,6 +9,7 @@ File Purpose: Provide utilities used by the webserver for the project.
 """
 
 import hashlib
+import os
 import secrets
 import string
 from typing import Any
@@ -16,6 +17,23 @@ from typing import Any
 from flask_login import AnonymousUserMixin
 
 from app.models import Meetings, Users
+
+def get_env_bool(variable_name):
+    """ Read an environment variable as a boolean. """
+    value = os.getenv(variable_name)
+    if value is None:
+        return False
+
+    normalized_value = value.strip().lower()
+
+    if normalized_value == "true":
+        return True
+    if normalized_value == "false":
+        return False
+
+    raise ValueError(
+        f'{variable_name} must be set to "True" or "False", not {value!r}.'
+    )
 
 def sha_hash(string_to_hash):
     """ Wrapper function for hashlib's SHA-512 hash. """

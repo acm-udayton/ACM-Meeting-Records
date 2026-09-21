@@ -10,14 +10,47 @@ File Purpose: Pytest for utility functions.
 """
 
 import pytest
+from flask_login import AnonymousUserMixin, login_user, logout_user
 
-from flask_login import login_user, logout_user
+from app import create_app
+from app.extensions import db
+from app.models import Meetings, Users
+from app.utils import (
+    sha_hash, generate_meeting_code, get_env_bool,
+    filter_by_role, is_admin, is_not_admin, user_can_access_meeting_by_id
+)
 from tests.conftest import app as flask_app  # Import the app fixture for context in tests.
 
-from app.extensions import db
+def test_get_env_bool(monkeypatch):
+    """ Test the get_env_bool function. """
+    monkeypatch.setenv("TEST_BOOLEAN", "True")
+    assert get_env_bool("TEST_BOOLEAN") is True
 
-from app.utils import filter_by_role, sha_hash, generate_meeting_code, is_admin, is_not_admin, user_can_access_meeting_by_id
-from app.models import Meetings, Users
+    monkeypatch.setenv("TEST_BOOLEAN", "False")
+    assert get_env_bool("TEST_BOOLEAN") is False
+
+def test_get_env_bool_returns_false_when_missing(monkeypatch):
+    """ Missing environment variables should default to false. """
+    monkeypatch.delenv("TEST_BOOLEAN", raising=False)
+    assert get_env_bool("TEST_BOOLEAN") is False
+
+def test_get_env_bool_rejects_invalid_value(monkeypatch):
+    """ Test an invalid boolean environment variable. """
+    monkeypatch.setenv("TEST_BOOLEAN", "Flase")
+    with pytest.raises(ValueError):
+        get_env_bool("TEST_BOOLEAN")
+
+def test_create_app_parses_username_environment_flags(monkeypatch):
+    """ The application factory should convert environment flags at startup. """
+    monkeypatch.setenv("SQLALCHEMY_DATABASE_URI", "sqlite:///:memory:")
+    monkeypatch.setenv("ENFORCE_USERNAMES", "False")
+    monkeypatch.setenv("REQUIRE_USERNAME_AS_EMAIL", "True")
+    monkeypatch.setenv("USERNAME_EMAIL_DOMAIN", "example.com")
+
+    flask_app = create_app()
+
+    assert flask_app.config["ENFORCE_USERNAMES"] is False
+    assert flask_app.config["REQUIRE_USERNAME_AS_EMAIL"] is True
 
 def test_sha_hash(flask_app):
     """ Test the sha_hash function. """
@@ -40,7 +73,6 @@ def test_generate_meeting_code(flask_app):
         assert len(code2) == 8
         # Should produce different codes on each call (statistically unlikely to repeat).
         assert code1 != code2
-from flask_login import AnonymousUserMixin, login_user, logout_user
 
 
 def test_is_admin(flask_app):

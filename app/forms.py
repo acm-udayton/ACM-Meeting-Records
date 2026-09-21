@@ -33,11 +33,11 @@ SEMESTER_REGEX = r"^(FA|SP) \d{4}$|^$" # FA YYYY or SP YYYY or empty
 
 def email_domain_validator(_form, field):
     """ WTForms Validator to check for the required email domain (if applicable). """
-    if field.data and current_app.context["usernames"]["enforce_usernames"] == "True":
+    if field.data and current_app.config["ENFORCE_USERNAMES"]:
         # Use regex to check the required email_domain.
         match = re.match(r"[^@]+@([^@]+)", field.data)
         if match:
-            required_domain = current_app.context["usernames"]["username_email_domain"]
+            required_domain = current_app.config["USERNAME_EMAIL_DOMAIN"]
             domain = match.group(1)
             if domain != required_domain:
                 raise ValidationError(f'Email must be from the domain {required_domain}')

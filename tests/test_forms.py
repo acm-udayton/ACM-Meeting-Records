@@ -89,13 +89,8 @@ def test_signup_email_validator(flask_app):
     We need the 'app' fixture to provide the context for current_app.
     """
     with flask_app.app_context():
-        # Mocking the context config your validator looks for
-        flask_app.context = {
-            "usernames": {
-                "enforce_usernames": "True",
-                "username_email_domain": "udayton.edu"
-            }
-        }
+        flask_app.config["ENFORCE_USERNAMES"] = True
+        flask_app.config["USERNAME_EMAIL_DOMAIN"] = "udayton.edu"
 
         form_data = MultiDict([
             ('username', 'user@gmail.com'),
@@ -115,6 +110,12 @@ def test_signup_email_validator(flask_app):
             ('confirm_password', 'password123')
         ])
         form = SignUpFormEmail(formdata=form_data_correct)
+        form.username.validate(form)
+        assert len(form.username.errors) == 0
+
+        # Test disabled username enforcement
+        flask_app.config["ENFORCE_USERNAMES"] = False
+        form = SignUpFormEmail(formdata=form_data)
         form.username.validate(form)
         assert len(form.username.errors) == 0
 

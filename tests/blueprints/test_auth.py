@@ -108,6 +108,21 @@ def test_auth_sign_up_get(flask_app):
         assert response.status_code == 200
         assert b"New Account" in response.data
 
+def test_auth_sign_up_allows_username_when_email_not_required(flask_app):
+    """ Test sign-up with a username instead of an email. """
+    with flask_app.app_context():
+        flask_app.config["REQUIRE_USERNAME_AS_EMAIL"] = False
+
+        # Test POST request with valid data.
+        response = flask_app.test_client().post("/sign-up/", data={
+            "username": "testuser",
+            "password": "password",
+            "confirm_password": "password"
+        }, follow_redirects=True)
+
+        assert response.status_code == 200
+        assert b"User creation succeeded." in response.data
+
 def test_auth_sign_up_fail_if_duplicate_username(flask_app):
     """ Test the /auth/sign-up endpoint for duplicate username. """
     with flask_app.app_context():
