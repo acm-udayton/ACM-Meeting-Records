@@ -73,7 +73,7 @@ def test_admin_dashboard(flask_app):
 
         test_client = flask_app.test_client()
 
-        # Create a test  meeting to view the dashboard for.
+        # Create a test meeting to view the dashboard for.
         meeting = Meetings(
             title="Test Meeting",
             event_start=datetime(2026, 7, 26, 18, 0),
