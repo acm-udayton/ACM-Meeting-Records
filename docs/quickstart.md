@@ -31,9 +31,9 @@ To get a local copy up and running follow these simple example steps.
 | ORGANIZATION_NAME | The name of the organization. |
 | MEETING_LOCATION | The location of the meetings. |
 | CONTACT_EMAIL | The contact email for the organization. |
-| ENFORCE_USERNAMES | Whether to enforce username email domain restriction. Set to "True" to enforce, "False" to not enforce. |
-| USERNAME_EMAIL_DOMAIN | The email domain to restrict usernames to, if ENFORCE_USERNAMES is set to "True". |
-| REQUIRE_USERNAME_AS_EMAIL | Whether to require users to use their email as their username. Set to "True" to require, "False" to not require.
+| ENFORCE_USERNAMES | Whether to enforce username email domain restriction. Set to True to enforce, False to not enforce. |
+| USERNAME_EMAIL_DOMAIN | The email domain to restrict usernames to when ENFORCE_USERNAMES is True. |
+| REQUIRE_USERNAME_AS_EMAIL | Whether to require users to use their email as their username. Set to True to require, False to not require.
 | SECRET_KEY | A secret key for the Flask application. This can be any random string. |
 | RECAPTCHA_SITE_KEY | The site key for Google reCAPTCHA. This is required to enable the reCAPTCHA on the user registration page. You can obtain a site key by registering your site with Google reCAPTCHA at https://www.google.com/recaptcha/admin/create. |
 | RECAPTCHA_SECRET_KEY | The secret key for Google reCAPTCHA. This is required to enable the reCAPTCHA on the user registration page. Obtain this key when obtaining the above `RECAPTCHA_SITE_KEY`. |

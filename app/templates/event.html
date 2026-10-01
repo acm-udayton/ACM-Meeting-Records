@@ -24,7 +24,7 @@
             </form>
         </section>
         {% endif %}
-        {% if current_user.is_authenticated and current_user.role == "admin" %}
+        {% if is_admin(current_user) %}
           <h5>Administrator Tools</h5>
           <section id="admin-dash">
             <a href="/admin/dashboard/{{ meeting.id }}/"><button role="button" class="btn btn-primary blue-link-btn">Meeting Dashboard</button></a>
