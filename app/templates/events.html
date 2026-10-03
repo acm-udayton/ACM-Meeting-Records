@@ -4,7 +4,7 @@
   <div class="flex-grow-1 container mt-5">
     <div class="row">
       <aside class="col-sm-3">
-        {% if current_user.is_authenticated and current_user.role == "admin" %}
+        {% if is_admin(current_user) %}
           {% block header_styles %}
             <link href="{{ url_for('static', filename='css/forms.css') }}" rel="stylesheet">
           {% endblock %}

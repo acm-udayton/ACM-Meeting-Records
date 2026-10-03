@@ -30,9 +30,9 @@ from werkzeug.utils import secure_filename
 
 # Local application imports.
 from app.extensions import db
-from app.forms import AdminAttendeeAddForm, CreateMeetingForm
+from app.forms import AdminAttendeeAddForm, CreateMeetingForm, MeetingTimesForm
 from app.models import Users, Meetings, Attendees, Minutes, Attachments
-from app.utils import generate_meeting_code, sha_hash
+from app.utils import generate_meeting_code, is_admin, is_not_admin, sha_hash
 from app.__init__ import admin_required
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin', template_folder='templates')
@@ -50,15 +50,47 @@ def get_last_attended_date(user):
     return last_meeting[0] if last_meeting else None
 
 # Admin web routes.
-@admin_bp.route("/dashboard/<int:meeting_id>/")
+@admin_bp.route("/dashboard/<int:meeting_id>/", methods = ["GET", "POST"])
 @login_required
 @admin_required
 def admin_dashboard(meeting_id):
     """ Show the administrator dashboard page for a single meeting. """
-    meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
-    attendees = Attendees.query.filter_by(meeting = meeting_id).all()
-    minutes = Minutes.query.filter_by(meeting = meeting_id).all()
-    attachments = Attachments.query.filter_by(meeting = meeting_id).all()
+    meeting = Meetings.query.filter(Meetings.id == meeting_id).first_or_404()
+    meeting_times_form = MeetingTimesForm(obj = meeting)
+
+    if request.method == "POST":
+        if meeting_times_form.validate_on_submit():
+            previous_state = meeting.state
+            meeting_code = None
+            meeting.event_start = meeting_times_form.event_start.data
+
+            if meeting.event_start is None:
+                meeting.event_end = None
+                meeting.state = "not started"
+            else:
+                meeting.event_end = meeting_times_form.event_end.data
+                meeting.state = "ended" if meeting.event_end is not None else "active"
+                if (
+                    meeting.state == "active"
+                    and (previous_state != "active" or meeting.code_hash is None)
+                ):
+                    meeting_code = generate_meeting_code()
+                    meeting.code_hash = sha_hash(meeting_code)
+
+            db.session.commit()
+            flash("Meeting times updated successfully.", "success")
+            if meeting_code is not None:
+                return redirect(url_for("admin.show_code", code = meeting_code))
+            return redirect(url_for("admin.admin_dashboard", meeting_id = meeting.id))
+        else:
+            flash(
+                "Meeting times update failed. Please correct the errors below and try again.",
+                "danger"
+            )
+
+    attendees = Attendees.query.filter(Attendees.meeting == meeting_id).all()
+    minutes = Minutes.query.filter(Minutes.meeting == meeting_id).all()
+    attachments = Attachments.query.filter(Attachments.meeting == meeting_id).all()
 
     add_attendee_form = AdminAttendeeAddForm()
 
@@ -69,7 +101,8 @@ def admin_dashboard(meeting_id):
         attendees = attendees,
         minutes = minutes,
         attachments = attachments,
-        add_attendee_form = add_attendee_form
+        add_attendee_form = add_attendee_form,
+        meeting_times_form = meeting_times_form
     ), 200
 
 @admin_bp.route("/create/", methods = ["POST"])
@@ -101,12 +134,12 @@ def event_create():
 @admin_required
 def event_start(meeting_id):
     """ Start a single meeting from the administrator dashboard. """
-    if current_user.role != "admin":
+    if is_not_admin(current_user):
         # User is not an officer, so prevent access.
         abort(403)
     else:
         # Mark the meeting as "active".
-        meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
+        meeting = Meetings.query.filter(Meetings.id == meeting_id).first_or_404()
         if meeting.state == "not started":
             meeting_code = generate_meeting_code()
             meeting.code_hash = sha_hash(meeting_code)
@@ -132,17 +165,17 @@ def event_start(meeting_id):
             }
             return jsonify(return_data), 400
 
-@admin_bp.route("/reset-code/<int:meeting_id>/")
+@admin_bp.route("/reset-code/<int:meeting_id>/", methods = ["POST"])
 @login_required
 @admin_required
 def reset_code(meeting_id):
     """ Reset the meeting join code for a single meeting. """
-    if current_user.role != "admin":
+    if is_not_admin(current_user):
         # User is not an officer, so prevent access.
         abort(403)
     else:
         # Mark the meeting as "active".
-        meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
+        meeting = Meetings.query.filter(Meetings.id == meeting_id).first_or_404()
         if meeting.state == "active":
             meeting_code = generate_meeting_code()
             meeting.code_hash = sha_hash(meeting_code)
@@ -177,15 +210,27 @@ def show_code():
 @admin_required
 def event_end(meeting_id):
     """ End a single meeting from the administrator dashboard. """
-    if current_user.role != "admin":
+    if is_not_admin(current_user):
         # User is not an officer, so prevent access.
         abort(403)
     else:
         # Mark the meeting as "ended".
-        meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
+        meeting = Meetings.query.filter(Meetings.id == meeting_id).first_or_404()
         if meeting.state == "active":
+            event_end_time = datetime.datetime.now()
+            if meeting.event_start is not None and event_end_time < meeting.event_start:
+                return_data = {
+                    "success": False,
+                    "meeting_id": meeting_id,
+                    "message": (
+                        "Meeting could not be ended because its start time "
+                        "is later than the current time."
+                    )
+                }
+                return jsonify(return_data), 400
+
             meeting.state = "ended"
-            meeting.event_end = datetime.datetime.now()
+            meeting.event_end = event_end_time
             db.session.commit()
             return_data = {
                 "success": True,
@@ -207,15 +252,15 @@ def event_end(meeting_id):
 @admin_required
 def event_attendees(meeting_id):
     """ Add an attendee to a single meeting from the administrator dashboard. """
-    if Meetings.query.filter_by(id = meeting_id).first() is not None:
+    if Meetings.query.filter(Meetings.id == meeting_id).first() is not None:
         form = AdminAttendeeAddForm()
         # Handle minutes submission.
         if form.validate_on_submit():
             attendee_username = form.username.data
-            if Users.query.filter_by(username = attendee_username).first() is not None:
-                if Attendees.query.filter_by(
-                    meeting = meeting_id,
-                    username = attendee_username
+            if Users.query.filter(Users.username == attendee_username).first() is not None:
+                if Attendees.query.filter(
+                    Attendees.meeting == meeting_id,
+                    Attendees.username == attendee_username
                 ).first() is None:
                     attendee = Attendees(meeting = meeting_id, username = attendee_username)
                     db.session.add(attendee)
@@ -261,11 +306,11 @@ def event_attendees(meeting_id):
 @admin_required
 def event_remove_attendee(meeting_id, attendee_id):
     """ Remove an attendee from a single meeting from the administrator dashboard. """
-    if Meetings.query.filter_by(id = meeting_id).first() is not None:
+    if Meetings.query.filter(Meetings.id == meeting_id).first() is not None:
         # Handle attendee removal.
-        attendee = Attendees.query.filter_by(
-            id = attendee_id,
-            meeting = meeting_id
+        attendee = Attendees.query.filter(
+            Attendees.id == attendee_id,
+            Attendees.meeting == meeting_id
         ).first()
         if attendee is not None:
             db.session.delete(attendee)
@@ -298,13 +343,13 @@ def event_remove_attendee(meeting_id, attendee_id):
 @admin_required
 def event_minutes(meeting_id, minutes_id = None):
     """ Add minutes for a single meeting from the administrator dashboard. """
-    if Meetings.query.filter_by(id = meeting_id).first() is not None:
+    if Meetings.query.filter(Meetings.id == meeting_id).first() is not None:
         # Handle minutes submission.
         meeting_minutes = request.form["meeting_minutes"]
         if minutes_id is not None:
-            minutes_entry = Minutes.query.filter_by(
-                id = minutes_id,
-                meeting = meeting_id
+            minutes_entry = Minutes.query.filter(
+                Minutes.id == minutes_id,
+                Minutes.meeting == meeting_id
             ).first()
             if minutes_entry is not None:
                 if current_user.username not in minutes_entry.username_by:
@@ -355,7 +400,7 @@ def event_minutes(meeting_id, minutes_id = None):
 @admin_required
 def event_add_attachment(meeting_id):
     """ Add an attachment to a single meeting from the administrator dashboard. """
-    if Meetings.query.filter_by(id = meeting_id).first() is not None:
+    if Meetings.query.filter(Meetings.id == meeting_id).first() is not None:
         if 'file' not in request.files:
             return_data = {
                 "success": False,
@@ -381,9 +426,9 @@ def event_add_attachment(meeting_id):
             if file.filename.lower().split('.')[-1] in allowed_extensions:
                 # Save the file to the docker volume directory and database.
                 filename = secure_filename(f"meeting-{meeting_id}-{file.filename}")
-                if Attachments.query.filter_by(
-                    meeting = meeting_id,
-                    filename = file.filename
+                if Attachments.query.filter(
+                    Attachments.meeting == meeting_id,
+                    Attachments.filename == file.filename
                 ).first() is None:
                     attachment = Attachments(
                         meeting = meeting_id,
@@ -420,11 +465,11 @@ def event_add_attachment(meeting_id):
 @admin_required
 def event_remove_attachment(meeting_id, attachment_id):
     """ Remove an attachment from a single meeting from the administrator dashboard. """
-    if Meetings.query.filter_by(id = meeting_id).first() is not None:
+    if Meetings.query.filter(Meetings.id == meeting_id).first() is not None:
         # Handle attachment removal.
-        attachment = Attachments.query.filter_by(
-            id = attachment_id,
-            meeting = meeting_id
+        attachment = Attachments.query.filter(
+            Attachments.id == attachment_id,
+            Attachments.meeting == meeting_id
         ).first()
         if attachment is not None:
             # Delete the file from the filesystem first.
@@ -459,15 +504,15 @@ def event_remove_attachment(meeting_id, attachment_id):
 @admin_required
 def event_delete(meeting_id):
     """ Delete a single meeting from the administrator dashboard. """
-    meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
+    meeting = Meetings.query.filter(Meetings.id == meeting_id).first_or_404()
 
     # Delete all associated attendees, minutes, and attachments first.
-    Attendees.query.filter_by(meeting = meeting_id).delete()
-    Minutes.query.filter_by(meeting = meeting_id).delete()
-    for attachment in Attachments.query.filter_by(meeting = meeting_id).all():
+    Attendees.query.filter(Attendees.meeting == meeting_id).delete()
+    Minutes.query.filter(Minutes.meeting == meeting_id).delete()
+    for attachment in Attachments.query.filter(Attachments.meeting == meeting_id).all():
         if os.path.exists(attachment.filepath):
             os.remove(attachment.filepath)
-    Attachments.query.filter_by(meeting = meeting_id).delete()
+    Attachments.query.filter(Attachments.meeting == meeting_id).delete()
     db.session.delete(meeting)
     db.session.commit()
     return redirect(url_for("main.events_list"))
@@ -480,7 +525,7 @@ def users_list():
     all_users = Users.query.order_by(Users.id).all()
     for user in all_users:
         # Get the number of meetings attended by each user.
-        user.meetings_attended = Attendees.query.filter_by(username = user.username).count()
+        user.meetings_attended = Attendees.query.filter(Attendees.username == user.username).count()
         # Get the date of the last meeting attended by each user.
         last_attended_meeting = get_last_attended_date(user)
         if last_attended_meeting is not None:
@@ -516,7 +561,7 @@ def users_list():
     )
 
     # Active user count
-    active_user_count = Users.query.filter_by(activated=True).count()
+    active_user_count = Users.query.filter(Users.activated == True).count()
 
     return render_template(
         "admin/users.html",
@@ -533,7 +578,7 @@ def users_list():
 @admin_required
 def reset_user_password(user_id):
     """ Reset a user's password. """
-    user = Users.query.filter_by(id = user_id).first_or_404()
+    user = Users.query.filter(Users.id == user_id).first_or_404()
     new_password = request.form["new_password"]
     user.set_password(new_password)
     db.session.commit()
@@ -545,8 +590,8 @@ def reset_user_password(user_id):
 @admin_required
 def promote_user(user_id):
     """ Promote a user to an admin role. """
-    user = Users.query.filter_by(id = user_id).first_or_404()
-    if user.role != "admin":
+    user = Users.query.filter(Users.id == user_id).first_or_404()
+    if is_not_admin(user):
         user.role = "admin"
         db.session.commit()
         flash(f"User {user.username} promoted to admin successfully.", "success")
@@ -563,8 +608,8 @@ def demote_user(user_id):
     if user_id == current_user.id:
         flash("You cannot demote your own account.")
         return redirect(url_for("admin.users_list"))
-    user = Users.query.filter_by(id = user_id).first_or_404()
-    if user.role != "user":
+    user = Users.query.filter(Users.id == user_id).first_or_404()
+    if is_admin(user):
         user.role = "user"
         db.session.commit()
         flash(f"User {user.username} demoted to user successfully.", "success")
@@ -578,7 +623,7 @@ def demote_user(user_id):
 @admin_required
 def disable_user_mfa(user_id):
     """ Disable two-factor authentication for a user. """
-    user = Users.query.filter_by(id = user_id).first_or_404()
+    user = Users.query.filter(Users.id == user_id).first_or_404()
     if user.mfa_active:
         user.mfa_active = False
         user.totp_active = False
@@ -595,7 +640,7 @@ def disable_user_mfa(user_id):
 @admin_required
 def disable_user_account(user_id):
     """ Disable a user's account. """
-    user = Users.query.filter_by(id = user_id).first_or_404()
+    user = Users.query.filter(Users.id == user_id).first_or_404()
     if user.activated:
         user.activated = False
         db.session.commit()
@@ -610,7 +655,7 @@ def disable_user_account(user_id):
 @admin_required
 def enable_user_account(user_id):
     """ Enable a user's account. """
-    user = Users.query.filter_by(id = user_id).first_or_404()
+    user = Users.query.filter(Users.id == user_id).first_or_404()
     if not user.activated:
         user.activated = True
         db.session.commit()

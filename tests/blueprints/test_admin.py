@@ -11,12 +11,21 @@ File Purpose: Pytest for the blueprints/admin endpoints.
 
 import io
 import os
+import re
 from datetime import datetime, timedelta
 
 from flask import current_app, get_flashed_messages
 
 from app.models import Attachments, Attendees, Meetings, Minutes, Users
 from tests.conftest import app as flask_app, db  # Import the app fixture for context in tests.
+
+
+def get_csrf_token(response):
+    """Extract a Flask-WTF CSRF token from a rendered form."""
+    match = re.search(rb'name="csrf_token" value="([^"]+)"', response.data)
+    assert match is not None
+    return match.group(1).decode()
+
 
 def test_get_last_attended_date(flask_app):
     """ Test the get_last_attended_date function. """
@@ -64,8 +73,14 @@ def test_admin_dashboard(flask_app):
 
         test_client = flask_app.test_client()
 
-        # Create a test  meeting to view the dashboard for.
-        meeting = Meetings(title="Test Meeting", event_start=datetime.now(), state="active", description="Test Meeting Description", host="adminuser")
+        # Create a test meeting to view the dashboard for.
+        meeting = Meetings(
+            title="Test Meeting",
+            event_start=datetime(2026, 7, 26, 18, 0),
+            state="active",
+            description="Test Meeting Description",
+            host="adminuser"
+        )
         db.session.add(meeting)
         db.session.commit()
 
@@ -81,6 +96,100 @@ def test_admin_dashboard(flask_app):
         # Test access to the dashboard after login.
         dashboard_response = test_client.get(f"/admin/dashboard/{meeting.id}/")
         assert dashboard_response.status_code == 200
+        assert b'id="meeting-times-form"' in dashboard_response.data
+        assert b'type="datetime-local"' in dashboard_response.data
+        assert b'value="2026-07-26T18:00"' in dashboard_response.data
+
+def test_admin_dashboard_updates_meeting_times(flask_app):
+    """ Test meeting time updates, validation, clearing, and state synchronization. """
+    with flask_app.app_context():
+        admin_user = Users(username="adminuser", role="admin", activated=True)
+        admin_user.set_password("testpassword")
+        meeting = Meetings(
+            title="Test Meeting",
+            state="not started",
+            description="Test Meeting Description",
+            host="adminuser"
+        )
+        db.session.add_all([admin_user, meeting])
+        db.session.commit()
+
+        test_client = flask_app.test_client()
+        test_client.post(
+            "/login/",
+            data={"username": "adminuser", "password": "testpassword"}
+        )
+
+        meeting_times_url = f"/admin/dashboard/{meeting.id}/"
+        start_time = datetime(2026, 7, 26, 18, 0)
+        end_time = datetime(2026, 7, 26, 19, 30)
+
+        response = test_client.post(
+            meeting_times_url,
+            data={
+                "event_start": "2026-07-26T18:00",
+                "event_end": "2026-07-26T19:30"
+            }
+        )
+
+        assert response.status_code == 302
+        db.session.refresh(meeting)
+        assert meeting.event_start == start_time
+        assert meeting.event_end == end_time
+        assert meeting.state == "ended"
+
+        invalid_response = test_client.post(
+            meeting_times_url,
+            data={
+                "event_start": "2026-07-26T18:00",
+                "event_end": "2026-07-26T17:59"
+            }
+        )
+
+        assert b"End time cannot be earlier than the start time." in invalid_response.data
+        assert (
+            b"Meeting times update failed. Please correct the errors below and try again."
+            in invalid_response.data
+        )
+        db.session.refresh(meeting)
+        assert meeting.event_start == start_time
+        assert meeting.event_end == end_time
+        assert meeting.state == "ended"
+
+        stale_code_hash = "stale-code-hash"
+        meeting.code_hash = stale_code_hash
+        db.session.commit()
+
+        reactivation_response = test_client.post(
+            meeting_times_url,
+            data={
+                "event_start": "2026-07-26T18:00",
+                "event_end": ""
+            }
+        )
+
+        assert reactivation_response.status_code == 302
+        assert "/admin/show-code/" in reactivation_response.location
+        db.session.refresh(meeting)
+        assert meeting.event_start == start_time
+        assert meeting.event_end is None
+        assert meeting.state == "active"
+        assert meeting.code_hash is not None
+        assert meeting.code_hash != stale_code_hash
+
+        test_client.post(
+            meeting_times_url,
+            data={
+                "event_start": "",
+                "event_end": "2026-07-26T19:30"
+            }
+        )
+
+        db.session.refresh(meeting)
+        assert meeting.event_start is None
+        assert meeting.event_end is None
+        assert meeting.state == "not started"
+        assert Attendees.query.filter(Attendees.meeting == meeting.id).count() == 0
 
 def test_event_create(flask_app):
     """ Test the /admin/create/ endpoint. """
@@ -136,7 +245,7 @@ def test_event_start(flask_app):
         assert start_response_again.status_code == 400
 
 def test_reset_code(flask_app):
-    """ Test the /admin/reset-code/ endpoint. """
+    """Test resetting a meeting code requires POST and a valid CSRF token."""
     with flask_app.app_context():
         # Create a test admin user.
         admin_user = Users(username="adminuser", role="admin", activated=True)
@@ -145,7 +254,13 @@ def test_reset_code(flask_app):
         db.session.commit()
 
         # Create a test meeting to reset the code for.
-        meeting = Meetings(title="Test Meeting", state="active", description="Test Meeting Description", host="adminuser")
+        meeting = Meetings(
+            title="Test Meeting",
+            state="active",
+            description="Test Meeting Description",
+            host="adminuser",
+            code_hash="original-code-hash"
+        )
         db.session.add(meeting)
         db.session.commit()
 
@@ -155,19 +270,45 @@ def test_reset_code(flask_app):
 
         # Test access without login.
         test_client = flask_app.test_client()
-        response = test_client.get(f"/admin/reset-code/{meeting.id}/", follow_redirects=True)
+        response = test_client.post(f"/admin/reset-code/{meeting.id}/", follow_redirects=True)
         assert response.status_code == 401  # Unauthorized.
 
         # Log in as the admin user.
         login_response = test_client.post("/login/", data={"username": "adminuser", "password": "testpassword"}, follow_redirects=True)
         assert login_response.status_code == 200
+        flask_app.config["WTF_CSRF_ENABLED"] = True
 
-        # Test access to the reset code endpoint after login.
-        reset_code_response = test_client.get(f"/admin/reset-code/{meeting.id}/", follow_redirects=True)
+        dashboard_response = test_client.get(f"/admin/dashboard/{meeting.id}/")
+        csrf_token = get_csrf_token(dashboard_response)
+        assert b"Resetting the meeting code will invalidate the current code." in dashboard_response.data
+
+        get_response = test_client.get(f"/admin/reset-code/{meeting.id}/")
+        assert get_response.status_code == 405
+        missing_token_response = test_client.post(f"/admin/reset-code/{meeting.id}/")
+        assert missing_token_response.status_code == 400
+        invalid_token_response = test_client.post(
+            f"/admin/reset-code/{meeting.id}/",
+            data={"csrf_token": "invalid"}
+        )
+        assert invalid_token_response.status_code == 400
+        db.session.refresh(meeting)
+        assert meeting.code_hash == "original-code-hash"
+
+        reset_code_response = test_client.post(
+            f"/admin/reset-code/{meeting.id}/",
+            data={"csrf_token": csrf_token},
+            follow_redirects=True
+        )
         assert reset_code_response.status_code == 200
+        db.session.refresh(meeting)
+        assert meeting.code_hash != "original-code-hash"
 
         # Test resetting the code for an inactive meeting.
-        reset_code_response_inactive = test_client.get(f"/admin/reset-code/{inactive_meeting.id}/", follow_redirects=True)
+        reset_code_response_inactive = test_client.post(
+            f"/admin/reset-code/{inactive_meeting.id}/",
+            data={"csrf_token": csrf_token},
+            follow_redirects=True
+        )
         assert reset_code_response_inactive.status_code == 400
 
 def test_show_code(flask_app):
@@ -207,7 +348,14 @@ def test_event_end(flask_app):
 
         # Create a test meeting to end.
         meeting = Meetings(title="Test Meeting", state="active", description="Test Meeting Description", host="adminuser")
-        db.session.add(meeting)
+        future_meeting = Meetings(
+            title="Future Meeting",
+            state="active",
+            description="Future Test Meeting",
+            host="adminuser",
+            event_start=datetime.now() + timedelta(days=1)
+        )
+        db.session.add_all([meeting, future_meeting])
         db.session.commit()
 
         # Test access without login.
@@ -226,6 +374,13 @@ def test_event_end(flask_app):
         # Test ending an already ended meeting.
         end_response_again = test_client.post(f"/admin/end/{meeting.id}/")
         assert end_response_again.status_code == 400
+
+        # Test that the generated end time cannot precede the saved start time.
+        future_end_response = test_client.post(f"/admin/end/{future_meeting.id}/")
+        assert future_end_response.status_code == 400
+        db.session.refresh(future_meeting)
+        assert future_meeting.state == "active"
+        assert future_meeting.event_end is None
 
 def test_event_attendees(flask_app):
     """ Test the /admin/attendees/ endpoint. """
@@ -365,7 +520,7 @@ def test_event_minutes(flask_app):
         assert login_response2.status_code == 200
 
         # Get the minutes entry ID for the meeting.
-        minutes_entry = Minutes.query.filter_by(meeting=meeting_id).first()
+        minutes_entry = Minutes.query.filter(Minutes.meeting == meeting_id).first()
         minutes_id = minutes_entry.id if minutes_entry else None
 
         # Attempt to update the minutes with the second admin user.
@@ -528,10 +683,10 @@ def test_event_delete(flask_app):
         # Test access to the delete endpoint after login.
         delete_response = test_client.post(f"/admin/delete/{meeting.id}/", follow_redirects=True)
         assert delete_response.status_code == 200
-        assert Attendees.query.filter_by(meeting=meeting.id).first() is None
-        assert Minutes.query.filter_by(meeting=meeting.id).first() is None
-        assert Attachments.query.filter_by(meeting=meeting.id).first() is None
-        assert Meetings.query.filter_by(id=meeting.id).first() is None
+        assert Attendees.query.filter(Attendees.meeting == meeting.id).first() is None
+        assert Minutes.query.filter(Minutes.meeting == meeting.id).first() is None
+        assert Attachments.query.filter(Attachments.meeting == meeting.id).first() is None
+        assert Meetings.query.filter(Meetings.id == meeting.id).first() is None
 
 def test_users(flask_app):
     """ Test the /admin/users/ endpoint. """
@@ -593,7 +748,7 @@ def test_reset_user_password(flask_app):
         assert reset_password_response.status_code == 200
 
         # Verify that the target user's password was changed.
-        target_user_from_db = Users.query.get(target_user.id)
+        target_user_from_db = db.session.get(Users, target_user.id)
         assert target_user_from_db is not None
         assert target_user_from_db.check_password("newpassword") == True
 
@@ -626,7 +781,7 @@ def test_promote_user(flask_app):
         assert promote_response.status_code == 200
 
         # Verify that the target user's role was changed.
-        target_user_from_db = Users.query.get(target_user.id)
+        target_user_from_db = db.session.get(Users, target_user.id)
         assert target_user_from_db is not None
         assert target_user_from_db.role == "admin"
 
@@ -664,7 +819,7 @@ def test_demote_user(flask_app):
         assert demote_response.status_code == 200
 
         # Verify that the target user's role was changed.
-        target_user_from_db = Users.query.get(target_user.id)
+        target_user_from_db = db.session.get(Users, target_user.id)
         assert target_user_from_db is not None
         assert target_user_from_db.role == "user"
 
@@ -707,7 +862,7 @@ def test_disable_user_mfa(flask_app):
         assert disable_mfa_response.status_code == 200
 
         # Verify that the target user's MFA was disabled.
-        target_user_from_db = Users.query.get(target_user.id)
+        target_user_from_db = db.session.get(Users, target_user.id)
         assert target_user_from_db is not None
         assert target_user_from_db.mfa_active == False
         assert target_user_from_db.totp_active == False
@@ -747,7 +902,7 @@ def test_disable_user_account(flask_app):
         assert disable_account_response.status_code == 200
 
         # Verify that the target user's account was disabled.
-        target_user_from_db = Users.query.get(target_user.id)
+        target_user_from_db = db.session.get(Users, target_user.id)
         assert target_user_from_db is not None
         assert target_user_from_db.activated == False
 
@@ -785,7 +940,7 @@ def test_enable_user_account(flask_app):
         assert enable_account_response.status_code == 200
 
         # Verify that the target user's account was enabled.
-        target_user_from_db = Users.query.get(target_user.id)
+        target_user_from_db = db.session.get(Users, target_user.id)
         assert target_user_from_db is not None
         assert target_user_from_db.activated == True
 

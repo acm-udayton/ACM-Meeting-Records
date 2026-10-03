@@ -14,7 +14,9 @@ from datetime import datetime
 
 # Third-party imports.
 from flask import (
+    abort,
     Blueprint,
+    jsonify,
     render_template,
     request,
     redirect,
@@ -38,7 +40,7 @@ from app.models import (Meetings,
     PollFreeResponse
 )
 from app.extensions import db
-from app.utils import sha_hash
+from app.utils import filter_by_role, is_admin, is_not_admin, sha_hash, user_can_access_meeting_by_id
 
 main_bp = Blueprint('main', __name__, template_folder='templates')
 
@@ -48,9 +50,9 @@ def handle_frq(question):
     response_text = request.form.get(f'question_{question.id}_frq', '').strip()
 
     if response_text:  # Only save if they entered something
-        existing_response = PollFreeResponse.query.filter_by(
-            user_id=current_user.id,
-            question_id=question.id
+        existing_response = PollFreeResponse.query.filter(
+            PollFreeResponse.user_id == current_user.id,
+            PollFreeResponse.question_id == question.id
         ).first()
 
         if existing_response:
@@ -82,9 +84,9 @@ def handle_frq(question):
 def handle_multiple_response_mcq(selected_option_ids, question):
     """ Handle multiple response MCQ submissions. """
     # Grab existing votes.
-    existing_votes = PollVoter.query.filter_by(
-        user_id=current_user.id,
-        question_id=question.id
+    existing_votes = PollVoter.query.filter(
+        PollVoter.user_id == current_user.id,
+        PollVoter.question_id == question.id
     ).all()
 
     # Create sets for easy comparison.
@@ -110,7 +112,7 @@ def handle_multiple_response_mcq(selected_option_ids, question):
     # Decrement vote counts for removed options
     for vote in existing_votes:
         if vote.option_id not in new_option_ids:
-            option = PollOption.query.get(vote.option_id)
+            option = db.session.get(PollOption, vote.option_id)
             if option and option.votes > 0:
                 option.votes -= 1
             db.session.delete(vote)
@@ -119,7 +121,7 @@ def handle_multiple_response_mcq(selected_option_ids, question):
     # Add votes for newly selected options
     for option_id in new_option_ids:
         if option_id not in existing_option_ids:
-            option = PollOption.query.get(option_id)
+            option = db.session.get(PollOption, option_id)
             if option:
                 option.votes += 1
                 new_vote = PollVoter(
@@ -139,9 +141,9 @@ def handle_single_mcq(selected_option_ids, question):
     """ Handle single response MCQ submissions. """
     option_id = selected_option_ids[0]  # Only one selection for radio
 
-    existing_vote = PollVoter.query.filter_by(
-        user_id=current_user.id,
-        question_id=question.id
+    existing_vote = PollVoter.query.filter(
+        PollVoter.user_id == current_user.id,
+        PollVoter.question_id == question.id
     ).first()
 
     if existing_vote:
@@ -157,11 +159,11 @@ def handle_single_mcq(selected_option_ids, question):
             return False, True
 
         # Process the changed vote
-        old_option = PollOption.query.get(existing_vote.option_id)
+        old_option = db.session.get(PollOption, existing_vote.option_id)
         if old_option and old_option.votes > 0:
             old_option.votes -= 1
 
-        new_option = PollOption.query.get(option_id)
+        new_option = db.session.get(PollOption, option_id)
         if new_option:
             new_option.votes += 1
             existing_vote.option_id = option_id
@@ -169,7 +171,7 @@ def handle_single_mcq(selected_option_ids, question):
         
     else:
         # New vote
-        option = PollOption.query.get(option_id)
+        option = db.session.get(PollOption, option_id)
         if option:
             option.votes += 1
             new_vote = PollVoter(
@@ -206,12 +208,7 @@ def home():
     """ Show the home page. """
     form = MeetingCheckinForm()
     poll_form = PollVoteForm()
-    if not (current_user.is_authenticated and current_user.role == "admin"):
-        recent_meetings = Meetings.query.filter(
-            Meetings.admin_only != True,
-        ).order_by(desc(Meetings.id)).limit(4).all()
-    else:
-        recent_meetings = Meetings.query.order_by(desc(Meetings.id)).limit(4).all()
+    recent_meetings = filter_by_role(Meetings.query, current_user).order_by(desc(Meetings.id)).limit(4).all()
     if len(recent_meetings) != 0:
         featured_meeting = recent_meetings.pop(0)
     else:
@@ -227,11 +224,11 @@ def home():
     user_frq_responses = {}
 
     if current_user.is_authenticated:
-        voter_records = PollVoter.query.filter_by(user_id=current_user.id).all()
+        voter_records = PollVoter.query.filter(PollVoter.user_id == current_user.id).all()
         voted_questions = {voter.question_id for voter in voter_records}
         voted_options = {voter.option_id for voter in voter_records}
 
-        frq_records = PollFreeResponse.query.filter_by(user_id=current_user.id).all()
+        frq_records = PollFreeResponse.query.filter(PollFreeResponse.user_id == current_user.id).all()
         user_frq_responses = {frq.question_id: frq.response_text for frq in frq_records}
         voted_questions.update(user_frq_responses.keys())
 
@@ -254,7 +251,7 @@ def events_list():
     all_meetings = Meetings.query.order_by(desc(Meetings.id)).all()
     visible_meetings = []
     form = CreateMeetingForm()
-    if current_user.is_authenticated and current_user.role == "admin":
+    if is_admin(current_user):
         return render_template("events.html",
                                page_title = "Meetings",
                                meetings = all_meetings,
@@ -272,10 +269,12 @@ def events_list():
 def user_event(meeting_id):
     """ Show a page with the details of a single meeting. """
     form = MeetingCheckinForm()
-    meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
-    attendees = Attendees.query.filter_by(meeting = meeting_id).all()
-    minutes = Minutes.query.filter_by(meeting = meeting_id).all()
-    attachments = Attachments.query.filter_by(meeting = meeting_id).all()
+    meeting = Meetings.query.filter(Meetings.id == meeting_id).first_or_404()
+    if is_not_admin(current_user) and meeting.admin_only:
+        abort(403, description="You do not have permission to view this meeting.")
+    attendees = Attendees.query.filter(Attendees.meeting == meeting_id).all()
+    minutes = Minutes.query.filter(Minutes.meeting == meeting_id).all()
+    attachments = Attachments.query.filter(Attachments.meeting == meeting_id).all()
     return render_template(
         "event.html",
         page_title = f"Meeting - {meeting.title}",
@@ -290,19 +289,19 @@ def user_event(meeting_id):
 @login_required
 def event_check_in(meeting_id):
     """ Check into a single meeting from the homepage. """
-    if Meetings.query.filter_by(id = meeting_id).first() is not None:
+    if Meetings.query.filter(Meetings.id == meeting_id).first() is not None:
         form = MeetingCheckinForm()
         if form.validate_on_submit():
             code = form.code.data
-            meeting = Meetings.query.filter_by(id = meeting_id).first_or_404()
+            meeting = Meetings.query.filter(Meetings.id == meeting_id).first_or_404()
             if meeting.state == "active":
-                if Attendees.query.filter_by(
-                meeting = meeting_id,
-                username = current_user.username
+                if Attendees.query.filter(
+                Attendees.meeting == meeting_id,
+                Attendees.username == current_user.username
                 ).first() is None:
                     if sha_hash(code) == meeting.code_hash:
                         # Check for admin-only meeting status.
-                        if meeting.admin_only and current_user.role != "admin":
+                        if meeting.admin_only and is_not_admin(current_user):
                             flash("Check-in failed. "
                                   "This meeting is restricted to administrators only.",
                                 "danger")
@@ -340,6 +339,19 @@ def event_check_in(meeting_id):
 @main_bp.route('/uploads/<name>')
 def download_file(name):
     """ Serve an uploaded file. """
+    # Check permissions on the file based on its meeting association.
+    # Extract filename from the format: meeting-<id>-<filename>
+    filename_parts = name.split('-', 2)
+    if len(filename_parts) < 3 or not filename_parts[0] == "meeting":
+        return jsonify({"error": "Invalid file name format."}), 400
+    attachment = Attachments.query.filter(
+        Attachments.filename == filename_parts[2],
+        Attachments.meeting == filename_parts[1]).first_or_404()
+    print(f"Attachment found: {attachment.filename}, meeting ID: {attachment.meeting}")
+    print(f"DEBUG: Attachements is coming from: {globals().get('Attachements')}")
+    meeting = Meetings.query.filter(Meetings.id == attachment.meeting).first_or_404()
+    if not user_can_access_meeting_by_id(current_user, meeting.id):
+        return jsonify({"error": "You do not have permission to access this file."}), 403
     return send_from_directory(current_app.config["UPLOAD_FOLDER"], name)
 
 @main_bp.route('/submit-poll/<int:poll_id>', methods=['POST'])
@@ -350,7 +362,7 @@ def submit_poll(poll_id):
     changes_made = False
     successes = 0
     failures = 0
-    poll = Poll.query.get_or_404(poll_id)
+    poll = db.get_or_404(Poll, poll_id)
     if poll.poll_expires and poll.poll_expires <= datetime.now():
         flash("Poll has expired. You cannot submit responses.", "danger")
         return redirect(url_for('main.home'))
