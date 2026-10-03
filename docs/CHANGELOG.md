@@ -13,7 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Corrected environment configuration handling and improved MFA setup reliability.
+- Corrected boolean environment settings to use boolean values instead of strings.
+- Replaced legacy database query calls to resolve SQLAlchemy deprecation warnings.
+- Corrected the HTTP status returned for invalid login form submissions.
 
 ### Security
 
