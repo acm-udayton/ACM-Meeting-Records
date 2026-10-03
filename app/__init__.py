@@ -20,7 +20,7 @@ from flask import Flask, render_template, abort, redirect, url_for
 from flask_login import current_user
 from flask_wtf import CSRFProtect
 
-from app.utils import is_admin, is_admin, is_not_admin
+from app.utils import is_admin, is_not_admin
 
 # Local application imports.
 from .extensions import db, login_manager, migrate
