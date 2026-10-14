@@ -5,9 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2026-10-03
+
+### Added
+
+- Added administrator controls for correcting meeting start and end times.
+
+### Fixed
+
+- Corrected boolean environment settings to use boolean values instead of strings.
+- Replaced legacy database query calls to resolve SQLAlchemy deprecation warnings.
+- Corrected the HTTP status returned for invalid login form submissions.
+
+### Security
+
+- Restricted access to admin-only meeting details, API data, and attachments.
+- Required CSRF-protected POST requests for meeting-code resets and MFA management.
+
 ## [1.9.0] - 2026-07-25
 
 ### Added
+
 - Create unit testing system with GitHub Actions workflow for automated testing and coverage minimum of 80%.
 - Create full unit test suite for all historical features in the application.
 - Revised Docker Image pipeline to publish to GHCR in addition to Docker Hub.
@@ -142,6 +160,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Released the initial application with account management, meeting check-in and history, administrative meeting controls, and API endpoints.
 - Added Docker deployment, persistent database storage, application logging, and the initial README and quickstart documentation.
 
+[1.10.0]: https://github.com/acm-udayton/ACM-Meeting-Records/releases/tag/v1.10.0
 [1.9.0]: https://github.com/acm-udayton/ACM-Meeting-Records/releases/tag/v1.9.0
 [1.8.2]: https://github.com/acm-udayton/ACM-Meeting-Records/releases/tag/v1.8.2
 [1.8.1]: https://github.com/acm-udayton/ACM-Meeting-Records/releases/tag/v1.8.1

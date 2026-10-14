@@ -347,8 +347,6 @@ def download_file(name):
     attachment = Attachments.query.filter(
         Attachments.filename == filename_parts[2],
         Attachments.meeting == filename_parts[1]).first_or_404()
-    print(f"Attachment found: {attachment.filename}, meeting ID: {attachment.meeting}")
-    print(f"DEBUG: Attachements is coming from: {globals().get('Attachements')}")
     meeting = Meetings.query.filter(Meetings.id == attachment.meeting).first_or_404()
     if not user_can_access_meeting_by_id(current_user, meeting.id):
         return jsonify({"error": "You do not have permission to access this file."}), 403
