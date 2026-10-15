@@ -26,6 +26,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from app.extensions import db
 from app.forms import LoginForm, SignUpFormEmail, SignUpFormUsername, AccountUpdateForm
 from app.models import Users, RecoveryCodes
+from app.utils import is_admin
 
 auth_bp = Blueprint('auth', __name__, template_folder='templates')
 
@@ -36,7 +37,7 @@ def login():
     """ Show a login page and process submissions. """
     form = LoginForm()
     if form.validate_on_submit():
-        user = Users.query.filter_by(username = form.username.data).first()
+        user = Users.query.filter(Users.username == form.username.data).first()
 
         needs_relogin = False
 
@@ -88,7 +89,7 @@ def login():
                 )
 
                 # Admin without MFA warning.
-                if user.role == "admin":
+                if is_admin(user):
                     flash("Please enable multi-factor authentication for this administrator account!", "danger")
 
                 return redirect(url_for("main.home"))
@@ -97,12 +98,19 @@ def login():
             return redirect(url_for("auth.login"))
 
     # Process GET requests or failed validation.
-    return render_template("login.html", page_title = "User Log In", form=form)
+    if request.method == "POST":
+        status_code = 400
+    else:
+        status_code = 200
+    return render_template("login.html", page_title = "User Log In", form=form), status_code
 
 @auth_bp.route("/sign-up/", methods = ["GET", "POST"])
 def sign_up():
     """ Show a sign-up page and process submissions. """
-    form = SignUpFormEmail() if current_app.context["usernames"]["require_username_as_email"] == "True" else SignUpFormUsername()
+    if current_app.config["REQUIRE_USERNAME_AS_EMAIL"]:
+        form = SignUpFormEmail()
+    else:
+        form = SignUpFormUsername()
 
     if form.validate_on_submit():
         # Log the user out if active.
@@ -112,10 +120,10 @@ def sign_up():
         pword = form.password.data
         conf_pword = form.confirm_password.data
         # Handle new username and password issues or create the new user.
-        if Users.query.filter_by(username = uname).first() is not None:
+        if Users.query.filter(Users.username == uname).first() is not None:
             flash(
                 "User creation failed. Username already registered. "
-                "Try logging in instead or contact an administrator."
+                "Try logging in instead or contacting an administrator."
                 , "danger"
                 )
             return redirect(url_for("auth.sign_up"))
@@ -134,9 +142,9 @@ def sign_up():
             return redirect(url_for("auth.login"))
     # Handle GET requests.
     else:
-        if (current_app.context["usernames"]["enforce_usernames"] == "True" and
-            current_app.context["usernames"]["require_username_as_email"] == "True"):
-            required_domain = current_app.context["usernames"]["username_email_domain"]
+        if (current_app.config["ENFORCE_USERNAMES"] and
+            current_app.config["REQUIRE_USERNAME_AS_EMAIL"]):
+            required_domain = current_app.config["USERNAME_EMAIL_DOMAIN"]
         else:
             required_domain = None
         return render_template("sign_up.html",
@@ -158,7 +166,7 @@ def logout():
 def my_account():
     """ Show account details page with update form. """
     account_updated_form = AccountUpdateForm()
-    num_codes = RecoveryCodes.query.filter_by(user_id=current_user.id).count()
+    num_codes = RecoveryCodes.query.filter(RecoveryCodes.user_id == current_user.id).count()
     account_updated_form.start_semester.data = current_user.joined
     account_updated_form.grad_semester.data = current_user.graduated
     return render_template("account.html",

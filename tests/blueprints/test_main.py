@@ -17,6 +17,7 @@ from flask_login import login_user as flask_login_user
 from app.blueprints import main as main_module
 from app.extensions import db
 from app.models import (
+    Attachments,
     Meetings,
     Attendees,
     Users,
@@ -298,7 +299,7 @@ def test_event_check_in_success(flask_app):
             )
             assert response.status_code == 200
             assert get_flashed_messages() == ["Check-in succeeded. Attendance updated successfully."]
-            assert Attendees.query.filter_by(username=user.username, meeting=meeting.id).first() is not None
+            assert Attendees.query.filter(Attendees.username == user.username, Attendees.meeting == meeting.id).first() is not None
 
 
 def test_event_check_in_duplicate_is_rejected(flask_app):
@@ -413,7 +414,7 @@ def test_event_check_in_unactivated_user_is_logged_out(flask_app):
             assert response.status_code == 200
             assert response.request.path == "/login/"
             assert get_flashed_messages() == ["Check-in failed. Your account is not activated. Please check in again."]
-            assert Attendees.query.filter_by(username=user.username, meeting=meeting.id).first() is None
+            assert Attendees.query.filter(Attendees.username == user.username, Attendees.meeting == meeting.id).first() is None
 
 def test_submit_poll_immutable_free_response_failure(flask_app):
     """An immutable free-response question should fail when the user tries to change an existing response."""
@@ -435,7 +436,7 @@ def test_submit_poll_immutable_free_response_failure(flask_app):
             )
             assert response.status_code == 200
             assert get_flashed_messages() == ["Response for 'What changed?' cannot be changed once submitted.", "Some responses were not submitted successfully. Successes: 0, Failures: 1"]
-            assert PollFreeResponse.query.filter_by(user_id=user.id, question_id=question.id).one().response_text == "Original response"
+            assert PollFreeResponse.query.filter(PollFreeResponse.user_id == user.id, PollFreeResponse.question_id == question.id).one().response_text == "Original response"
 
 def test_submit_poll_frq_blank_response_no_change(flask_app):
     """Blank FRQ input should be treated as no change."""
@@ -829,15 +830,60 @@ def test_submit_poll_commit_exception(flask_app, monkeypatch):
             assert get_flashed_messages() == ["An error occurred while saving your responses. Please try again."]
 
 def test_download_file(flask_app, tmp_path):
-    """Uploaded files should be served from the configured upload folder."""
-    with flask_app.app_context():
+    """Uploaded files should be served from the configured upload folder and scoped to the correct meeting."""
+    with flask_app.test_request_context():
+        client = flask_app.test_client()
         upload_dir = tmp_path / "uploads"
         upload_dir.mkdir()
-        file_path = upload_dir / "notes.txt"
+        file_path = upload_dir / "meeting-1-notes.txt"
         file_path.write_text("meeting notes", encoding="utf-8")
         flask_app.config["UPLOAD_FOLDER"] = str(upload_dir)
 
-        response = flask_app.test_client().get("/uploads/notes.txt")
+        # Setup Meeting 1 & Attachment
+        admin_user = Users(username="testuser", password="password", role="admin")
+        attachment_meeting_1 = Meetings(id=1, title="File Meeting 1", state="active", description="Meeting 1", host="testuser", admin_only=True)
+        db.session.add_all([admin_user, attachment_meeting_1])
+        db.session.commit()
+
+        attachment_1 = Attachments(filename="notes.txt", filepath=str(file_path), meeting=attachment_meeting_1.id)
+        db.session.add(attachment_1)
+        db.session.commit()
+
+        # Create Meeting 2 with a file sharing the SAME filename ("notes.txt") 
+        attachment_meeting_2 = Meetings(id=2, title="File Meeting 2", state="active", description="Meeting 2", host="testuser", admin_only=True)
+        db.session.add(attachment_meeting_2)
+        db.session.commit()
+
+        other_file_path = upload_dir / "meeting-2-notes.txt"
+        other_file_path.write_text("meeting 2 notes", encoding="utf-8")
+
+        attachment_2 = Attachments(filename="notes.txt", filepath=str(other_file_path), meeting=attachment_meeting_2.id)
+        db.session.add(attachment_2)
+        db.session.commit()
+
+        # Test Bad filename format (400)
+        response = client.get("/uploads/nonexistent-file.txt")
+        assert response.status_code == 400
+        assert response.json == {"error": "Invalid file name format."}
+
+        # Test Unauthenticated access (403)
+        response = client.get("/uploads/meeting-1-notes.txt")
+        assert response.status_code == 403
+
+        # Authenticate User
+        flask_login_user(admin_user)
+
+        # Requesting a file associated with a nonexistent meeting ID (404) 
+        response = client.get("/uploads/meeting-999-notes.txt")
+        assert response.status_code == 404
+
+        # Requesting notes.txt specifically for Meeting 2 retrieves Meeting 2 content
+        response = client.get("/uploads/meeting-2-notes.txt")
+        assert response.status_code == 200
+        assert response.get_data(as_text=True) == "meeting 2 notes"
+
+        # Requesting notes.txt specifically for Meeting 1 retrieves Meeting 1 content
+        response = client.get("/uploads/meeting-1-notes.txt")
         assert response.status_code == 200
         assert response.get_data(as_text=True) == "meeting notes"
 
@@ -876,9 +922,9 @@ def test_submit_poll_successfully_persists_responses(flask_app):
             )
             assert response.status_code == 200
             assert get_flashed_messages() == ["All responses submitted successfully!"]
-            assert PollFreeResponse.query.filter_by(user_id=user.id, question_id=frq.id).one().response_text == "Good work"
-            assert PollVoter.query.filter_by(user_id=user.id, question_id=multi.id).count() == 2
-            assert PollVoter.query.filter_by(user_id=user.id, question_id=single.id).count() == 1
+            assert PollFreeResponse.query.filter(PollFreeResponse.user_id == user.id, PollFreeResponse.question_id == frq.id).one().response_text == "Good work"
+            assert PollVoter.query.filter(PollVoter.user_id == user.id, PollVoter.question_id == multi.id).count() == 2
+            assert PollVoter.query.filter(PollVoter.user_id == user.id, PollVoter.question_id == single.id).count() == 1
 
 
 def test_submit_poll_repeat_submission_reports_no_changes(flask_app):
