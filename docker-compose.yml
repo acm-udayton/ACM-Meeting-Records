@@ -22,6 +22,7 @@ services:
     volumes: # Mount a volume for persistent uploads storage.
       - ./app/uploads:/app/uploads
       - ./migrations:/app/migrations
+      - ./.env:/app/.env
   db:
     image: postgres:13
     container_name: acm-meeting-records-db

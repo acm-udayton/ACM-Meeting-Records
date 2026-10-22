@@ -14,6 +14,7 @@ from flask import Blueprint, current_app, flash, redirect, render_template, requ
 from flask_login import current_user, login_required, login_user, logout_user
 
 # Local application imports.
+from app.utils import is_admin
 from app.forms import AccountUpdateForm, LoginForm, SignUpFormEmail, SignUpFormUsername
 from app.services.auth_service import (
     AccountViewData,
@@ -81,13 +82,20 @@ def login():
         if result.statuses and result.statuses[0] == AuthResultStatus.SUCCESS:
             login_user(result.user)
 
-            if result.user.role == "admin":
+            if is_admin(result.user):
                 flash("Please enable multi-factor authentication for this administrator account!", "danger")
 
             return redirect(url_for("main.home"))
 
     # Process GET requests or failed validation.
-    return render_template("login.html", page_title="User Log In", form=form)
+    if request.method == "POST":
+        status_code = 400
+    else:
+        status_code = 200
+
+    return render_template("login.html", page_title="User Log In", form=form), (
+        status_code
+    )
 
 
 @auth_bp.route("/sign-up/", methods=["GET", "POST"])
@@ -95,7 +103,7 @@ def sign_up():
     """Show a sign-up page and process submissions."""
     form = (
         SignUpFormEmail()
-        if current_app.context["usernames"]["require_username_as_email"] == "True"
+        if current_app.config["REQUIRE_USERNAME_AS_EMAIL"]
         else SignUpFormUsername()
     )
 
@@ -109,7 +117,7 @@ def sign_up():
         if result.statuses and result.statuses[0] == AuthResultStatus.DUPLICATE_USERNAME:
             flash(
                 "User creation failed. Username already registered. "
-                "Try logging in instead or contact an administrator.",
+                "Try logging in instead or contacting an administrator.",
                 "danger",
             )
             return redirect(url_for("auth.sign_up"))
@@ -119,10 +127,10 @@ def sign_up():
 
     # Handle GET requests.
     if (
-        current_app.context["usernames"]["enforce_usernames"] == "True"
-        and current_app.context["usernames"]["require_username_as_email"] == "True"
+        current_app.config["ENFORCE_USERNAMES"]
+        and current_app.config["REQUIRE_USERNAME_AS_EMAIL"]
     ):
-        required_domain = current_app.context["usernames"]["username_email_domain"]
+        required_domain = current_app.config["USERNAME_EMAIL_DOMAIN"]
     else:
         required_domain = None
 

@@ -20,11 +20,13 @@ from flask import (
     request,
     send_from_directory,
     url_for,
+    jsonify,
 )
 from flask_login import current_user, login_required, logout_user
 
 # Local application imports.
 from app.forms import CreateMeetingForm, MeetingCheckinForm, PollVoteForm
+from app.models import Attachments, Meetings
 from app.services.main_service import (
     MainResultStatus,
     check_in_to_meeting,
@@ -34,6 +36,8 @@ from app.services.main_service import (
     meeting_exists,
     submit_poll_responses,
 )
+
+from app.utils import is_admin, user_can_access_meeting_by_id
 
 main_bp = Blueprint('main', __name__, template_folder='templates')
 
@@ -92,7 +96,7 @@ def home():
     is_authenticated = current_user.is_authenticated
     view_data = get_home_view_data(
         current_user.id if is_authenticated else None,
-        is_authenticated and current_user.role == "admin",
+        is_admin(current_user),
     )
 
     return render_template(
@@ -113,8 +117,7 @@ def home():
 def events_list():
     """Show the event list page."""
     form = CreateMeetingForm()
-    is_admin = current_user.is_authenticated and current_user.role == "admin"
-    view_data = get_events_list_data(is_admin)
+    view_data = get_events_list_data(is_admin(current_user))
     return render_template(
         "events.html",
         page_title="Meetings",
@@ -126,9 +129,13 @@ def events_list():
 @main_bp.route("/event/<int:meeting_id>/")
 def user_event(meeting_id):
     """Show a page with the details of a single meeting."""
-    view_data = get_event_view_data(meeting_id)
+    view_data = get_event_view_data(meeting_id, is_admin(current_user))
     if view_data is None:
         abort(404)
+
+    status = view_data.statuses[0]
+    if status == MainResultStatus.ADMIN_ONLY_RESTRICTED:
+        abort(403, description="You do not have permission to view this meeting.")
 
     form = MeetingCheckinForm()
     return render_template(
@@ -161,7 +168,7 @@ def event_check_in(meeting_id):
     result = check_in_to_meeting(
         meeting_id=meeting_id,
         username=current_user.username,
-        user_role=current_user.role,
+        user_is_admin=is_admin(current_user),
         user_activated=current_user.activated,
         code=form.code.data,
     )
@@ -193,6 +200,17 @@ def event_check_in(meeting_id):
 @main_bp.route('/uploads/<name>')
 def download_file(name):
     """Serve an uploaded file."""
+    # Check permissions on the file based on its meeting association.
+    # Extract filename from the format: meeting-<id>-<filename>
+    filename_parts = name.split('-', 2)
+    if len(filename_parts) < 3 or not filename_parts[0] == "meeting":
+        return jsonify({"error": "Invalid file name format."}), 400
+    attachment = Attachments.query.filter(
+        Attachments.filename == filename_parts[2],
+        Attachments.meeting == filename_parts[1]).first_or_404()
+    meeting = Meetings.query.filter(Meetings.id == attachment.meeting).first_or_404()
+    if not user_can_access_meeting_by_id(current_user, meeting.id):
+        return jsonify({"error": "You do not have permission to access this file."}), 403
     return send_from_directory(current_app.config["UPLOAD_FOLDER"], name)
 
 

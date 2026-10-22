@@ -60,7 +60,7 @@ class AccountViewData:
 
 def authenticate_user(username: str, password: str, remote_addr: str | None) -> AuthLoginResult:
     """Validate login credentials and return the matching outcome."""
-    user = Users.query.filter_by(username=username).first()
+    user = Users.query.filter(Users.username == username).first()
     if user is None:
         return AuthLoginResult(statuses=(AuthResultStatus.USER_NOT_FOUND,))
 
@@ -100,7 +100,7 @@ def authenticate_user(username: str, password: str, remote_addr: str | None) -> 
 
 def register_user(username: str, password: str, remote_addr: str | None) -> AuthOperationResult:
     """Create a user account if the username is available."""
-    if Users.query.filter_by(username=username).first() is not None:
+    if Users.query.filter(Users.username == username).first() is not None:
         return AuthOperationResult(statuses=(AuthResultStatus.DUPLICATE_USERNAME,))
 
     current_app.logger.warning("New user %s from IP %s", username, remote_addr)
@@ -116,7 +116,7 @@ def register_user(username: str, password: str, remote_addr: str | None) -> Auth
 def get_account_view_data(user_id: int) -> AccountViewData:
     """Return the account values needed to render the profile page."""
     user = db.session.get(Users, user_id)
-    num_codes = RecoveryCodes.query.filter_by(user_id=user_id).count()
+    num_codes = RecoveryCodes.query.filter(RecoveryCodes.user_id == user_id).count()
     return AccountViewData(
         num_codes=num_codes,
         start_semester=user.joined if user is not None else None,

@@ -13,8 +13,9 @@ import datetime
 from flask import Blueprint, render_template, request, jsonify, abort, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
 
+from app.utils import is_not_admin
 from app.__init__ import admin_required
-from app.forms import AdminAttendeeAddForm, CreateMeetingForm
+from app.forms import AdminAttendeeAddForm, CreateMeetingForm, MeetingTimesForm
 from app.services.admin_service import (
     AdminResultStatus,
     add_attachment as add_attachment_service,
@@ -35,12 +36,13 @@ from app.services.admin_service import (
     reset_password as reset_password_service,
     save_minutes as save_minutes_service,
     start_meeting as start_meeting_service,
+    update_meeting_times as update_meeting_times_service,
 )
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin", template_folder="templates")
 
 
-@admin_bp.route("/dashboard/<int:meeting_id>/")
+@admin_bp.route("/dashboard/<int:meeting_id>/", methods=["GET", "POST"])
 @login_required
 @admin_required
 def admin_dashboard(meeting_id):
@@ -49,6 +51,24 @@ def admin_dashboard(meeting_id):
     if dashboard_data is None:
         abort(404)
 
+    meeting_times_form = MeetingTimesForm(obj=dashboard_data.meeting)
+    if request.method == "POST":
+        if meeting_times_form.validate_on_submit():
+            result = update_meeting_times_service(
+                meeting_id,
+                meeting_times_form.event_start.data,
+                meeting_times_form.event_end.data,
+            )
+            if result.statuses == (AdminResultStatus.MEETING_NOT_FOUND,):
+                abort(404)
+            flash("Meeting times updated successfully.", "success")
+            if result.meeting_code is not None:
+                return redirect(url_for("admin.show_code", code=result.meeting_code))
+            return redirect(url_for("admin.admin_dashboard", meeting_id=meeting_id))
+        flash(
+            "Meeting times update failed. Please correct the errors below and try again.",
+            "danger",
+        )
     add_attendee_form = AdminAttendeeAddForm()
     return render_template(
         "admin/dashboard.html",
@@ -58,6 +78,7 @@ def admin_dashboard(meeting_id):
         minutes=dashboard_data.minutes,
         attachments=dashboard_data.attachments,
         add_attendee_form=add_attendee_form,
+        meeting_times_form=meeting_times_form
     ), 200
 
 
@@ -86,7 +107,7 @@ def event_create():
 @admin_required
 def event_start(meeting_id):
     """Start a single meeting from the administrator dashboard."""
-    if current_user.role != "admin":
+    if is_not_admin(current_user):
         abort(403)
 
     result = start_meeting_service(meeting_id, current_user.username)
@@ -118,12 +139,12 @@ def event_start(meeting_id):
     ), 400
 
 
-@admin_bp.route("/reset-code/<int:meeting_id>/")
+@admin_bp.route("/reset-code/<int:meeting_id>/", methods=["POST"])
 @login_required
 @admin_required
 def reset_code(meeting_id):
     """Reset the meeting join code for a single meeting."""
-    if current_user.role != "admin":
+    if is_not_admin(current_user):
         abort(403)
 
     result = reset_meeting_code_service(meeting_id)
@@ -153,7 +174,7 @@ def show_code():
 @admin_required
 def event_end(meeting_id):
     """End a single meeting from the administrator dashboard."""
-    if current_user.role != "admin":
+    if is_not_admin(current_user):
         abort(403)
 
     result = end_meeting_service(meeting_id)
@@ -165,6 +186,17 @@ def event_end(meeting_id):
                 "message": "Meeting ended successfully.",
             }
         ), 200
+    elif result.statuses == (AdminResultStatus.MEETING_STARTED_FUTURE,):
+        return jsonify(
+            {
+                "success": False,
+                "meeting_id": meeting_id,
+                "message": (
+                    "Meeting could not be ended because its start time "
+                    "is later than the current time."
+                )
+            }
+        ), 400
 
     return jsonify(
         {

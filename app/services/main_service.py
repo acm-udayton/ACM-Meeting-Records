@@ -31,7 +31,7 @@ from app.models import (
     PollQuestion,
     PollVoter,
 )
-from app.utils import sha_hash
+from app.utils import sha_hash, filter_by_role
 
 LOGGER = logging.getLogger(__name__)
 
@@ -56,7 +56,6 @@ class MainResultStatus(str, Enum):
     QUESTION_NOT_FOUND = "question_not_found"
     PARTIAL_FAILURE = "partial_failure"
     ERROR = "error"
-
 
 @dataclass(slots=True)
 class MainOperationResult:
@@ -91,6 +90,7 @@ class EventsListViewData:
 class EventViewData:
     """Data required to render a single event page."""
 
+    statuses: tuple[MainResultStatus, ...]
     meeting: Meetings
     attendees: list[Attendees]
     minutes: list[Minutes]
@@ -161,13 +161,23 @@ def get_events_list_data(is_admin: bool) -> EventsListViewData:
     )
 
 
-def get_event_view_data(meeting_id: int) -> EventViewData | None:
+def get_event_view_data(meeting_id: int, is_admin: bool) -> EventViewData | None:
     """Return the data for an event detail page, if the meeting exists."""
     meeting = db.session.get(Meetings, meeting_id)
     if meeting is None:
         return None
 
+    if meeting.admin_only and not is_admin:
+        return EventViewData(
+            statuses=(MainResultStatus.ADMIN_ONLY_RESTRICTED,),
+            meeting=meeting,
+            attendees=Attendees.query.filter_by(meeting=meeting_id).all(),
+            minutes=Minutes.query.filter_by(meeting=meeting_id).all(),
+            attachments=Attachments.query.filter_by(meeting=meeting_id).all(),
+        )
+
     return EventViewData(
+        statuses=(MainResultStatus.SUCCESS,),
         meeting=meeting,
         attendees=Attendees.query.filter_by(meeting=meeting_id).all(),
         minutes=Minutes.query.filter_by(meeting=meeting_id).all(),
@@ -183,7 +193,7 @@ def meeting_exists(meeting_id: int) -> bool:
 def check_in_to_meeting(
     meeting_id: int,
     username: str,
-    user_role: str,
+    user_is_admin:bool,
     user_activated: bool,
     code: str,
 ) -> MainOperationResult:
@@ -210,7 +220,7 @@ def check_in_to_meeting(
             meeting=meeting,
         )
 
-    if meeting.admin_only and user_role != "admin":
+    if meeting.admin_only and not user_is_admin:
         return MainOperationResult(
             statuses=(MainResultStatus.ADMIN_ONLY_RESTRICTED,),
             meeting=meeting,

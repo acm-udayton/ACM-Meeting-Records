@@ -14,6 +14,8 @@ from dataclasses import dataclass
 from enum import Enum
 from io import BytesIO
 
+from flask import current_app
+
 import pyotp
 import qrcode
 
@@ -121,8 +123,8 @@ def verify_mfa_recovery_code(user: Users | None, code: str) -> MfaLoginResult:
 # Setup & Management Actions
 # ==========================================
 
-def prepare_totp_setup(user: Users) -> tuple[MfaOperationResult, str | None, str | None]:
-    """Generate temporary TOTP secret & URI for setup. Returns (Result, URI, QR_Base64)."""
+def prepare_totp_setup(user: Users, secret: str) -> tuple[MfaOperationResult, str | None, str | None]:
+    """Build a setup URI and QR image for a pending secret without persisting it."""
     if user.totp_active:
         return (
             MfaOperationResult(
@@ -132,10 +134,9 @@ def prepare_totp_setup(user: Users) -> tuple[MfaOperationResult, str | None, str
             None,
         )
 
-    user.generate_totp_secret()
-    db.session.commit()
-
-    uri = user.get_totp_uri()
+    uri = pyotp.TOTP(secret).provisioning_uri(
+        name=user.username, issuer_name=current_app.config.get("TOTP_ISSUER_NAME")
+    )
     qr_code_b64 = generate_qr_code(uri)
 
     return (
@@ -145,28 +146,29 @@ def prepare_totp_setup(user: Users) -> tuple[MfaOperationResult, str | None, str
     )
 
 
-def verify_and_enable_totp(user: Users, token: str) -> MfaOperationResult:
-    """Verify TOTP token during setup and activate TOTP for the user."""
-    if not user.totp_secret:
+def verify_and_enable_totp(user: Users, token: str, secret: str | None) -> MfaOperationResult:
+    """Verify the pending secret and stage activation for the caller to commit."""
+    if not secret:
         return MfaOperationResult(
             statuses=(MfaResultStatus.MFA_NOT_ENABLED,), user=user
         )
 
-    totp = pyotp.TOTP(user.totp_secret)
+    totp = pyotp.TOTP(secret)
     if not totp.verify(token):
         return MfaOperationResult(
             statuses=(MfaResultStatus.INVALID_TOTP,), user=user
         )
 
+    user.totp_secret = secret
     user.mfa_active = True
     user.totp_active = True
-    db.session.commit()
+    # The route commits activation together with any initial recovery codes.
 
     return MfaOperationResult(statuses=(MfaResultStatus.SUCCESS,), user=user)
 
 
 def reset_recovery_codes_for_user(
-    user: Users, count: int = 10
+    user: Users, count: int = 10, *, commit: bool = True
 ) -> tuple[MfaOperationResult, list[str]]:
     """Delete old recovery codes, enable MFA, and generate new recovery codes."""
     # Clear old codes
@@ -182,7 +184,8 @@ def reset_recovery_codes_for_user(
         db.session.add(new_code)
         new_code_strings.append(code_value)
 
-    db.session.commit()
+    if commit:
+        db.session.commit()
 
     return (
         MfaOperationResult(statuses=(MfaResultStatus.SUCCESS,), user=user),
@@ -191,9 +194,9 @@ def reset_recovery_codes_for_user(
 
 
 def disable_totp_for_user(user: Users) -> MfaOperationResult:
-    """Disable TOTP MFA specifically and regenerate secret."""
+    """Disable TOTP MFA and clear its secret."""
     user.totp_active = False
-    user.generate_totp_secret()
+    user.totp_secret = None
     db.session.commit()
 
     return MfaOperationResult(statuses=(MfaResultStatus.SUCCESS,), user=user)

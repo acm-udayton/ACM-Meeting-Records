@@ -22,7 +22,7 @@ from werkzeug.utils import secure_filename
 # Local application imports.
 from app.extensions import db
 from app.models import Attachments, Attendees, Meetings, Minutes, Users
-from app.utils import generate_meeting_code, sha_hash
+from app.utils import generate_meeting_code, is_admin, is_not_admin, sha_hash
 
 
 class AdminResultStatus(str, Enum):
@@ -45,6 +45,7 @@ class AdminResultStatus(str, Enum):
     MFA_ALREADY_DISABLED = "mfa_already_disabled"
     ACCOUNT_ALREADY_DISABLED = "account_already_disabled"
     ACCOUNT_ALREADY_ENABLED = "account_already_enabled"
+    MEETING_STARTED_FUTURE = "meeting_started_future"
 
 
 @dataclass(slots=True)
@@ -135,6 +136,37 @@ def get_dashboard_data(meeting_id: int) -> AdminDashboardViewData | None:
     )
 
 
+def update_meeting_times(
+    meeting_id: int,
+    event_start: datetime.datetime | None,
+    event_end: datetime.datetime | None,
+) -> AdminOperationResult:
+    """Persist validated meeting times and update the meeting state and join code."""
+    meeting = db.session.get(Meetings, meeting_id)
+    if meeting is None:
+        return AdminOperationResult(statuses=(AdminResultStatus.MEETING_NOT_FOUND,))
+
+    previous_state = meeting.state
+    meeting_code = None
+    meeting.event_start = event_start
+    if event_start is None:
+        meeting.event_end = None
+        meeting.state = "not started"
+    else:
+        meeting.event_end = event_end
+        meeting.state = "ended" if event_end is not None else "active"
+        if meeting.state == "active" and (
+            previous_state != "active" or meeting.code_hash is None
+        ):
+            meeting_code = generate_meeting_code()
+            meeting.code_hash = sha_hash(meeting_code)
+
+    db.session.commit()
+    return AdminOperationResult(
+        statuses=(AdminResultStatus.SUCCESS,), meeting=meeting, meeting_code=meeting_code
+    )
+
+
 def start_meeting(meeting_id: int, username: str) -> AdminOperationResult:
     """Activate a meeting and generate a join code."""
     meeting = db.session.get(Meetings, meeting_id)
@@ -197,8 +229,12 @@ def end_meeting(meeting_id: int) -> AdminOperationResult:
             meeting=meeting,
         )
 
+    event_end_time = datetime.datetime.now()
+    if meeting.event_start is not None and event_end_time < meeting.event_start:
+        return AdminOperationResult(statuses=(AdminResultStatus.MEETING_STARTED_FUTURE,))
+
     meeting.state = "ended"
-    meeting.event_end = datetime.datetime.now()
+    meeting.event_end = event_end_time
     db.session.commit()
     current_app.logger.info("Ended meeting %s", meeting.id)
     return AdminOperationResult(statuses=(AdminResultStatus.SUCCESS,), meeting=meeting)
@@ -372,7 +408,7 @@ def promote_user(user_id: int) -> AdminOperationResult:
     user = db.session.get(Users, user_id)
     if user is None:
         return AdminOperationResult(statuses=(AdminResultStatus.USER_NOT_FOUND,))
-    if user.role == "admin":
+    if is_admin(user):
         return AdminOperationResult(statuses=(AdminResultStatus.ALREADY_ADMIN,), user=user)
 
     user.role = "admin"
@@ -388,7 +424,7 @@ def demote_user(user_id: int, current_user_id: int) -> AdminOperationResult:
     user = db.session.get(Users, user_id)
     if user is None:
         return AdminOperationResult(statuses=(AdminResultStatus.USER_NOT_FOUND,))
-    if user.role == "user":
+    if is_not_admin(user):
         return AdminOperationResult(statuses=(AdminResultStatus.ALREADY_USER,), user=user)
 
     user.role = "user"

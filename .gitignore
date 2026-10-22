@@ -38,3 +38,6 @@ htmlcov/
 .pytest_cache/
 .coverage
 .cache/
+
+# Ignore IDE/editor config files.
+.idea/
