@@ -25,7 +25,7 @@ from flask_wtf import CSRFProtect
 from app.utils import is_admin, is_not_admin
 
 # Local application imports.
-from .extensions import db, login_manager, migrate
+from .extensions import db, login_manager, migrate, jwt
 from .utils import get_env_bool
 
 csrf = CSRFProtect()
@@ -116,6 +116,7 @@ test_config = {
     'WTF_CSRF_ENABLED': False,  # Disable CSRF for tests.
     'TOTP_ISSUER_NAME': "ACM Meeting Records Test",
     "SECRET_KEY": "test-secret-key",
+    "JWT_SECRET_KEY": "test-jwt-secret-key",
     "ENFORCE_USERNAMES": True,
     "REQUIRE_USERNAME_AS_EMAIL": True,
     "USERNAME_EMAIL_DOMAIN": "example.com",
@@ -159,6 +160,7 @@ def create_app(use_test_config=False):
     migrate.init_app(app, db)
     login_manager.init_app(app)
     csrf.init_app(app)
+    jwt.init_app(app)
 
     # Configure Flask-Login.
     from .models import Users  # pylint: disable=import-outside-toplevel
