@@ -17,6 +17,7 @@ dependencies = [
     "gunicorn>=26.0.0",
     "pillow>=12.2.0",
     "psycopg2-binary>=2.9.12",
+    "pyjwt>=2.15.1",
     "pyotp>=2.9.0",
     "python-dotenv>=1.2.2",
     "qrcode>=8.2",
