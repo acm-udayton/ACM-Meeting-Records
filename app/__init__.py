@@ -4,7 +4,7 @@
 """
 Project Name: ACM-Meeting-Records
 Project Author(s): Joseph Lefkovitz (github.com/lefkovitz)
-Last Modified: 10/7/2025
+Last Modified: 10/30/2026
 
 File Purpose: Application factory for the project.
 """
@@ -215,11 +215,13 @@ def create_app(use_test_config=False):
     from .blueprints.api import api_bp # pylint: disable=import-outside-toplevel
     from .blueprints.mfa import mfa_bp # pylint: disable=import-outside-toplevel
     from .blueprints.polls import polls_bp # pylint: disable=import-outside-toplevel
+    from .blueprints.jwt_api import jwt_bp # pylint: disable=import-outside-toplevel
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(auth_bp)
     app.register_blueprint(mfa_bp, url_prefix="/mfa")
     app.register_blueprint(main_bp)
     app.register_blueprint(api_bp, url_prefix="/api")
     app.register_blueprint(polls_bp, url_prefix="/admin")
+    app.register_blueprint(jwt_bp, url_prefix="/api/v1/jwt")
 
     return app
