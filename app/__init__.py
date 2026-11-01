@@ -64,6 +64,12 @@ def add_claims_to_access_token(identity):
         }
     return {}
 
+@jwt.token_verification_loader
+def verify_login_token_type(jwt_header, jwt_payload):
+    """Prevent intermediate MFA tokens from authenticating protected routes."""
+    return jwt_payload.get("type") in {"access", "refresh"}
+
+
 def datetime_format(value):
     """Format a datetime object in a Jinja template to a custom string."""
     time_format = "%m/%d/%Y %I:%M %p"
@@ -237,5 +243,8 @@ def create_app(use_test_config=False):
     app.register_blueprint(api_bp, url_prefix="/api")
     app.register_blueprint(polls_bp, url_prefix="/admin")
     app.register_api(jwt_bp, url_prefix="/api/v1/jwt")
+    
+    # JSON API routes are exempt from CSRF protection, as they use JWTs for authentication.
+    csrf.exempt(jwt_bp)
 
     return app

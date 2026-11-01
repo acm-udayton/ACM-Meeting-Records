@@ -11,14 +11,22 @@ File Purpose: JWT authentication service for the project.
 
 # Standard library imports.
 from dataclasses import dataclass
+from datetime import timedelta
 from enum import Enum
 
 # Third-party imports.
 from flask import current_app
-from flask_jwt_extended import create_access_token, create_refresh_token
+from flask_jwt_extended import create_access_token, create_refresh_token, decode_token
+from flask_jwt_extended.exceptions import JWTExtendedException
+from jwt.exceptions import PyJWTError
 
 # Local application imports.
 from app.models import Users
+from app.extensions import db
+from app.services.mfa_service import verify_mfa_recovery_code, verify_mfa_totp_code
+
+
+MFA_TOKEN_LIFETIME = timedelta(minutes=5)
 
 
 class AuthResultStatus(str, Enum):
@@ -31,6 +39,8 @@ class AuthResultStatus(str, Enum):
     REQUIRE_TOTP_MFA = "require_totp_mfa"
     REQUIRE_RECOVERY_MFA = "require_recovery_mfa"
     DUPLICATE_USERNAME = "duplicate_username"
+    INVALID_MFA_TOKEN = "invalid_mfa_token"
+    INVALID_MFA_CODE = "invalid_mfa_code"
 
 
 @dataclass(slots=True)
@@ -41,6 +51,7 @@ class AuthLoginResult:
     user_id: int | None = None
     access_token: str | None = None
     refresh_token: str | None = None
+    mfa_token: str | None = None
 
 
 def authenticate_user(username: str, password: str, remote_addr: str | None) -> AuthLoginResult:
@@ -74,6 +85,11 @@ def authenticate_user(username: str, password: str, remote_addr: str | None) -> 
         return AuthLoginResult(
             statuses=(status,),
             user_id=user.id,
+            mfa_token=create_access_token(
+                identity=str(user.id),
+                expires_delta=MFA_TOKEN_LIFETIME,
+                additional_claims={"type": "mfa"},
+            ),
         )
 
     current_app.logger.info(
@@ -90,3 +106,28 @@ def issue_login_tokens(user: Users) -> AuthLoginResult:
         access_token=create_access_token(identity=str(user.id)),
         refresh_token=create_refresh_token(identity=str(user.id)),
     )
+
+
+def complete_mfa_login(mfa_token: str, token: str, recovery: bool = False) -> AuthLoginResult:
+    """Verify the signed MFA challenge and code before issuing login tokens."""
+    try:
+        claims = decode_token(mfa_token)
+        # Ensure correct token type.
+        if claims.get("type") != "mfa":
+            return AuthLoginResult(statuses=(AuthResultStatus.INVALID_MFA_TOKEN,))
+        # JWT_IDENTITY_CLAIM defaults to "sub" on jwt.init_app().
+        identity = claims[current_app.config["JWT_IDENTITY_CLAIM"]]
+        user_id = int(identity)
+    except (PyJWTError, JWTExtendedException, ValueError, TypeError, KeyError):
+        return AuthLoginResult(statuses=(AuthResultStatus.INVALID_MFA_TOKEN,))
+
+    user = db.session.get(Users, user_id)
+    if not user or not user.activated or not user.mfa_active:
+        return AuthLoginResult(statuses=(AuthResultStatus.INVALID_MFA_TOKEN,))
+
+    # Verify the provided MFA code using the appropriate method.
+    verify = verify_mfa_recovery_code if recovery else verify_mfa_totp_code
+    if not verify(user, token).is_success:
+        return AuthLoginResult(statuses=(AuthResultStatus.INVALID_MFA_CODE,))
+
+    return issue_login_tokens(user)

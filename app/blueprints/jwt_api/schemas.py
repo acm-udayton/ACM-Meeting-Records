@@ -24,18 +24,11 @@ class MFARequest(BaseModel):
     token: str = Field(
         min_length=1, max_length=128, json_schema_extra={"writeOnly": True}
     )
-
-class CSRFHeader(BaseModel):
-    """Request model for CSRF token header."""
-    csrf_token: str | None = Field(
-        default=None,
-        alias="X-CSRFToken",
-        description="Required when CSRF protection is enabled. Obtain from GET /api/v1/jwt/csrf/ and retain the session cookie.",
+    mfa_token: str = Field(
+        min_length=1,
+        description="Intermediate token returned by login; expires after five minutes.",
+        json_schema_extra={"writeOnly": True},
     )
-
-class CSRFResponse(BaseModel):
-    """Response model for CSRF token retrieval."""
-    csrf_token: str
 
 class TokenResponse(BaseModel):
     """Response model for successful login, containing JWT access and refresh tokens."""
@@ -46,7 +39,8 @@ class TokenResponse(BaseModel):
 
 class MFAResponse(BaseModel):
     """Response model for MFA verification, indicating the next step."""
-    redirect_to: str = Field(description="URL to POST the MFA token to, using the same session cookie.")
+    redirect_to: str = Field(description="URL to POST mfa_token and the TOTP or recovery code to.")
+    mfa_token: str = Field(description="Intermediate MFA token, valid for five minutes; cannot authorize API access.")
 
 class LoginResponse(RootModel[TokenResponse | MFAResponse]):
     """Login returns tokens or the next MFA verification URL."""

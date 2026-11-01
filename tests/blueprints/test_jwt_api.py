@@ -9,11 +9,12 @@ Last Modified: 11/1/2026
 File Purpose: Pytest for the blueprints/jwt_api endpoints.
 """
 
+from datetime import timedelta
 from unittest.mock import patch
 
 import pyotp
 import pytest
-from flask_jwt_extended import decode_token
+from flask_jwt_extended import create_access_token, create_refresh_token, decode_token, jwt_required
 
 from app.extensions import db
 from app.models import RecoveryCodes, Users
@@ -87,20 +88,25 @@ def test_login_failures_do_not_issue_tokens(app, failure):
 
 def test_totp_login(app):
     user = make_user(mfa_active=True, totp_active=True, totp_secret=pyotp.random_base32())
-    client = app.test_client()
     result = authenticate_user("testuser", "password", None)
     assert result.user_id == user.id
     assert result.access_token is result.refresh_token is None
-    response = login(client)
+    claims = decode_token(result.mfa_token)
+    assert claims["type"] == "mfa"
+    assert claims["exp"] - claims["iat"] == 300
+
+    response = login(app.test_client())
     assert response.status_code == 200
-    assert response.json == {"redirect_to": f"{BASE}/mfa/verify-totp/"}
+    assert response.json["redirect_to"] == f"{BASE}/mfa/verify-totp/"
+    assert set(response.json) == {"redirect_to", "mfa_token"}
+    assert "Set-Cookie" not in response.headers
     endpoint = response.json["redirect_to"]
-    assert client.post(endpoint, json={"token": "bad"}).status_code == 401
-    assert_tokens(client.post(endpoint, json={"token": pyotp.TOTP(user.totp_secret).now()}), user)
-    with client.session_transaction() as state:
-        assert "jwt_mfa_login" not in state
-        assert "mfa_user_id" not in state
-    assert client.post(endpoint, json={"token": pyotp.TOTP(user.totp_secret).now()}).status_code == 401
+    # A different client can complete MFA without a login session or CSRF cookie.
+    client = app.test_client()
+    body = {"mfa_token": response.json["mfa_token"], "token": "bad"}
+    assert client.post(endpoint, json=body).status_code == 401
+    body["token"] = pyotp.TOTP(user.totp_secret).now()
+    assert_tokens(client.post(endpoint, json=body), user)
 
 
 def test_recovery_login_consumes_code(app):
@@ -109,74 +115,117 @@ def test_recovery_login_consumes_code(app):
     raw_code = recovery.generate_code()
     db.session.add(recovery)
     db.session.commit()
-    client = app.test_client()
-    endpoint = login(client).json["redirect_to"]
+    response = login(app.test_client())
+    endpoint = response.json["redirect_to"]
     assert endpoint == f"{BASE}/mfa/verify-recovery-code/"
-    assert client.post(endpoint, json={"token": "bad"}).status_code == 401
-    assert_tokens(client.post(endpoint, json={"token": raw_code}), user)
-    assert db.session.get(RecoveryCodes, recovery.id) is None
-    login(client)
-    assert client.post(endpoint, json={"token": raw_code}).status_code == 401
-
-
-@pytest.mark.parametrize("state", ["missing", "expired", "inactive", "disabled", "deleted"])
-def test_mfa_rejects_invalid_pending_login(app, state):
-    user = make_user(mfa_active=True, totp_active=True, totp_secret=pyotp.random_base32())
-    token = pyotp.TOTP(user.totp_secret).now()
     client = app.test_client()
-    if state != "missing":
-        login(client)
-    if state == "expired":
-        with client.session_transaction() as pending:
-            pending["jwt_mfa_login"] = {"user_id": user.id, "started_at": 0}
-    elif state == "inactive":
+    body = {"mfa_token": response.json["mfa_token"], "token": "bad"}
+    assert client.post(endpoint, json=body).status_code == 401
+    body["token"] = raw_code
+    assert_tokens(client.post(endpoint, json=body), user)
+    assert db.session.get(RecoveryCodes, recovery.id) is None
+    assert client.post(endpoint, json=body).status_code == 401
+
+
+@pytest.mark.parametrize("kind", ["expired", "tampered", "malformed", "access", "refresh"])
+def test_invalid_mfa_tokens(app, kind):
+    user = make_user(mfa_active=True, totp_active=True, totp_secret=pyotp.random_base32())
+    challenge = login(app.test_client()).json["mfa_token"]
+    if kind == "expired":
+        challenge = create_access_token(
+            identity=str(user.id), expires_delta=timedelta(seconds=-1),
+            additional_claims={"type": "mfa"},
+        )
+    elif kind == "tampered":
+        header, payload, signature = challenge.split(".")
+        signature = ("a" if signature[0] != "a" else "b") + signature[1:]
+        challenge = ".".join((header, payload, signature))
+    elif kind == "malformed":
+        challenge = "invalid"
+    elif kind == "access":
+        challenge = create_access_token(identity=str(user.id))
+    else:
+        challenge = create_refresh_token(identity=str(user.id))
+    with patch("app.services.jwt_service.issue_login_tokens") as issue:
+        response = app.test_client().post(
+            f"{BASE}/mfa/verify-totp/",
+            json={"mfa_token": challenge, "token": pyotp.TOTP(user.totp_secret).now()},
+        )
+    assert response.status_code == 401
+    issue.assert_not_called()
+
+
+@pytest.mark.parametrize("state", ["inactive", "disabled", "deleted"])
+def test_mfa_rechecks_user(app, state):
+    user = make_user(mfa_active=True, totp_active=True, totp_secret=pyotp.random_base32())
+    body = {
+        "mfa_token": login(app.test_client()).json["mfa_token"],
+        "token": pyotp.TOTP(user.totp_secret).now(),
+    }
+    if state == "inactive":
         user.activated = False
     elif state == "disabled":
         user.mfa_active = False
-    elif state == "deleted":
+    else:
         db.session.delete(user)
     db.session.commit()
-    response = client.post(f"{BASE}/mfa/verify-totp/", json={"token": token})
+    response = app.test_client().post(f"{BASE}/mfa/verify-totp/", json=body)
     assert response.status_code == 401
     assert "access_token" not in response.json
 
 
-def test_failed_new_login_clears_mfa_challenge(app):
-    make_user(mfa_active=True)
+@pytest.mark.parametrize("endpoint", ["verify-totp", "verify-recovery-code"])
+def test_mfa_requires_challenge(app, endpoint):
+    response = app.test_client().post(f"{BASE}/mfa/{endpoint}/", json={"token": "123456"})
+    assert response.status_code == 422
+
+
+def test_mfa_token_cannot_authenticate_protected_routes(app):
+    app.add_url_rule("/protected", view_func=jwt_required()(lambda: {"ok": True}), endpoint="protected")
+    app.add_url_rule(
+        "/refresh-protected", view_func=jwt_required(refresh=True)(lambda: {"ok": True}),
+        endpoint="refresh_protected",
+    )
+    user = make_user(mfa_active=True)
+    challenge = login(app.test_client()).json["mfa_token"]
     client = app.test_client()
-    login(client)
-    login(client, password="bad")
-    with client.session_transaction() as pending:
-        assert "jwt_mfa_login" not in pending
+    for endpoint in ("/protected", "/refresh-protected"):
+        response = client.get(endpoint, headers={"Authorization": f"Bearer {challenge}"})
+        assert response.status_code in {400, 401, 422}
+    # Normal login tokens remain usable by the corresponding decorators.
+    for endpoint, encoded in (
+        ("/protected", create_access_token(identity=str(user.id))),
+        ("/refresh-protected", create_refresh_token(identity=str(user.id))),
+    ):
+        assert client.get(endpoint, headers={"Authorization": f"Bearer {encoded}"}).status_code == 200
 
 
-def test_csrf_protected_json_login_and_mfa(app):
+def test_stateless_login_and_mfa_with_global_csrf_enabled(app):
     app.config["WTF_CSRF_ENABLED"] = True
     user = make_user(mfa_active=True, totp_active=True, totp_secret=pyotp.random_base32())
-    client = app.test_client()
-    response = login(client)
-    assert response.status_code == 400
-    assert response.is_json
-    csrf = client.get(f"{BASE}/csrf/")
-    assert csrf.headers["Cache-Control"] == "no-store"
-    headers = {"X-CSRFToken": csrf.json["csrf_token"]}
-    response = client.post(
-        f"{BASE}/login/", json={"username": "testuser", "password": "password"}, headers=headers
+    response = login(app.test_client())
+    assert response.status_code == 200
+    result = app.test_client().post(
+        response.json["redirect_to"],
+        json={"mfa_token": response.json["mfa_token"], "token": pyotp.TOTP(user.totp_secret).now()},
     )
-    endpoint = response.json["redirect_to"]
-    token = {"token": pyotp.TOTP(user.totp_secret).now()}
-    assert client.post(endpoint, json=token).status_code == 400
-    assert_tokens(client.post(endpoint, json=token, headers=headers), user)
+    assert_tokens(result, user)
+    assert "Set-Cookie" not in result.headers
+    # Browser form routes still require CSRF.
+    assert app.test_client().post("/login/", data={"username": "testuser", "password": "password"}).status_code == 400
 
 
 def test_openapi_contract(app):
     spec = app.test_client().get("/openapi/openapi.json").json
     operation = spec["paths"][f"{BASE}/login/"]["post"]
     assert "application/json" in operation["requestBody"]["content"]
-    assert {"200", "400", "401", "422"} <= operation["responses"].keys()
-    assert any(param["name"] == "X-CSRFToken" for param in operation["parameters"])
+    assert {"200", "401", "422"} <= operation["responses"].keys()
+    assert not operation.get("parameters")
     schemas = spec["components"]["schemas"]
     assert len(schemas["LoginResponse"]["anyOf"]) == 2
     assert schemas["LoginRequest"]["properties"]["password"]["writeOnly"] is True
+    assert "mfa_token" in schemas["MFARequest"]["required"]
+    assert "mfa_token" in schemas["MFAResponse"]["required"]
+    assert f"{BASE}/csrf/" not in spec["paths"]
     for suffix in ("verify-totp/", "verify-recovery-code/"):
         assert f"{BASE}/mfa/{suffix}" in spec["paths"]
