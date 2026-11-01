@@ -12,6 +12,7 @@ File Purpose: JWT authentication routes for the project.
 # Third-party imports.
 from flask import request, url_for
 from flask_openapi3 import APIBlueprint, Tag
+from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from app.extensions import db
 from app.models import Users
@@ -19,6 +20,7 @@ from app.services.jwt_service import (
     AuthLoginResult,
     AuthResultStatus,
     authenticate_user,
+    refresh_access_token,
     complete_mfa_login,
 )
 from app.utils import is_admin
@@ -30,6 +32,7 @@ from .schemas import (
     LoginResponse,
     MFARequest,
     TokenResponse,
+    RefreshTokenResponse,
 )
 
 jwt_tag = Tag(name="JWT", description="Operations related to JWT authentication.")
@@ -112,3 +115,19 @@ def verify_totp(body: MFARequest):
 def verify_recovery_code(body: MFARequest):
     """Finish JWT login with a recovery code, consuming it on success."""
     return _verify_mfa(body, recovery=True)
+
+@jwt_bp.post(
+    "/refresh",
+    security=[{"RefreshBearer": []}],
+    responses={200: RefreshTokenResponse, 401: ErrorResponse},
+)
+@jwt_required(refresh=True)
+def refresh():
+    """Refresh the JWT access token using a valid refresh token."""
+    # Extract identity from the valid refresh token
+    user = db.session.get(Users, int(get_jwt_identity()))
+    if not user or not user.activated:
+        return _authentication_error()
+    # Create a fresh access token
+    result = refresh_access_token(user)
+    return {"access_token": result.access_token}, 200

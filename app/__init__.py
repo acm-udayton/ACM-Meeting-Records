@@ -159,7 +159,22 @@ def create_app(use_test_config=False):
     )
 
     # Create the Flask app.
-    app = OpenAPI(__name__, info=info)
+    app = OpenAPI(
+        __name__,
+        info=info, 
+        security_schemes={
+            "RefreshBearer": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+            },
+            "AccessBearer": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+            }
+        },
+    )
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("SQLALCHEMY_DATABASE_URI")
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
     app.config["UPLOAD_FOLDER"] = os.getenv("UPLOAD_FOLDER")
@@ -243,7 +258,7 @@ def create_app(use_test_config=False):
     app.register_blueprint(api_bp, url_prefix="/api")
     app.register_blueprint(polls_bp, url_prefix="/admin")
     app.register_api(jwt_bp, url_prefix="/api/v1/jwt")
-    
+
     # JSON API routes are exempt from CSRF protection, as they use JWTs for authentication.
     csrf.exempt(jwt_bp)
 

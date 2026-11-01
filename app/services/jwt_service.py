@@ -107,6 +107,12 @@ def issue_login_tokens(user: Users) -> AuthLoginResult:
         refresh_token=create_refresh_token(identity=str(user.id)),
     )
 
+def refresh_access_token(user: Users) -> AuthLoginResult:
+    """Issue a new access token for the user."""
+    return AuthLoginResult(
+        statuses=(AuthResultStatus.SUCCESS,),
+        access_token=create_access_token(identity=str(user.id)),
+    )
 
 def complete_mfa_login(mfa_token: str, token: str, recovery: bool = False) -> AuthLoginResult:
     """Verify the signed MFA challenge and code before issuing login tokens."""

@@ -229,3 +229,38 @@ def test_openapi_contract(app):
     assert f"{BASE}/csrf/" not in spec["paths"]
     for suffix in ("verify-totp/", "verify-recovery-code/"):
         assert f"{BASE}/mfa/{suffix}" in spec["paths"]
+
+
+def test_refresh_returns_access_token(app):
+    user = make_user()
+    client = app.test_client()
+    tokens = login(client).json
+    response = client.post(
+        f"{BASE}/refresh",
+        headers={"Authorization": f"Bearer {tokens['refresh_token']}"},
+    )
+    assert response.status_code == 200
+    assert set(response.json) == {"access_token"}
+    assert response.json["access_token"] != tokens["access_token"]
+    claims = decode_token(response.json["access_token"])
+    assert claims["sub"] == str(user.id)
+    assert claims["type"] == "access"
+
+
+@pytest.mark.parametrize("state", ["inactive", "deleted"])
+def test_refresh_rechecks_user(app, state):
+    user = make_user()
+    client = app.test_client()
+    refresh_token = login(client).json["refresh_token"]
+    if state == "inactive":
+        user.activated = False
+    else:
+        db.session.delete(user)
+    db.session.commit()
+    with patch("app.services.jwt_service.create_access_token") as issue:
+        response = client.post(
+            f"{BASE}/refresh", headers={"Authorization": f"Bearer {refresh_token}"}
+        )
+    assert response.status_code == 401
+    assert response.json["error"] == "Login failed"
+    issue.assert_not_called()

@@ -49,3 +49,7 @@ class ErrorResponse(BaseModel):
     """Error response model for failed authentication attempts."""
     error: str
     flashed_messages: dict[str, list[str]]
+
+class RefreshTokenResponse(BaseModel):
+    """Response model for successful refresh token usage, containing a new access token."""
+    access_token: str
