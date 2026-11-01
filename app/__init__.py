@@ -21,6 +21,7 @@ from flask import Flask, render_template, abort, redirect, url_for
 from flask_login import current_user
 from flask_openapi3 import OpenAPI, Info
 from flask_wtf import CSRFProtect
+from app.models import Users
 
 from app.utils import is_admin, is_not_admin
 
@@ -49,6 +50,19 @@ def admin_required(f):
             abort(403)
         return f(*args, **kwargs)
     return decorated_admin_required
+
+@jwt.additional_claims_loader
+def add_claims_to_access_token(identity):
+    """ Add custom claims to the JWT access token. """
+    # Query the user using the identity stored in the token
+    user = db.session.get(Users, int(identity))
+    if user:
+        # Pass only certain columns into the JWT payload
+        return {
+            "username": user.username,
+            "role": user.role
+        }
+    return {}
 
 def datetime_format(value):
     """Format a datetime object in a Jinja template to a custom string."""
@@ -222,6 +236,6 @@ def create_app(use_test_config=False):
     app.register_blueprint(main_bp)
     app.register_blueprint(api_bp, url_prefix="/api")
     app.register_blueprint(polls_bp, url_prefix="/admin")
-    app.register_blueprint(jwt_bp, url_prefix="/api/v1/jwt")
+    app.register_api(jwt_bp, url_prefix="/api/v1/jwt")
 
     return app
