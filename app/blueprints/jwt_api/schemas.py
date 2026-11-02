@@ -53,3 +53,7 @@ class ErrorResponse(BaseModel):
 class RefreshTokenResponse(BaseModel):
     """Response model for successful refresh token usage, containing a new access token."""
     access_token: str
+
+class ProtectedResponse(BaseModel):
+    """Response for the protected admin example."""
+    message: str

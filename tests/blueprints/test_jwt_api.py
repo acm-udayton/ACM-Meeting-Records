@@ -264,3 +264,74 @@ def test_refresh_rechecks_user(app, state):
     assert response.status_code == 401
     assert response.json["error"] == "Login failed"
     issue.assert_not_called()
+
+
+def test_admin_protected_route(app):
+    make_user(role="admin")
+    client = app.test_client()
+    token = login(client).json["access_token"]
+    response = client.get(f"{BASE}/protected", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200
+    assert response.json == {"message": "Access granted to protected route."}
+
+
+def test_admin_protected_route_forbids_non_admin(app):
+    make_user(role="user")
+    client = app.test_client()
+    token = login(client).json["access_token"]
+    response = client.get(f"{BASE}/protected", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 403
+    assert response.json["error"] == "Admin access required"
+
+
+def test_admin_protected_route_requires_header(app):
+    response = app.test_client().get(f"{BASE}/protected")
+    assert response.status_code == 401
+    assert response.json["msg"] == "Missing Authorization Header"
+
+
+def test_admin_protected_route_rejects_expired_token(app):
+    user = make_user(role="admin")
+    token = create_access_token(identity=str(user.id), expires_delta=timedelta(seconds=-1))
+    response = app.test_client().get(
+        f"{BASE}/protected", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 401
+    assert response.json["msg"] == "Token has expired"
+
+
+@pytest.mark.parametrize("recovery", [False, True])
+def test_mfa_bearer_authorization(app, recovery):
+    user = make_user(mfa_active=True, totp_active=True, totp_secret=pyotp.random_base32())
+    if recovery:
+        entry = RecoveryCodes(user_id=user.id)
+        code = entry.generate_code()
+        db.session.add(entry)
+        db.session.commit()
+        endpoint = f"{BASE}/mfa/verify-recovery-code/"
+    else:
+        code = pyotp.TOTP(user.totp_secret).now()
+        endpoint = f"{BASE}/mfa/verify-totp/"
+    mfa_token = login(app.test_client()).json["mfa_token"]
+    response = app.test_client().post(
+        endpoint, json={"token": code},
+        headers={"Authorization": f"Bearer {mfa_token}"},
+    )
+    assert_tokens(response, user)
+
+
+@pytest.mark.parametrize("kind", ["access", "refresh", "malformed"])
+def test_mfa_rejects_wrong_authorization_even_with_valid_body(app, kind):
+    user = make_user(mfa_active=True, totp_active=True, totp_secret=pyotp.random_base32())
+    mfa_token = login(app.test_client()).json["mfa_token"]
+    if kind == "malformed":
+        authorization = "Basic invalid"
+    else:
+        create = create_access_token if kind == "access" else create_refresh_token
+        authorization = f"Bearer {create(identity=str(user.id))}"
+    response = app.test_client().post(
+        f"{BASE}/mfa/verify-totp/",
+        json={"token": pyotp.TOTP(user.totp_secret).now(), "mfa_token": mfa_token},
+        headers={"Authorization": authorization},
+    )
+    assert response.status_code == 401

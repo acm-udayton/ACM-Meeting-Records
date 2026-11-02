@@ -19,6 +19,7 @@ from importlib.metadata import version, PackageNotFoundError
 from dotenv import load_dotenv
 from flask import Flask, render_template, abort, redirect, url_for
 from flask_login import current_user
+from flask_jwt_extended import get_jwt, verify_jwt_in_request
 from flask_openapi3 import OpenAPI, Info
 from flask_wtf import CSRFProtect
 from app.models import Users
@@ -50,6 +51,17 @@ def admin_required(f):
             abort(403)
         return f(*args, **kwargs)
     return decorated_admin_required
+
+def jwt_admin_required(f):
+    """ Route decorator to restrict API access to admin users. """
+    @wraps(f)
+    def decorated_admin_jwt_required(*args, **kwargs):
+        verify_jwt_in_request()
+        claims = get_jwt()
+        if claims.get("role") != "admin":
+            return {"error": "Admin access required", "flashed_messages": {}}, 403
+        return f(*args, **kwargs)
+    return decorated_admin_jwt_required
 
 @jwt.additional_claims_loader
 def add_claims_to_access_token(identity):
@@ -168,7 +180,7 @@ def create_app(use_test_config=False):
                 "scheme": "bearer",
                 "bearerFormat": "JWT",
             },
-            "AccessBearer": {
+            "Bearer": {
                 "type": "http",
                 "scheme": "bearer",
                 "bearerFormat": "JWT",
