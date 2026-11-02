@@ -14,7 +14,6 @@ from flask import request, url_for
 from flask_openapi3 import APIBlueprint, Tag
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
-from app import jwt_admin_required
 from app.extensions import db
 from app.models import Users
 from app.services.jwt_service import (
@@ -34,7 +33,6 @@ from .schemas import (
     MFARequest,
     TokenResponse,
     RefreshTokenResponse,
-    ProtectedResponse,
 )
 
 jwt_tag = Tag(name="JWT", description="Operations related to JWT authentication.")
@@ -133,13 +131,3 @@ def refresh():
     # Create a fresh access token
     result = refresh_access_token(user)
     return {"access_token": result.access_token}, 200
-
-@jwt_bp.get(
-    "/protected",
-    security=[{"Bearer": []}],
-    responses={200: ProtectedResponse, 401: ErrorResponse, 403: ErrorResponse},
-)
-@jwt_admin_required
-def protected_route():
-    """Example protected route that requires a valid JWT access token and admin role."""
-    return {"message": "Access granted to protected route."}, 200
