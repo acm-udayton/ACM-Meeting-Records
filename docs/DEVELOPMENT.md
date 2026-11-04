@@ -88,12 +88,13 @@ ACM-Meeting-Records
 │   └── <a href="#pytest-ci">pytest.yml</a>
 ├── /app
 │   ├── <a href="#route-map">/blueprints</a>
-│   │   ├── <a href="#routes-admin">admin.py</a>
-│   │   ├── <a href="#routes-api">api.py</a>
-│   │   ├── <a href="#routes-auth">auth.py</a>
-│   │   ├── <a href="#routes-main">main.py</a>
-│   │   ├── <a href="#routes-mfa">mfa.py</a>
-│   │   └── <a href="#routes-polls">polls.py</a>
+│   │   ├── <a href="#routes-admin">admin</a>
+│   │   ├── <a href="#routes-api">api</a>
+│   │   ├── <a href="#routes-auth">auth</a>
+│   │   ├── <a href="#api-jwt">jwt_api</a>
+│   │   ├── <a href="#routes-main">main</a>
+│   │   ├── <a href="#routes-mfa">mfa</a>
+│   │   └── <a href="#routes-polls">polls</a>
 │   ├── /static
 │   ├── <a href="#route-map">/templates</a>
 │   ├── /uploads
@@ -143,14 +144,16 @@ The application factory within the `create_app` function in `app/__init__.py` is
 1. Loading environment variables from the ```.env``` file.
 2. Configuring the logger.
 3. Initializing the Flask app.
-4. Adding configuration settings to the Flask app.
-5. Initializing <a href="#flask-extensions">Flask extensions</a> with the app.
-6. Specifying the user loader for <a href="#flask-login">Flask-Login</a>.
-7. Setting the app variables such as ```.context```, ```.logs```, ```.base_url```, and ```.storage```.
-8. Defining the app's context processor for variables passed to all templates.
-9. Adding custom Jinja filters to the app.
-10. Registering the app's error handlers for HTTP status code exceptions.
-11. Registering all <a href="#route-map">app blueprints</a>.
+4. Configuring the OpenAPI specification for the app.
+5. Adding configuration settings to the Flask app.
+6. Initializing <a href="#flask-extensions">Flask extensions</a> with the app.
+7. Specifying the user loader for <a href="#flask-login">Flask-Login</a>.
+8. Specifying configuration for <a href="#flask-jwt-extended">Flask-JWT-Extended</a>.
+9. Setting the app variables such as ```.context```, ```.logs```, ```.base_url```, and ```.storage```.
+10. Defining the app's context processor for variables passed to all templates.
+11. Adding custom Jinja filters to the app.
+12. Registering the app's error handlers for HTTP status code exceptions.
+13. Registering all <a href="#route-map">app blueprints</a>.
 
 The application factory is launched by Docker within the web container. This results in a clean build of the flask app, combining the entire codebase and all of its extensions into one app that can be run and debugged within the web container. This also allows us to avoid many issues that arise with monolithic flask apps, such as circular imports and messy code structure. By following the application factory design pattern, we also ensure that our codebase is modular, scalable, and maintainable as we continue to build out the project.
 <hr>
@@ -232,11 +235,24 @@ For more information on how to use Flask-WTF, please refer to the official docum
 <summary id="flask-openapi3"><strong>Flask-OpenAPI3</strong></summary>
 <br>
 
-Flask-OpenAPI3 is a Flask extension that provides seamless integration with the OpenAPI 3.0 specification. It allows you to define your API endpoints using Python decorators and automatically generates OpenAPI documentation for your application. This makes it easy to document your API and provides a way for other developers to understand and use your endpoints. We use the Swagger UI integration, and you can find the dashboard at `/openapi/swagger/`.
+Flask-OpenAPI3 is a Flask extension that provides seamless integration with the OpenAPI 3.0 specification. It allows you to define your API endpoints using Python decorators and automatically generates OpenAPI documentation for your application. This makes it easy to document your API and provides a way for other developers to understand and use your endpoints. We use the Swagger UI integration, and you can find the dashboard at `/openapi/swagger` (without a trailing slash). The generated schema is available at `/openapi/openapi.json`. Only API blueprints registered with `app.register_api()` contribute their documented operations.
 
 To add a new API endpoint, you can use the `@api.get`, `@api.post`, `@api.put`, or `@api.delete` decorators to define the HTTP method for your endpoint. You can also specify the path, summary, description, and response schema for your endpoint using the decorator parameters. Flask-OpenAPI3 will then generate the OpenAPI documentation based on these definitions. You must use pydantic models to define the request and response schemas for your endpoints. These models are used to validate the input and output data for your API endpoints, ensuring that they conform to the specified schema.
 
 For more information on how to use Flask-OpenAPI3, please refer to the official documentation: https://flask-openapi3.readthedocs.io/en/latest/
+</details>
+
+<details>
+<summary id="flask-jwt-extended"><strong>Flask-JWT-Extended</strong></summary>
+<br>
+
+Flask-JWT-Extended is a Flask extension that provides seamless integration with the JWT (JSON Web Token) standard. It allows you to easily add authentication and authorization to your Flask application using JWTs. With Flask-JWT-Extended, you can issue new tokens, refresh existing tokens, and validate token authenticity. This extension is particularly useful for implementing secure API endpoints and managing user sessions.
+
+We use Flask-JWT-Extended to handle user authentication and authorization in our application's `v1.11+` RESTful API. On API login, we create both access and refresh tokens for the user. The access token is used to authenticate API requests, while the refresh token is used to obtain a new access token when the current one expires. We have implemented a `/refresh` endpoint that allows clients to refresh their access tokens using a valid refresh token. This ensures that users can maintain their sessions without having to log in again.
+
+You can add the decorator `@jwt_required()` to any API route to protect it and require a valid access token for access. Additionally, you can use the `@jwt_required(refresh=True)` decorator for routes that require a valid refresh token. This allows you to control access to your API endpoints based on the user's authentication status.
+
+For more information on how to use Flask-JWT-Extended, please refer to the official documentation: https://flask-jwt-extended.readthedocs.io/en/latest/
 </details>
 
 <hr>
@@ -797,6 +813,16 @@ Unless explicitly exempted, POST requests are protected by the application's Fla
         </p>
       </li>
     </ul>
+</details>
+
+<br>
+
+The `v1.11+` API utilizes Swagger UI (`/openapi/swagger`) for API documentation and testing. The following blueprints create API endpoints and routes that are documented within Swagger UI:
+
+<details>
+<summary id="api-jwt"><strong>JWT API</strong></summary>
+<br>
+<p>The JWT API provides endpoints for managing JSON Web Tokens, including issuing new tokens, refreshing existing tokens, and validating token authenticity. <br>This section of the API implements the functionality of the authentication and mfa routes.</p>
 </details>
 
 ### Extension & Inclusion Summary

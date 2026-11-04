@@ -4,7 +4,7 @@
 """
 Project Name: ACM-Meeting-Records
 Project Author(s): Joseph Lefkovitz (github.com/lefkovitz)
-Last Modified: 10/7/2025
+Last Modified: 10/30/2026
 
 File Purpose: Application factory for the project.
 """
@@ -19,13 +19,15 @@ from importlib.metadata import version, PackageNotFoundError
 from dotenv import load_dotenv
 from flask import Flask, render_template, abort, redirect, url_for
 from flask_login import current_user
+from flask_jwt_extended import get_jwt, verify_jwt_in_request
 from flask_openapi3 import OpenAPI, Info
 from flask_wtf import CSRFProtect
+from app.models import Users
 
 from app.utils import is_admin, is_not_admin
 
 # Local application imports.
-from .extensions import db, login_manager, migrate
+from .extensions import db, login_manager, migrate, jwt
 from .utils import get_env_bool
 
 csrf = CSRFProtect()
@@ -49,6 +51,36 @@ def admin_required(f):
             abort(403)
         return f(*args, **kwargs)
     return decorated_admin_required
+
+def jwt_admin_required(f):
+    """ Route decorator to restrict API access to admin users. """
+    @wraps(f)
+    def decorated_admin_jwt_required(*args, **kwargs):
+        verify_jwt_in_request()
+        claims = get_jwt()
+        if claims.get("role") != "admin":
+            return {"error": "Admin access required", "flashed_messages": {}}, 403
+        return f(*args, **kwargs)
+    return decorated_admin_jwt_required
+
+@jwt.additional_claims_loader
+def add_claims_to_access_token(identity):
+    """ Add custom claims to the JWT access token. """
+    # Query the user using the identity stored in the token
+    user = db.session.get(Users, int(identity))
+    if user:
+        # Pass only certain columns into the JWT payload
+        return {
+            "username": user.username,
+            "role": user.role
+        }
+    return {}
+
+@jwt.token_verification_loader
+def verify_login_token_type(jwt_header, jwt_payload):
+    """Prevent intermediate MFA tokens from authenticating protected routes."""
+    return jwt_payload.get("type") in {"access", "refresh"}
+
 
 def datetime_format(value):
     """Format a datetime object in a Jinja template to a custom string."""
@@ -116,6 +148,7 @@ test_config = {
     'WTF_CSRF_ENABLED': False,  # Disable CSRF for tests.
     'TOTP_ISSUER_NAME': "ACM Meeting Records Test",
     "SECRET_KEY": "test-secret-key",
+    "JWT_SECRET_KEY": "test-jwt-secret-key",
     "ENFORCE_USERNAMES": True,
     "REQUIRE_USERNAME_AS_EMAIL": True,
     "USERNAME_EMAIL_DOMAIN": "example.com",
@@ -138,7 +171,22 @@ def create_app(use_test_config=False):
     )
 
     # Create the Flask app.
-    app = OpenAPI(__name__, info=info)
+    app = OpenAPI(
+        __name__,
+        info=info, 
+        security_schemes={
+            "RefreshBearer": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+            },
+            "Bearer": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+            }
+        },
+    )
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("SQLALCHEMY_DATABASE_URI")
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
     app.config["UPLOAD_FOLDER"] = os.getenv("UPLOAD_FOLDER")
@@ -159,6 +207,7 @@ def create_app(use_test_config=False):
     migrate.init_app(app, db)
     login_manager.init_app(app)
     csrf.init_app(app)
+    jwt.init_app(app)
 
     # Configure Flask-Login.
     from .models import Users  # pylint: disable=import-outside-toplevel
@@ -213,11 +262,16 @@ def create_app(use_test_config=False):
     from .blueprints.api import api_bp # pylint: disable=import-outside-toplevel
     from .blueprints.mfa import mfa_bp # pylint: disable=import-outside-toplevel
     from .blueprints.polls import polls_bp # pylint: disable=import-outside-toplevel
+    from .blueprints.jwt_api import jwt_bp # pylint: disable=import-outside-toplevel
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(auth_bp)
     app.register_blueprint(mfa_bp, url_prefix="/mfa")
     app.register_blueprint(main_bp)
     app.register_blueprint(api_bp, url_prefix="/api")
     app.register_blueprint(polls_bp, url_prefix="/admin")
+    app.register_api(jwt_bp, url_prefix="/api/v1/jwt")
+
+    # JSON API routes are exempt from CSRF protection, as they use JWTs for authentication.
+    csrf.exempt(jwt_bp)
 
     return app
